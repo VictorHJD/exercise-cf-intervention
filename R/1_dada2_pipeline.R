@@ -155,6 +155,8 @@ if(Taxanot){
   
   tree<- fitGTR16S$tree
   
+  saveRDS(fitGTR16S, "~/CF_project/output/phylo_tree.rds")
+  
 }
   
   
