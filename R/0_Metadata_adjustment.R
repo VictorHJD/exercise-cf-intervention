@@ -97,11 +97,12 @@ rm(tmp1, tmp2)
 
 ##3) Nutritional data
 ##Re-shape dataframe
+##Eliminate BMI that was already included in the previous table (this value actually can be computed based on wight and lenght)
 nutri%>%
   rename(Patient_number= 1)%>%
   mutate(Patient_number = paste0("P", Patient_number))%>%
   select(-c(V1_BMI:V3_BMI))-> nutri
-
+##Fat free mass (Charatsi)
 nutri%>%
   select(Patient_number, `FFM_V1_Charatsi(kg)`:`FFM_V3_Charatsi(kg)`)%>%
   gather(FFM_Visit, FFM_Charatsi, `FFM_V1_Charatsi(kg)`:`FFM_V3_Charatsi(kg)`)%>%
@@ -110,4 +111,114 @@ nutri%>%
                            FFM_Visit == "FFM_V3_Charatsi(kg)" ~ "V3"))%>%
   mutate(Comed_token= paste0(Patient_number, Visit))%>%
   select(Patient_number, Visit, Comed_token, FFM_Charatsi)-> tmp1
+##Lenght (cm)
+nutri%>%
+  select(Patient_number, V1_length_cm:V3_length_cm)%>%
+  gather(Length_Visit, Length, V1_length_cm:V3_length_cm)%>%
+  mutate(Visit = case_when(Length_Visit == "V1_length_cm"  ~ "V1",
+                           Length_Visit == "V2_length_cm" ~ "V2",
+                           Length_Visit == "V3_length_cm" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, Length)-> tmp2
 
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Weight (kg)
+nutri%>%
+  select(Patient_number, V1_weight_kg:V3_weight_kg)%>%
+  gather(Weight_Visit, Weight, V1_weight_kg:V3_weight_kg)%>%
+  mutate(Visit = case_when(Weight_Visit == "V1_weight_kg"  ~ "V1",
+                           Weight_Visit == "V2_weight_kg" ~ "V2",
+                           Weight_Visit == "V3_weight_kg" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, Weight)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Fat free mass (Lukaski) bioelectrical impedance measurements
+nutri%>%
+  select(Patient_number, `V1_FFM_%(Lukaski)`:`V3_FFM_%(Lukaski)`)%>%
+  gather(FFM_Luk_Visit, FFM_Luk,`V1_FFM_%(Lukaski)`:`V3_FFM_%(Lukaski)`)%>%
+  mutate(Visit = case_when(FFM_Luk_Visit == "V1_FFM_%(Lukaski)"  ~ "V1",
+                           FFM_Luk_Visit == "V2_FFM_%(Lukaski)" ~ "V2",
+                           FFM_Luk_Visit == "V3_FFM_%(Lukaski)" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, FFM_Luk)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Average of kcal
+nutri%>%
+  select(Patient_number, `V2 kcal Durchschnitt`:`V3 kcal Durchschnitt`)%>%
+  gather(kcal_Visit, kcal_Avg,`V2 kcal Durchschnitt`:`V3 kcal Durchschnitt`)%>%
+  mutate(Visit = case_when(kcal_Visit == "V1 kcal Durchschnitt"  ~ "V1",
+                           kcal_Visit == "V2 kcal Durchschnitt" ~ "V2",
+                           kcal_Visit == "V3 kcal Durchschnitt" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, kcal_Avg)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Kcal body weight ratio per day
+nutri%>%
+  select(Patient_number, `V2_kcal_kg(BW)/d`:`V3_kcal_kg(BW)/d`)%>%
+  gather(kcal_Visit, kcal_kg_day,`V2_kcal_kg(BW)/d`:`V3_kcal_kg(BW)/d`)%>%
+  mutate(Visit = case_when(kcal_Visit == "V1_kcal_kg(BW)/d"  ~ "V1",
+                           kcal_Visit == "V2_kcal_kg(BW)/d" ~ "V2",
+                           kcal_Visit == "V3_kcal_kg(BW)/d" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, kcal_kg_day)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Protein (%)
+nutri%>%
+  select(Patient_number, `V2_Eiweiß(%)`:`V3_Eiweiß(%)`)%>%
+  gather(Prot_Visit, Protein,`V2_Eiweiß(%)`:`V3_Eiweiß(%)`)%>%
+  mutate(Visit = case_when(Prot_Visit == "V1_Eiweiß(%)"  ~ "V1",
+                           Prot_Visit == "V2_Eiweiß(%)" ~ "V2",
+                           Prot_Visit == "V3_Eiweiß(%)" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, Protein)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Lipids (%)
+nutri%>%
+  select(Patient_number,  `V2_Fett(%)`:`V3_Fett(%)`)%>%
+  gather(Lip_Visit, Lipids,`V2_Fett(%)`:`V3_Fett(%)`)%>%
+  mutate(Visit = case_when(Lip_Visit == "V1_Fett(%)"  ~ "V1",
+                           Lip_Visit == "V2_Fett(%)" ~ "V2",
+                           Lip_Visit == "V3_Fett(%)" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, Lipids)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Carbohydrates (%CHO)
+nutri%>%
+  select(Patient_number, `V2_Kohlenhydrate(%)`:`V3_Kohlenhydrate(%)`)%>%
+  gather(CHO_Visit, CHO,`V2_Kohlenhydrate(%)`:`V3_Kohlenhydrate(%)`)%>%
+  mutate(Visit = case_when(CHO_Visit == "V1_Kohlenhydrate(%)"  ~ "V1",
+                           CHO_Visit == "V2_Kohlenhydrate(%)" ~ "V2",
+                           CHO_Visit == "V3_Kohlenhydrate(%)" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, CHO)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Dietary fiber (%DFr)
+nutri%>%
+  select(Patient_number, c(`V2_Ballaststoffe(%)`,`V3_Ballaststoffe(%)`))%>%
+  gather(DFr_Visit, DFr,c(`V2_Ballaststoffe(%)`,`V3_Ballaststoffe(%)`))%>%
+  mutate(Visit = case_when(DFr_Visit == "V1_Ballaststoffe(%)"  ~ "V1",
+                           DFr_Visit == "V2_Ballaststoffe(%)" ~ "V2",
+                           DFr_Visit == "V3_Ballaststoffe(%)" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, DFr)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+##Alcohol (%EtOH)
+nutri%>%
+  select(Patient_number, c(`V2_Alkohol(%)`,`V3_Alkohol(%)`))%>%
+  gather(EtOH_Visit, EtOH,c(`V2_Alkohol(%)`,`V3_Alkohol(%)`))%>%
+  mutate(Visit = case_when(EtOH_Visit == "V1_Alkohol(%)"  ~ "V1",
+                           EtOH_Visit == "V2_Alkohol(%)" ~ "V2",
+                           EtOH_Visit == "V3_Alkohol(%)" ~ "V3"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Comed_token, EtOH)-> tmp2
+
+nutri<- left_join(tmp1, tmp2, by= "Comed_token")
+rm(tmp1, tmp2)
