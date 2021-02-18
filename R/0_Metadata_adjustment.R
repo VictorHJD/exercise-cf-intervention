@@ -259,3 +259,5 @@ setdiff(tmp1$Comed_token, tech$Comed_token)
 left_join(tech, tmp1, by="Comed_token")-> metadata ##This is partial (clinical info not yet included)
 
 rm(tmp1)
+
+saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
