@@ -222,3 +222,40 @@ nutri%>%
 
 nutri<- left_join(tmp1, tmp2, by= "Comed_token")
 rm(tmp1, tmp2)
+
+##4)Clinic data (Not finished)
+##Re-shape dataframe
+##Select not redundant tables
+clinic%>%
+  rename(Patient_number= 1)%>%
+  select(-c(V0_date,...297,...273,`inpatient days during last 12 months`,`date of last hospitalisation`,
+            `V3_date_of_sputum_ analysis`, V3_BMI,V3_weight_kg,V3_length_cm,
+            V2_BMI,V2_weight_kg,V2_length_cm,V3_date,`V2_date_of_sputum_ analysis`,V2_date,
+            V1_BMI,V1_weight_kg,V1_length_cm,V0_date,Date_diagnosis,Sex))-> clinic 
+##Antibiotics
+clinic%>%
+  select(c(Patient_number,V0_Tobramycin_inh:V0_Macrolides_last12months, V1_Tobramycin_inh:V1_Cetirizin, 
+           V2_Tobramycin_inh:V2_Cetirizin, V3_Tobramycin_inh:V3_Cetirizin))
+            
+
+clinic%>%
+  gather(ppFEV1_Visit, ppFEV1, ppFEV1_V1:ppFEV1_V3)%>%
+  separate(ppFEV1_Visit, c("Test", "Visit"))%>%
+  mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  select(Patient_number, sex, age, Visit, Comed_token, ppFEV1)-> tmp1
+
+##Merge all the info
+##Merge Nutritional data with Lung data
+
+lung%>%
+  select(-c(Patient_number,Visit))%>%
+  left_join(nutri, lung, by= "Comed_token")-> tmp1
+
+tmp1%>%
+  select(-c(Patient_number,Visit))-> tmp1
+
+setdiff(tmp1$Comed_token, tech$Comed_token)
+
+left_join(tech, tmp1, by="Comed_token")-> metadata ##This is partial (clinical info not yet included)
+
+rm(tmp1)
