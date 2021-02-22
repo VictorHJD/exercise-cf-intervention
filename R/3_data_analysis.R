@@ -253,6 +253,60 @@ patient<- fct_relevel(patient, "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18")
 sample_data(PS3)$Patient_number <- patient
 
-PS3.ord <- ordinate(PS3, "NMDS", "bray")
-plot_ordination(PS3, PS3.ord, type="taxa", color="Phylum")
-plot_ordination(PS3, PS3.ord, type="samples", color="Patient_number", shape="material")
+##Weighted Unifrac
+wunifrac_dist<- phyloseq::distance(PS3,
+                                   method="unifrac", weighted=T)
+ordination<- ordinate(PS3,
+                      method="PCoA", distance=wunifrac_dist)
+plot_ordination(PS3, ordination, shape= "material")+ 
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(color= Patient_number))+
+  geom_point(color= "black", size= 1.5)+
+  labs(title = "Weighted UniFrac",tag= "A)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  labs(colour = "Patient")+
+  labs(shape = "Sample type")
+
+vegan::adonis(wunifrac_dist~ Patient_number + material + Visit,
+              permutations = 999, data = sdt)
+
+##Bray-Curtis
+BC_dist<- phyloseq::distance(PS3,
+                                   method="bray", weighted=T)
+ordination<- ordinate(PS3,
+                      method="PCoA", distance= BC_dist)
+plot_ordination(PS3, ordination, shape= "material")+ 
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(color= Patient_number))+
+  #geom_point(color= "black", size= 1.5)+
+  labs(title = "Bray-Curtis dissimilariy",tag= "A)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  labs(colour = "Patient")+
+  labs(shape = "Sample type")+
+  stat_ellipse()
+
+vegan::adonis(BC_dist~ Patient_number + material + Visit,
+              permutations = 999, data = sdt)
+
+
+##Analysis for stool
+PS3.stool<- subset_samples(PS3, material%in%c("Stool"))
+PS3.sput<-  subset_samples(PS3, material%in%c("Sputum"))
+
+##Bray-Curtis
+BC_dist<- phyloseq::distance(PS3.stool,
+                             method="bray", weighted=F)
+ordination<- ordinate(PS3.stool,
+                      method="PCoA", distance= BC_dist)
+plot_ordination(PS3.stool, ordination, shape= "Visit")+ 
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(color= Patient_number))+
+  #geom_point(color= "black", size= 1.5)+
+  labs(title = "Bray-Curtis dissimilariy",tag= "A)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  labs(colour = "Patient")+
+  labs(shape = "Visit")
+  
