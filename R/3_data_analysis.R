@@ -102,6 +102,7 @@ rm(tmp1,tmp2)
 
 ###Alpha diversity 
 ##Q1: Differences in alpha diversity among days between sample types
+##Richness
 sdt%>% 
   mutate(Visit = fct_relevel(Visit, 
                                    "V1", "V2", "V3"))%>%
@@ -114,7 +115,7 @@ sdt%>%
 ##Save statistical analysis
 x <- stats.test
 x$groups<- NULL
-write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q1_Sample_Visit_AplhaDiv.csv")
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q1_Sample_Visit_Chao1.csv")
 
 sdt%>% 
   mutate(Visit = fct_relevel(Visit, 
@@ -137,3 +138,101 @@ sdt%>%
   theme(text = element_text(size=16))+
   stat_pvalue_manual(stats.test, bracket.nudge.y = -2, hide.ns = F,label = "{p.adj}{p.adj.signif}")-> A
 
+##Shannon diversity 
+sdt%>% 
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  wilcox_test(diversity_shannon ~ material)%>%
+  adjust_pvalue(method = "bonferroni") %>%
+  add_significance()%>%
+  add_xy_position(x = "Visit")-> stats.test
+
+##Save statistical analysis
+x <- stats.test
+x$groups<- NULL
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q1_Sample_Visit_Shannon.csv")
+
+sdt%>% 
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  wilcox_effsize(diversity_shannon ~ material)
+
+##Plot 
+sdt%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  ggplot(aes(x= Visit, y= diversity_shannon))+
+  geom_boxplot(aes(color= material), alpha= 0.5)+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= material), color= "black")+
+  xlab("Visit")+
+  ylab("Diversity (Shannon Index)")+
+  labs(tag= "B)", caption = get_pwc_label(stats.test))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")-> B
+
+##Q2: Analysis by sample type
+##Richness
+sdt%>% 
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  wilcox_test(chao1 ~ Patient_number)%>%
+  add_significance()%>%
+  add_xy_position(x = "Visit")
+
+##Plot 
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  ggplot(aes(x= Visit, y= chao1))+
+  geom_boxplot(color= "black", outlier.colour = "white")+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
+  xlab("Visit")+
+  ylab("Richness (Chao1 Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  labs(tag= "A)", caption = get_pwc_label(stats.test))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  facet_wrap(~InfectionStatus)+
+  stat_pvalue_manual(stats.test, hide.ns = TRUE,label = "{p.adj}{p.adj.signif}")->P
+
+##Shannon diversity 
+sdt%>% 
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  wilcox_test(diversity_shannon ~ material)%>%
+  adjust_pvalue(method = "bonferroni") %>%
+  add_significance()%>%
+  add_xy_position(x = "Visit")-> stats.test
+
+##Save statistical analysis
+x <- stats.test
+x$groups<- NULL
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q1_Sample_Visit_Shannon.csv")
+
+sdt%>% 
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  wilcox_effsize(diversity_shannon ~ material)
+
+##Plot 
+sdt%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  ggplot(aes(x= Visit, y= diversity_shannon))+
+  geom_boxplot(aes(color= material), alpha= 0.5)+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= material), color= "black")+
+  xlab("Visit")+
+  ylab("Diversity (Shannon Index)")+
+  labs(tag= "B)", caption = get_pwc_label(stats.test))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")-> B
