@@ -187,55 +187,6 @@ sdt%>%
   add_significance()%>%
   add_xy_position(x = "Visit")
 
-##Plot 
-sdt%>%
-  dplyr::filter(material=="Stool")%>%
-  mutate(Visit = fct_relevel(Visit, 
-                             "V1", "V2", "V3"))%>%
-  mutate(Patient_number = fct_relevel(Patient_number, 
-                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Visit, y= chao1))+
-  geom_boxplot(color= "black", outlier.colour = "white")+
-  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black")+
-  xlab("Visit")+
-  ylab("Richness (Chao1 Index)")+
-  geom_line(aes(group = Patient_number), color= "gray")+
-  labs(tag= "A)")+
-  theme_bw()+
-  theme(text = element_text(size=16))->C
-
-##Shannon diversity 
-sdt%>% 
-  dplyr::filter(material=="Stool")%>%
-  mutate(Visit = fct_relevel(Visit, 
-                             "V1", "V2", "V3"))%>%
-  mutate(Patient_number = fct_relevel(Patient_number, 
-                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  wilcox_test(diversity_shannon ~ Patient_number)%>%
-  add_significance()%>%
-  add_xy_position(x = "Visit")
-
-##Plot 
-sdt%>%
-  dplyr::filter(material=="Stool")%>%
-  mutate(Visit = fct_relevel(Visit, 
-                             "V1", "V2", "V3"))%>%
-  mutate(Patient_number = fct_relevel(Patient_number, 
-                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Visit, y= diversity_shannon))+
-  geom_boxplot(color= "black", outlier.colour = "white")+
-  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black")+
-  xlab("Visit")+
-  ylab("Diversity (Shannon Index)")+
-  geom_line(aes(group = Patient_number), color= "gray")+
-  labs(tag= "B)")+
-  theme_bw()+
-  theme(text = element_text(size=16))-> D
-
-
 ##Beta diversity
 ##Remove ASVs that do not show appear more than 5 times in more than half the samples
 wh0 <- genefilter_sample(PS2, filterfun_sample(function(x) x > 5), A=0.05*nsamples(PS2))
@@ -280,12 +231,13 @@ plot_ordination(PS3, ordination, shape= "material")+
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(color= Patient_number))+
   #geom_point(color= "black", size= 1.5)+
-  labs(title = "Bray-Curtis dissimilariy",tag= "A)")+
+  labs(title = "Bray-Curtis dissimilariy",tag= "C)")+
   theme_bw()+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
   labs(shape = "Sample type")+
-  stat_ellipse()
+  xlab("PCo1 (26.6%)")+
+  ylab("PCo2 (14.6%)")-> C
 
 vegan::adonis(BC_dist~ Patient_number + material + Visit,
               permutations = 999, data = sdt)
@@ -294,6 +246,54 @@ vegan::adonis(BC_dist~ Patient_number + material + Visit,
 ##Analysis for stool
 PS3.stool<- subset_samples(PS3, material%in%c("Stool"))
 PS3.sput<-  subset_samples(PS3, material%in%c("Sputum"))
+
+##Plot 
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Visit, y= chao1))+
+  geom_boxplot(color= "black", outlier.colour = "white")+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black")+
+  xlab("Visit")+
+  ylab("Richness (Chao1 Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  labs(tag= "A)")+
+  theme_bw()+
+  theme(text = element_text(size=16))
+
+##Shannon diversity 
+sdt%>% 
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  wilcox_test(diversity_shannon ~ Patient_number)%>%
+  add_significance()%>%
+  add_xy_position(x = "Visit")
+
+##Plot 
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Visit, y= diversity_shannon))+
+  geom_boxplot(color= "black", outlier.colour = "white")+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black")+
+  xlab("Visit")+
+  ylab("Diversity (Shannon Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  labs(tag= "B)")+
+  theme_bw()+
+  theme(text = element_text(size=16))-> D
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS3.stool,
@@ -308,5 +308,51 @@ plot_ordination(PS3.stool, ordination, shape= "Visit")+
   theme_bw()+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
-  labs(shape = "Visit")
-  
+  labs(shape = "Visit")+
+  xlab("PCo1 (15.3%)")+
+  ylab("PCo2 (10.6%)")
+
+ordination$values[1,2]
+ordination$values[2,2]
+
+## Differences are more linked to patient rather than Visit... but difficult to assess. 
+
+sdt.stool<- sample_data(PS3.stool)
+
+mvd.Stool<- vegan::betadisper(BC_dist, sdt.stool$Patient_number, type = "centroid")
+vegan::permutest(mvd.Stool, permutations = 999)
+anova(mvd.Stool)
+plot(mvd.Stool)
+boxplot(mvd.Stool)
+tuky<- TukeyHSD(mvd.Stool)
+
+tuky<- as.data.frame(tuky$group)
+
+tuky%>%
+  rename("p adj" = "p.adj")%>%
+  filter(p.adj <= 0.05)%>%
+  arrange(desc(diff))%>%
+  rownames_to_column(var = "Pat_comp")%>%
+  ggplot(aes(diff, Pat_comp))+
+  geom_boxplot()
+
+plot(TukeyHSD(mvd.Stool))
+
+BC_mat<- as.matrix(BC_dist)
+BC_mat<-as.data.frame(BC_mat)
+BC_mat$Comed_token<-rownames(BC_mat)
+BC_mat$Comed_token<- gsub("^10", "\\1", basename(BC_mat$Comed_token))
+
+##Heatmap
+plot_bar(PS3.stool, fill="Phylum")+ 
+  facet_wrap(~Visit, scales= "free_x", nrow=1)
+
+PS3.stool%>%
+  subset_taxa(Phylum %in% c("Bacteroidota", "Firmicutes", "Proteobacteria")) -> PS3.stool2
+# Z transformed abundance data
+PS3.stool2z <- microbiome::transform(PS3.stool2, "Z")
+dfm <- melt(abundances(PS3.stool2z))
+colnames(dfm) <- c("Taxa", "Sample", "value")
+heat(dfm, "Taxa", "Sample", "value")
+
+
