@@ -6,6 +6,8 @@
 library(phyloseq)
 library(microbiome)
 library(tidyverse)
+library(ggpubr)
+library(rstatix)
 library(data.table)
 library(knitr)
 
@@ -75,37 +77,63 @@ summarize_phyloseq(PS.Phy)
 
 plot_bar(PS.Phy, fill="Phylum") + facet_wrap(~material, scales= "free_x", nrow=1)
 
-##Alpha diversity (rarefied)
-plot_richness(PS2, x= "material", color = "sex" , measures = c("Observed","Chao1", "Shannon")) +
+##Alpha diversity (not-rarefied)
+plot_richness(PS2, x= "material", color = "sex" , measures = c("Chao1", "Shannon")) +
   geom_boxplot()+
   geom_jitter(alpha= 0.005)+
   theme_bw()+
   theme(axis.text.x = element_text(angle=90))
 
+##Estimate global indicators
 alphaDiv <-microbiome::alpha(PS2, index = "all")
 kable(head(alphaDiv))
 
-alphadiv%>%
-  rownames_to_column()->tmp1
+alphaDiv%>%
+  rownames_to_column()%>%
+  rename(rowname = "SampleID")->tmp1
 
-as.tibble(sample)%>%
-  mutate(rowname= paste0("Sample", 1:nrow(sample)))->tmp2
+as_tibble(sample)->tmp2
 
-tmp1<-inner_join(tmp1, tmp2, by="rowname")
-rownames(tmp1)<- tmp1$rowname
-tmp1$rowname<- NULL
-alphadiv<- tmp1
+tmp1<-inner_join(tmp1, tmp2, by="SampleID")
+rownames(tmp1)<- tmp1$SampleID
+tmp1$SampleID<- NULL
+sdt<- tmp1
 rm(tmp1,tmp2)
 
-##Estimate global indicators
+###Alpha diversity 
+##Q1: Differences in alpha diversity among days between sample types
+sdt%>% 
+  mutate(Visit = fct_relevel(Visit, 
+                                   "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  wilcox_test(chao1 ~ material)%>%
+  adjust_pvalue(method = "bonferroni") %>%
+  add_significance()%>%
+  add_xy_position(x = "Visit")-> stats.test
 
-##Testing for differences in alpha diversity
-# Construct the data
-sdt <- meta(PS1)
-sdt$diversity <- diversities(PS1, "shannon")$diversity_shannon
-# Split the values by group
-spl <- split(d$diversity, d$sex)
-# Kolmogorov-Smironv test
-pv <- ks.test(spl$female, spl$male)$p.value
-# Adjust the p-value
-padj <- p.adjust(pv)
+##Save statistical analysis
+x <- stats.test
+x$groups<- NULL
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q1_Sample_Visit_AplhaDiv.csv")
+
+sdt%>% 
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  wilcox_effsize(chao1 ~ material)
+
+##Plot 
+sdt%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  ggplot(aes(x= Visit, y= chao1))+
+  geom_boxplot(aes(color= material), alpha= 0.5)+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= material), color= "black")+
+  xlab("Visit")+
+  ylab("Richness (Chao1 Index)")+
+  labs(tag= "A)", caption = get_pwc_label(stats.test))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  stat_pvalue_manual(stats.test, bracket.nudge.y = -2, hide.ns = F,label = "{p.adj}{p.adj.signif}")-> A
+
