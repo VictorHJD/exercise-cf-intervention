@@ -180,6 +180,9 @@ sdt%>%
   dplyr::filter(material=="Stool")%>%
   mutate(Visit = fct_relevel(Visit, 
                              "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   wilcox_test(chao1 ~ Patient_number)%>%
   add_significance()%>%
   add_xy_position(x = "Visit")
@@ -189,50 +192,67 @@ sdt%>%
   dplyr::filter(material=="Stool")%>%
   mutate(Visit = fct_relevel(Visit, 
                              "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Visit, y= chao1))+
   geom_boxplot(color= "black", outlier.colour = "white")+
-  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black")+
   xlab("Visit")+
   ylab("Richness (Chao1 Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
-  labs(tag= "A)", caption = get_pwc_label(stats.test))+
+  labs(tag= "A)")+
   theme_bw()+
-  theme(text = element_text(size=16))+
-  facet_wrap(~InfectionStatus)+
-  stat_pvalue_manual(stats.test, hide.ns = TRUE,label = "{p.adj}{p.adj.signif}")->P
+  theme(text = element_text(size=16))->C
 
 ##Shannon diversity 
 sdt%>% 
+  dplyr::filter(material=="Stool")%>%
   mutate(Visit = fct_relevel(Visit, 
                              "V1", "V2", "V3"))%>%
-  dplyr::group_by(Visit)%>%
-  wilcox_test(diversity_shannon ~ material)%>%
-  adjust_pvalue(method = "bonferroni") %>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  wilcox_test(diversity_shannon ~ Patient_number)%>%
   add_significance()%>%
-  add_xy_position(x = "Visit")-> stats.test
-
-##Save statistical analysis
-x <- stats.test
-x$groups<- NULL
-write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q1_Sample_Visit_Shannon.csv")
-
-sdt%>% 
-  mutate(Visit = fct_relevel(Visit, 
-                             "V1", "V2", "V3"))%>%
-  dplyr::group_by(Visit)%>%
-  wilcox_effsize(diversity_shannon ~ material)
+  add_xy_position(x = "Visit")
 
 ##Plot 
 sdt%>%
+  dplyr::filter(material=="Stool")%>%
   mutate(Visit = fct_relevel(Visit, 
                              "V1", "V2", "V3"))%>%
-  dplyr::group_by(Visit)%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Visit, y= diversity_shannon))+
-  geom_boxplot(aes(color= material), alpha= 0.5)+
-  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= material), color= "black")+
+  geom_boxplot(color= "black", outlier.colour = "white")+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black")+
   xlab("Visit")+
   ylab("Diversity (Shannon Index)")+
-  labs(tag= "B)", caption = get_pwc_label(stats.test))+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  labs(tag= "B)")+
   theme_bw()+
-  theme(text = element_text(size=16))+
-  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")-> B
+  theme(text = element_text(size=16))-> D
+
+
+##Beta diversity
+##Remove ASVs that do not show appear more than 5 times in more than half the samples
+wh0 <- genefilter_sample(PS2, filterfun_sample(function(x) x > 5), A=0.05*nsamples(PS2))
+PS3<- prune_taxa(wh0, PS2)
+
+##Transform to an even sample size
+PS3<- transform_sample_counts(PS3, function(x) 1E6 * x/sum(x))
+
+phylum.sum <- tapply(taxa_sums(PS3), tax_table(PS3)[, "Phylum"], sum, na.rm=TRUE)
+top5phyla <- names(sort(phylum.sum, TRUE))[1:5]
+PS3<- prune_taxa((tax_table(PS3)[, "Phylum"] %in% top5phyla), PS3)
+
+patient<- get_variable(PS3, "Patient_number")
+patient<- fct_relevel(patient, "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18")
+sample_data(PS3)$Patient_number <- patient
+
+PS3.ord <- ordinate(PS3, "NMDS", "bray")
+plot_ordination(PS3, PS3.ord, type="taxa", color="Phylum")
+plot_ordination(PS3, PS3.ord, type="samples", color="Patient_number", shape="material")
