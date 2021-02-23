@@ -347,12 +347,56 @@ BC_mat$Comed_token<- gsub("^10", "\\1", basename(BC_mat$Comed_token))
 plot_bar(PS3.stool, fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)
 
-PS3.stool%>%
-  subset_taxa(Phylum %in% c("Bacteroidota", "Firmicutes", "Proteobacteria")) -> PS3.stool2
-# Z transformed abundance data
-PS3.stool2z <- microbiome::transform(PS3.stool2, "Z")
-dfm <- melt(abundances(PS3.stool2z))
-colnames(dfm) <- c("Taxa", "Sample", "value")
-heat(dfm, "Taxa", "Sample", "value")
+##Glom by genus
+PS.stool.Gen<-  tax_glom(PS3.stool, "Genus", NArm = T)
 
+##Adjust ASV table for merging with taxa information
+otu<- PS.stool.Gen@otu_table
+otu<-as.data.frame(otu)
+otu<- rownames_to_column(otu, var = "ASV")
 
+##Select just the genus 
+tax<- PS.stool.Gen@tax_table
+tax<-as.data.frame(tax)
+tax%>%
+  select(Genus)-> tax
+tax$Genus<-gsub(" ", "_", basename(tax$Genus))
+tax<- rownames_to_column(tax, var = "ASV")
+
+##Use genus as rownames
+stool.microbiome<- plyr::join(otu, tax, by= "ASV")
+stool.microbiome$ASV<- NULL
+rownames(stool.microbiome)<- stool.microbiome$Genus
+stool.microbiome$Genus<- NULL
+
+##Transpose dataframe so samples are rows 
+stool.microbiome<- t(stool.microbiome)
+
+x <- log10(stool.microbiome+1) # ASV Log10 (39 samples x 122 genera)
+
+##Select useful metrics
+y<-as.data.frame(sdt.stool)
+
+y<- y[,c(5:7,11:29)]
+ 
+y <- as.matrix(y) # Metadata (39 samples x 22 technical and nutritional variables)
+
+# Cross correlate data sets
+correlations <- associate(x, y, method = "spearman", mode = "matrix", p.adj.threshold = 0.05, n.signif = 1)
+
+# Or, alternatively, the same output is also available in a handy table format
+correlation.table <- associate(x, y, method = "spearman", mode = "table", p.adj.threshold = 0.05, n.signif = 1)
+
+kable(head(correlation.table))
+
+heat(correlation.table, "X1", "X2", fill = "Correlation", star = "p.adj", p.adj.threshold = 0.05) 
+
+p <- ggplot(correlation.table, aes(X1, X2, group=X2)) + 
+  geom_tile(aes(fill = Correlation)) +
+  geom_text(aes(fill = correlation.table$Correlation, label = round(correlation.table$Correlation, 1)), size = 2) +
+  scale_fill_gradientn("Correlation", 
+                              breaks = seq(from = -1, to = 1,  by = 0.25), 
+                              colours = c("blue", "white", "red"), 
+                              limits = c(-1, 1)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  labs(x = "", y = "")
