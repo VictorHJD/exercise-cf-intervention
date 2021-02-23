@@ -450,6 +450,8 @@ png("CF_project/exercise-cf-intervention/figures/Q2_BCHeatmap_Stool.png", units 
 BCheatmap.stool
 dev.off()
 
+#library("DESeq2"); packageVersion("DESeq2")
+
 ######Sputum###################
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS3.sput,
