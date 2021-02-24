@@ -236,7 +236,13 @@ clinic%>%
 clinic%>%
   select(c(Patient_number,V0_Tobramycin_inh:V0_Macrolides_last12months, V1_Tobramycin_inh:V1_Cetirizin, 
            V2_Tobramycin_inh:V2_Cetirizin, V3_Tobramycin_inh:V3_Cetirizin))
-            
+
+clinic%>%
+  select(c(Patient_number,Mutation))-> genotype
+
+genotype%>%
+  mutate(Severity = case_when(Mutation == "F508del/F508del"  ~ "Severe",
+                              Mutation != "F508del/F508del" ~ "Mild"))
 
 clinic%>%
   gather(ppFEV1_Visit, ppFEV1, ppFEV1_V1:ppFEV1_V3)%>%
