@@ -320,6 +320,14 @@ plot_ordination(PS3.stool, ordination, shape= "Visit")+
 ordination$values[1,2]
 ordination$values[2,2]
 
+sdt%>%
+  dplyr::filter(material=="Stool")-> tmp1
+
+vegan::adonis(BC_dist~ Patient_number + Visit + BMI + sex + age,
+              permutations = 999, data = tmp1, na.action = F)
+
+##Patient is the only significant factor and explains 66% of the variation.
+
 png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", units = 'in', res = 300, width=10, height=8)
 D
 dev.off()
@@ -472,6 +480,15 @@ plot_ordination(PS3.sput, ordination, shape= "Visit")+
 
 ordination$values[1,2]
 ordination$values[2,2]
+
+sdt%>%
+  dplyr::filter(material=="Sputum")-> tmp1
+
+vegan::adonis(BC_dist~ Patient_number + Visit + BMI + sex + age,
+              permutations = 999, data = tmp1, na.action = F)
+
+##Patient is the only significant factor and explains 79.8% of the variation.
+
 
 png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum.png", units = 'in', res = 300, width=10, height=8)
 A
