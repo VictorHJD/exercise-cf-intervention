@@ -1,4 +1,4 @@
-# Project: Nutitional and activity intervention on patients with cytic-fibrosis 
+# Project: Nutitional and activity intervention on patients with cystic-fibrosis 
 
 ## Repository structure:
 
