@@ -474,7 +474,39 @@ rownames(tmp2) <- sample(sample_names(PS3.stool))
 sample_data(PS3.stool)$Severity <- tmp2$Severity
 
 deseq.severity<- phyloseq_to_deseq2(PS3.stool, ~ Severity)
+# calculate geometric means prior to estimate size factors
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans<- apply(counts(deseq.severity), 1, gm_mean)
+deseq.severity<- estimateSizeFactors(deseq.severity, geoMeans = geoMeans)
 deseq.severity<- DESeq(deseq.severity, test="LRT", fitType="parametric", reduced= ~ 1)
+
+ac.res <- results(deseq.severity, cooksCutoff = FALSE)
+alpha <- 0.05
+Bac.sigtab <- deseq.severity[which(deseq.severity$padj < alpha), ]
+Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS.PA.genus)[rownames(Bac.sigtab), ], "matrix"))
+rownames(Bac.sigtab) <- NULL
+Bac.sigtab
+
+# Phylum order
+x <- tapply(Bac.sigtab$log2FoldChange, Bac.sigtab$Phylum, function(x) max(x))
+x <- sort(x, TRUE)
+Bac.sigtab$Phylum <- factor(as.character(Bac.sigtab$Phylum), levels=names(x))
+# Genus order
+x <- tapply(Bac.sigtab$log2FoldChange, Bac.sigtab$Genus, function(x) max(x))
+x <- sort(x, TRUE)
+Bac.sigtab$Genus <- factor(as.character(Bac.sigtab$Genus), levels=names(x))
+
+ggplot(Bac.sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) +
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
+  scale_fill_brewer(palette = "Set1")+
+  coord_flip()+
+  geom_hline(aes(yintercept = 0), color = "gray70", size = 0.6)+
+  xlab("Bacteria Genus")+
+  ylab("Ascaris <-- Log-2-Fold-Change --> Jejunum")+
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16))+
+  theme_bw()
 
 ######Sputum###################
 ##Bray-Curtis

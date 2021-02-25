@@ -266,4 +266,8 @@ left_join(tech, tmp1, by="Comed_token")-> metadata ##This is partial (clinical i
 
 rm(tmp1)
 
+##Add genotype 
+left_join(metadata, genotype, by="Patient_number")-> metadata
+
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
+write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv")
