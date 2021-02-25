@@ -230,15 +230,16 @@ png("CF_project/exercise-cf-intervention/figures/Q1_Beta_div_General.png", units
 C
 dev.off()
 
+rm(A,B,C)
 ##Q2: Analysis by sample type
-PS3.stool<- subset_samples(PS3, material%in%c("Stool"))
-PS3.sput<-  subset_samples(PS3, material%in%c("Sputum"))
+PS4.stool<- subset_samples(PS4, material%in%c("Stool"))
+PS4.sput<-  subset_samples(PS4, material%in%c("Sputum"))
 
-plot_bar(PS3.stool, fill="Phylum")+ 
+plot_bar(PS4.stool, fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   labs(tag= "A)")-> A
 
-plot_bar(PS3.sput, fill="Phylum")+ 
+plot_bar(PS4.sput, fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   labs(tag= "B)")-> B
 
@@ -298,11 +299,11 @@ sdt%>%
   theme(text = element_text(size=16))
 
 ##Bray-Curtis
-BC_dist<- phyloseq::distance(PS3.stool,
+BC_dist<- phyloseq::distance(PS4.stool,
                              method="bray", weighted=F)
-ordination<- ordinate(PS3.stool,
+ordination<- ordinate(PS4.stool,
                       method="PCoA", distance= BC_dist)
-plot_ordination(PS3.stool, ordination, shape= "Visit")+ 
+plot_ordination(PS4.stool, ordination, shape= "Visit")+ 
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(color= Patient_number))+
   #geom_point(color= "black", size= 1.5)+
@@ -311,8 +312,8 @@ plot_ordination(PS3.stool, ordination, shape= "Visit")+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
   labs(shape = "Visit")+
-  xlab("PCo1 (15.3%)")+
-  ylab("PCo2 (10.6%)")-> D
+  xlab("PCo1 (15.6%)")+
+  ylab("PCo2 (11.0%)")-> D
 
 ordination$values[1,2]
 ordination$values[2,2]
@@ -320,12 +321,10 @@ ordination$values[2,2]
 sdt%>%
   dplyr::filter(material=="Stool")-> tmp1
 
-tmp1<- left_join(tmp1, genotype, "Patient_number")
-
-vegan::adonis(BC_dist~ Patient_number + Severity + Visit + BMI + sex + age,
+BC.test<- vegan::adonis(BC_dist~ Severity + Patient_number + sex + age +  Visit + BMI,
               permutations = 999, data = tmp1, na.action = F)
 
-##Patient is the only significant factor and explains 66% of the variation.
+##Patient is the only significant factor and explains 64% of the variation.
 
 png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", units = 'in', res = 300, width=10, height=8)
 D
@@ -333,30 +332,15 @@ dev.off()
 rm(A,B,C,D)
 
 ## Differences are more linked to patient rather than Visit... but difficult to assess. 
-sdt.stool<- sample_data(PS3.stool)
-
-mvd.Stool<- vegan::betadisper(BC_dist, sdt.stool$Patient_number, type = "centroid")
-vegan::permutest(mvd.Stool, permutations = 999)
-anova(mvd.Stool)
-plot(mvd.Stool)
-boxplot(mvd.Stool)
-tuky<- TukeyHSD(mvd.Stool)
-
-tuky<- as.data.frame(tuky$group)
-
-tuky%>%
-  rename("p adj" = "p.adj")%>%
-  filter(p.adj <= 0.05)%>%
-  arrange(desc(diff))%>%
-  rownames_to_column(var = "Pat_comp")%>%
-  ggplot(aes(diff, Pat_comp))+
-  geom_boxplot()
-
-plot(TukeyHSD(mvd.Stool))
+##Extract pairwise distances per patient
+BC_dist.stool<- as.matrix(BC_dist)
+nm<- rownames(BC_dist.stool)
+tmp1<- subset(BC_dist.stool, grepl("V1", nm))
+tmp2<- tmp1[,grepl("V2", colnames(tmp1))]
 
 ###Correlation with nutritional and respiratory activity
 ##Glom by genus
-PS.stool.Gen<-  tax_glom(PS3.stool, "Genus", NArm = T)
+PS.stool.Gen<-  tax_glom(PS4.stool, "Genus", NArm = T)
 
 ##Adjust ASV table for merging with taxa information
 otu<- PS.stool.Gen@otu_table
