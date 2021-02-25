@@ -474,6 +474,7 @@ rownames(tmp2) <- sample(sample_names(PS3.stool))
 sample_data(PS3.stool)$Severity <- tmp2$Severity
 
 deseq.severity<- phyloseq_to_deseq2(PS3.stool, ~ Severity)
+deseq.severity<- DESeq(deseq.severity, test="LRT", fitType="parametric", reduced= ~ 1)
 
 ######Sputum###################
 ##Bray-Curtis
