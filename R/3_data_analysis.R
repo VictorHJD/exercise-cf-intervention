@@ -323,7 +323,9 @@ ordination$values[2,2]
 sdt%>%
   dplyr::filter(material=="Stool")-> tmp1
 
-vegan::adonis(BC_dist~ Patient_number + Visit + BMI + sex + age,
+tmp1<- left_join(tmp1, genotype, "Patient_number")
+
+vegan::adonis(BC_dist~ Patient_number + Severity + Visit + BMI + sex + age,
               permutations = 999, data = tmp1, na.action = F)
 
 ##Patient is the only significant factor and explains 66% of the variation.
@@ -458,7 +460,20 @@ png("CF_project/exercise-cf-intervention/figures/Q2_BCHeatmap_Stool.png", units 
 BCheatmap.stool
 dev.off()
 
-#library("DESeq2"); packageVersion("DESeq2")
+library("DESeq2"); packageVersion("DESeq2")
+
+tmp2<- sdt.stool[,c(2,9)]
+tmp2<- left_join(genotype, tmp2, "Patient_number")
+tmp2[,2:4]-> tmp2
+tmp2<- as.data.frame(tmp2)
+rownames(tmp2)<- tmp2$SampleID
+tmp2$SampleID<- NULL
+
+tmp2<- cbind(sdt.stool, tmp2)
+rownames(tmp2) <- sample(sample_names(PS3.stool))
+sample_data(PS3.stool)$Severity <- tmp2$Severity
+
+deseq.severity<- phyloseq_to_deseq2(PS3.stool, ~ Severity)
 
 ######Sputum###################
 ##Bray-Curtis
@@ -484,7 +499,9 @@ ordination$values[2,2]
 sdt%>%
   dplyr::filter(material=="Sputum")-> tmp1
 
-vegan::adonis(BC_dist~ Patient_number + Visit + BMI + sex + age,
+tmp1<- left_join(tmp1, genotype, "Patient_number")
+
+vegan::adonis(BC_dist~ Patient_number + Severity + Visit + BMI + sex + age,
               permutations = 999, data = tmp1, na.action = F)
 
 ##Patient is the only significant factor and explains 79.8% of the variation.

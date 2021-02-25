@@ -242,7 +242,7 @@ clinic%>%
 
 genotype%>%
   mutate(Severity = case_when(Mutation == "F508del/F508del"  ~ "Severe",
-                              Mutation != "F508del/F508del" ~ "Mild"))
+                              Mutation != "F508del/F508del" ~ "Mild"))-> genotype
 
 clinic%>%
   gather(ppFEV1_Visit, ppFEV1, ppFEV1_V1:ppFEV1_V3)%>%
