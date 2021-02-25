@@ -64,24 +64,24 @@ ggplot(Prevdf, aes(TotalAbundance, Prevalence / nsamples(PS2),color=Phylum)) +
 
 ##3) Transform to even sampling depth
 ## Rarefy without replacement
-##PS3<- rarefy_even_depth(PS2, rngseed=2020, sample.size=min(sample_sums(PS2)), replace=F)
+PS3<- rarefy_even_depth(PS2, rngseed=2020, sample.size=min(sample_sums(PS2)), replace=F)
 ##readcount(PS3)
 
 ## Merge ASVs that have the same taxonomy at a certain taxonomic rank (in this case Phylum and Family)
-PS.Fam<-  tax_glom(PS2, "Family", NArm = F)
+PS.Fam<-  tax_glom(PS3, "Family", NArm = F)
 summarize_phyloseq(PS.Fam)
 
-PS.Gen<-  tax_glom(PS2, "Genus", NArm = T)
+PS.Gen<-  tax_glom(PS3, "Genus", NArm = T)
 summarize_phyloseq(PS.Gen)
 
-PS.Phy<-  tax_glom(PS2, "Phylum", NArm = F)
+PS.Phy<-  tax_glom(PS3, "Phylum", NArm = F)
 summarize_phyloseq(PS.Phy)
 
 plot_bar(PS.Phy, fill="Phylum") + facet_wrap(~material, scales= "free_x", nrow=1)
 
 ##Alpha diversity (not-rarefied)
 ##Estimate global indicators
-alphaDiv <-microbiome::alpha(PS2, index = "all")
+alphaDiv <-microbiome::alpha(PS3, index = "all")
 kable(head(alphaDiv))
 
 alphaDiv%>%
@@ -172,27 +172,24 @@ sdt%>%
 
 ##Beta diversity
 ##Remove ASVs that do not show appear more than 5 times in more than half the samples
-wh0 <- genefilter_sample(PS2, filterfun_sample(function(x) x > 5), A=0.05*nsamples(PS2))
-PS3<- prune_taxa(wh0, PS2)
+wh0 <- genefilter_sample(PS3, filterfun_sample(function(x) x > 5), A=0.05*nsamples(PS3))
+PS4<- prune_taxa(wh0, PS3)
 
 ##Transform to an even sample size
-PS3<- transform_sample_counts(PS3, function(x) 1E6 * x/sum(x))
+##PS4<- transform_sample_counts(PS4, function(x) 1E6 * x/sum(x))
+readcount(PS4)
 
-#phylum.sum <- tapply(taxa_sums(PS3), tax_table(PS3)[, "Phylum"], sum, na.rm=TRUE)
-#top5phyla <- names(sort(phylum.sum, TRUE))[1:5]
-#PS3<- prune_taxa((tax_table(PS3)[, "Phylum"] %in% top5phyla), PS3)
-
-patient<- get_variable(PS3, "Patient_number")
+patient<- get_variable(PS4, "Patient_number")
 patient<- fct_relevel(patient, "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18")
-sample_data(PS3)$Patient_number <- patient
+sample_data(PS4)$Patient_number <- patient
 
 ##Weighted Unifrac
-wunifrac_dist<- phyloseq::distance(PS3,
+wunifrac_dist<- phyloseq::distance(PS4,
                                    method="unifrac", weighted=T)
-ordination<- ordinate(PS3,
+ordination<- ordinate(PS4,
                       method="PCoA", distance=wunifrac_dist)
-plot_ordination(PS3, ordination, shape= "material")+ 
+plot_ordination(PS4, ordination, shape= "material")+ 
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(color= Patient_number))+
   geom_point(color= "black", size= 1.5)+
@@ -202,15 +199,15 @@ plot_ordination(PS3, ordination, shape= "material")+
   labs(colour = "Patient")+
   labs(shape = "Sample type")
 
-vegan::adonis(wunifrac_dist~ Patient_number + material + Visit,
+vegan::adonis(wunifrac_dist~ Severity + Patient_number + material + Visit,
               permutations = 999, data = sdt)
 
 ##Bray-Curtis
-BC_dist<- phyloseq::distance(PS3,
+BC_dist<- phyloseq::distance(PS4,
                                    method="bray", weighted=T)
-ordination<- ordinate(PS3,
+ordination<- ordinate(PS4,
                       method="PCoA", distance= BC_dist)
-plot_ordination(PS3, ordination, shape= "material")+ 
+plot_ordination(PS4, ordination, shape= "material")+ 
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(color= Patient_number))+
   #geom_point(color= "black", size= 1.5)+
@@ -219,10 +216,10 @@ plot_ordination(PS3, ordination, shape= "material")+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
   labs(shape = "Sample type")+
-  xlab("PCo1 (26.6%)")+
-  ylab("PCo2 (14.6%)")-> c
+  xlab("PCo1 (26.9%)")+
+  ylab("PCo2 (14.7%)")-> C
 
-vegan::adonis(BC_dist~ Patient_number + material + Visit,
+vegan::adonis(BC_dist~ Severity + Patient_number + material + Visit,
               permutations = 999, data = sdt)
 
 png("CF_project/exercise-cf-intervention/figures/Q1_Alpha_div_General.png", units = 'in', res = 300, width=14, height=14)

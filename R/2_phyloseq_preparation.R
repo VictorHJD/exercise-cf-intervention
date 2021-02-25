@@ -50,4 +50,5 @@ tree<- tree$tree
 ##5)Merge each element 
 PS <- merge_phyloseq(asv, tax, sample, tree)
   
-  saveRDS(PS, file="~/CF_project/PhyloSeqComp.Rds")
+  saveRDS(PS, file="~/CF_project/exercise-cf-intervention/data/PhyloSeqComp.Rds")
+  
