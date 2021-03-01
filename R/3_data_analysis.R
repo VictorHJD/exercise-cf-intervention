@@ -199,12 +199,11 @@ plot_ordination(PS4, ordination, shape= "material")+
   labs(colour = "Patient")+
   labs(shape = "Sample type")
 
-vegan::adonis(wunifrac_dist~ Severity + Patient_number + material + Visit,
-              permutations = 999, data = sdt)
+vegan::adonis(wunifrac_dist~ Severity + sex + age +  Visit + BMI,
+                        permutations = 999, data = sdt, na.action = F, strata = sdt$Patient_number)
 
 ##Bray-Curtis
-BC_dist<- phyloseq::distance(PS4,
-                                   method="bray", weighted=T)
+BC_dist<- phyloseq::distance(PS4, method="bray", weighted=T)
 ordination<- ordinate(PS4,
                       method="PCoA", distance= BC_dist)
 plot_ordination(PS4, ordination, shape= "material")+ 
@@ -216,11 +215,11 @@ plot_ordination(PS4, ordination, shape= "material")+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
   labs(shape = "Sample type")+
-  xlab("PCo1 (26.9%)")+
-  ylab("PCo2 (14.7%)")-> C
+  xlab("PCo1 (24.8%)")+
+  ylab("PCo2 (14.0%)")-> C
 
-vegan::adonis(BC_dist~ Severity + Patient_number + material + Visit,
-              permutations = 999, data = sdt)
+vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
+              permutations = 999, data = sdt, na.action = F, strata = sdt$Patient_number)
 
 png("CF_project/exercise-cf-intervention/figures/Q1_Alpha_div_General.png", units = 'in', res = 300, width=14, height=14)
 grid.arrange(A, B)
@@ -231,6 +230,7 @@ C
 dev.off()
 
 rm(A,B,C)
+
 ##Q2: Analysis by sample type
 PS4.stool<- subset_samples(PS4, material%in%c("Stool"))
 PS4.sput<-  subset_samples(PS4, material%in%c("Sputum"))
@@ -303,6 +303,7 @@ BC_dist<- phyloseq::distance(PS4.stool,
                              method="bray", weighted=F)
 ordination<- ordinate(PS4.stool,
                       method="PCoA", distance= BC_dist)
+
 plot_ordination(PS4.stool, ordination, shape= "Visit")+ 
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(color= Patient_number))+
@@ -312,11 +313,8 @@ plot_ordination(PS4.stool, ordination, shape= "Visit")+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
   labs(shape = "Visit")+
-  xlab("PCo1 (15.6%)")+
-  ylab("PCo2 (11.0%)")-> D
-
-ordination$values[1,2]
-ordination$values[2,2]
+  xlab(paste0("PCo1 ", round(ordination$values[1,2]*100, digits = 2)))+
+  ylab(paste0("PCo2 ", round(ordination$values[2,2]*100, digits = 2)))-> D
 
 sdt%>%
   dplyr::filter(material=="Stool")-> tmp1
@@ -332,10 +330,76 @@ rm(A,B,C,D)
 
 ## Differences are more linked to patient rather than Visit... but difficult to assess. 
 ##Extract pairwise distances per patient
+
 BC_dist.stool<- as.matrix(BC_dist)
 tmp1<- cbind(sdt.stool, BC_dist.stool)
+
+##V1 vs V2
 tmp1%>%
-  dplyr::filter()
+  filter(Visit== "V1")%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V3",])))-> V1vsV2.stool
+
+
+x<- c(V1vsV2.stool["10P1V1","10P1V2"], V1vsV2.stool["10P3V1A","10P3V2A"], 
+   V1vsV2.stool["10P4V1A","10P4V2A"], V1vsV2.stool["10P6V1A","10P6V2A"],
+   V1vsV2.stool["10P7V1A","10P7V2"], V1vsV2.stool["10P8V1A","10P8V2A"], V1vsV2.stool["10P9V1B","10P9V2A"],
+   V1vsV2.stool["10P13V1","10P13V2"], V1vsV2.stool["10P14V1A","10P14V2A"], V1vsV2.stool["10P15V1A","10P15V2A"],
+   V1vsV2.stool["10P16V1","10P16V2"], V1vsV2.stool["10P17V1","10P17V2"])
+ 
+tmp2<- data.frame(x)
+tmp2[,2]<- "V1_V2"
+colnames(tmp2)<- c("BC_dist", "Group")
+
+##V1 vs V3
+tmp1%>%
+  filter(Visit== "V1")%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V1vsV3.stool
+
+x<- c(V1vsV3.stool["10P3V1A","10P3V3"], V1vsV3.stool["10P3V1A","10P3V3A"], 
+      V1vsV3.stool["10P4V1A","10P4V3A"], V1vsV3.stool["10P6V1A","10P6V3A"],
+      V1vsV3.stool["10P7V1A","10P7V3A"],  V1vsV3.stool["10P9V1B","10P9V3A"],
+      V1vsV3.stool["10P14V1A","10P14V3A"], V1vsV3.stool["10P15V1A","10P15V3A"],
+      V1vsV3.stool["10P18V1A","10P18V3A"])
+
+tmp3<- data.frame(x)
+tmp3[,2]<- "V1_V3"
+colnames(tmp3)<- c("BC_dist", "Group")
+
+##V2 vs V3
+tmp1%>%
+  filter(Visit== "V2")%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V2vsV3.stool
+
+x<- c(V2vsV3.stool["10P3V2A","10P3V3"], V2vsV3.stool["10P3V2A","10P3V3A"], 
+      V2vsV3.stool["10P4V2A","10P4V3A"], V2vsV3.stool["10P6V2A","10P6V3A"],
+      V2vsV3.stool["10P7V2","10P7V3A"],  V2vsV3.stool["10P9V2A","10P9V3A"],
+      V2vsV3.stool["10P14V2A","10P14V3A"], V2vsV3.stool["10P15V2A","10P15V3A"])
+
+tmp4<- data.frame(x)
+tmp4[,2]<- "V2_V3"
+colnames(tmp4)<- c("BC_dist", "Group")
+
+##rowbind the 3 dataframes
+
+BC_dist.stool<- bind_rows(tmp2, tmp3, tmp4)
+
+ggplot (BC_dist.stool, aes (x = BC_dist, y = Group)) +
+  geom_boxplot (aes (fill = Group)) + 
+  stat_compare_means (method = "wilcox.test") + 
+  xlab ("Bray-Curtis dissimilarity") + ylab ("Differences by visit") + 
+  theme (legend.position = "none")
 
 ###Correlation with nutritional and respiratory activity
 ##Glom by genus
