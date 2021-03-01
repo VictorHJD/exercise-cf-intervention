@@ -10,9 +10,9 @@ library(readxl)
 tech<- read_tsv("~/CF_project/Metadata/technical_Metadata.tsv") ##Contains technical data from DNA (Mainz)
 lung<- read_excel("~/CF_project/Metadata/LungFunction_PhysicalFitness.xlsx") ##Contains lung function data
 nutri<- read_excel("~/CF_project/Metadata/Nutrition_BodyComposition.xlsx") ##Contains nutritional data
-clinic<- read_excel("~/CF_project/Metadata/KlinDaten080221.xlsx") ##Contains clinical data (Antibiotics, Bacterial isolates, etc)
+clinic<- read.csv("~/CF_project/Metadata/sample_data_indexed_medication.csv", sep = ";") ##Contains clinical data (Antibiotics, Bacterial isolates, etc)
+genetics<- read_excel("~/CF_project/Metadata/KlinDaten080221.xlsx")
 resp<- read_excel("~/CF_project/Metadata/Responder_nonResponder.xlsx") ##Response to intervantions data (ask how were assigned the categories)
-
 
 ##Select useful data and uniform columns
 ##1) Tech data
@@ -223,32 +223,22 @@ nutri%>%
 nutri<- left_join(tmp1, tmp2, by= "Comed_token")
 rm(tmp1, tmp2)
 
-##4)Clinic data (Not finished)
+##4)Genetic data
 ##Re-shape dataframe
 ##Select not redundant tables
-clinic%>%
-  rename(Patient_number= 1)%>%
-  select(-c(V0_date,...297,...273,`inpatient days during last 12 months`,`date of last hospitalisation`,
-            `V3_date_of_sputum_ analysis`, V3_BMI,V3_weight_kg,V3_length_cm,
-            V2_BMI,V2_weight_kg,V2_length_cm,V3_date,`V2_date_of_sputum_ analysis`,V2_date,
-            V1_BMI,V1_weight_kg,V1_length_cm,V0_date,Date_diagnosis,Sex))-> clinic 
-##Antibiotics
-clinic%>%
-  select(c(Patient_number,V0_Tobramycin_inh:V0_Macrolides_last12months, V1_Tobramycin_inh:V1_Cetirizin, 
-           V2_Tobramycin_inh:V2_Cetirizin, V3_Tobramycin_inh:V3_Cetirizin))
-
-clinic%>%
-  select(c(Patient_number,Mutation))-> genotype
+genetics%>%
+  dplyr::rename(Patient_number= 1)%>%
+  select(c(Patient_number, Mutation))-> genotype
 
 genotype%>%
   mutate(Severity = case_when(Mutation == "F508del/F508del"  ~ "Severe",
                               Mutation != "F508del/F508del" ~ "Mild"))-> genotype
 
+rm(genetics)
+
+##5) Medication data 
 clinic%>%
-  gather(ppFEV1_Visit, ppFEV1, ppFEV1_V1:ppFEV1_V3)%>%
-  separate(ppFEV1_Visit, c("Test", "Visit"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Patient_number, sex, age, Visit, Comed_token, ppFEV1)-> tmp1
+  select(c(SampleID,antibiotics_inh:Cystagon))-> clinic
 
 ##Merge all the info
 ##Merge Nutritional data with Lung data
@@ -269,5 +259,6 @@ rm(tmp1)
 ##Add genotype 
 left_join(metadata, genotype, by="Patient_number")-> metadata
 
+left_join(metadata, clinic, by="SampleID")-> metadata
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
 write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv")

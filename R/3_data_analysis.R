@@ -321,10 +321,9 @@ ordination$values[2,2]
 sdt%>%
   dplyr::filter(material=="Stool")-> tmp1
 
-BC.test<- vegan::adonis(BC_dist~ Severity + Patient_number + sex + age +  Visit + BMI,
-              permutations = 999, data = tmp1, na.action = F)
-
-##Patient is the only significant factor and explains 64% of the variation.
+##Stratified for Patient number 
+BC.test<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
+              permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
 
 png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", units = 'in', res = 300, width=10, height=8)
 D
@@ -334,9 +333,9 @@ rm(A,B,C,D)
 ## Differences are more linked to patient rather than Visit... but difficult to assess. 
 ##Extract pairwise distances per patient
 BC_dist.stool<- as.matrix(BC_dist)
-nm<- rownames(BC_dist.stool)
-tmp1<- subset(BC_dist.stool, grepl("V1", nm))
-tmp2<- tmp1[,grepl("V2", colnames(tmp1))]
+tmp1<- cbind(sdt.stool, BC_dist.stool)
+tmp1%>%
+  dplyr::filter()
 
 ###Correlation with nutritional and respiratory activity
 ##Glom by genus
