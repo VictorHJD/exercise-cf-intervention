@@ -397,9 +397,10 @@ BC_dist.stool<- bind_rows(tmp2, tmp3, tmp4)
 
 ggplot (BC_dist.stool, aes (x = BC_dist, y = Group)) +
   geom_boxplot (aes (fill = Group)) + 
+  geom_point()+
   stat_compare_means (method = "wilcox.test") + 
   xlab ("Bray-Curtis dissimilarity") + ylab ("Differences by visit") + 
-  theme (legend.position = "none")
+  theme(legend.position = "none")
 
 ###Correlation with nutritional and respiratory activity
 ##Glom by genus
