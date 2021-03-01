@@ -1,4 +1,4 @@
 "","Visit",".y.","group1","group2","n1","n2","statistic","p","p.adj","p.adj.signif","y.position","x","xmin","xmax"
-"1","V1","diversity_shannon","Sputum","Stool",16,15,14,3.38e-06,1.014e-05,"****",4.19312,1,0.8,1.2
-"2","V2","diversity_shannon","Sputum","Stool",12,15,5,2.19e-06,6.57e-06,"****",4.39212,2,1.8,2.2
-"3","V3","diversity_shannon","Sputum","Stool",10,9,6,0.00065,0.00195,"**",4.25112,3,2.8,3.2
+"1","V1","diversity_shannon","Sputum","Stool",16,15,14,3.38e-06,1.014e-05,"****",4.18416,1,0.8,1.2
+"2","V2","diversity_shannon","Sputum","Stool",12,15,5,2.19e-06,6.57e-06,"****",4.38116,2,1.8,2.2
+"3","V3","diversity_shannon","Sputum","Stool",10,9,6,0.00065,0.00195,"**",4.23916,3,2.8,3.2

@@ -62,19 +62,27 @@ ggplot(Prevdf, aes(TotalAbundance, Prevalence / nsamples(PS2),color=Phylum)) +
   theme_bw()+
   facet_wrap(~Phylum) + theme(legend.position="none")
 
-##3) Transform to even sampling depth
-## Rarefy without replacement
-PS3<- rarefy_even_depth(PS2, rngseed=2020, sample.size=min(sample_sums(PS2)), replace=F)
-##readcount(PS3)
+#3) Remove low prevalent ASVs
+##Remove ASVs that do not show appear more than 5 times in more than 10% of the samples
+wh0 <- genefilter_sample(PS2, filterfun_sample(function(x) x > 5), A=0.01*nsamples(PS2))
+PS3<- prune_taxa(wh0, PS2)
+hist(readcount(PS3))
+
+##4) Transform to even sampling depth
+## Rarefy without replacement to the min sequencing depth 
+#PS4<- rarefy_even_depth(PS3, rngseed=2020, sample.size=min(sample_sums(PS3)), replace=F)
+##Normalization Transform to an even sample size
+PS4<- transform_sample_counts(PS3, function(x) 1E6 * x/sum(x))
+readcount(PS4)
 
 ## Merge ASVs that have the same taxonomy at a certain taxonomic rank (in this case Phylum and Family)
-PS.Fam<-  tax_glom(PS3, "Family", NArm = F)
+PS.Fam<-  tax_glom(PS4, "Family", NArm = F)
 summarize_phyloseq(PS.Fam)
 
-PS.Gen<-  tax_glom(PS3, "Genus", NArm = T)
+PS.Gen<-  tax_glom(PS4, "Genus", NArm = T)
 summarize_phyloseq(PS.Gen)
 
-PS.Phy<-  tax_glom(PS3, "Phylum", NArm = F)
+PS.Phy<-  tax_glom(PS4, "Phylum", NArm = F)
 summarize_phyloseq(PS.Phy)
 
 plot_bar(PS.Phy, fill="Phylum") + facet_wrap(~material, scales= "free_x", nrow=1)
@@ -171,14 +179,6 @@ sdt%>%
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")-> B
 
 ##Beta diversity
-##Remove ASVs that do not show appear more than 5 times in more than half the samples
-wh0 <- genefilter_sample(PS3, filterfun_sample(function(x) x > 5), A=0.05*nsamples(PS3))
-PS4<- prune_taxa(wh0, PS3)
-
-##Transform to an even sample size
-##PS4<- transform_sample_counts(PS4, function(x) 1E6 * x/sum(x))
-readcount(PS4)
-
 patient<- get_variable(PS4, "Patient_number")
 patient<- fct_relevel(patient, "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18")
