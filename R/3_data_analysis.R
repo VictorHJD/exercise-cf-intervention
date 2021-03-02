@@ -430,6 +430,7 @@ BC_dist.stool%>%
 png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", units = 'in', res = 300, width=10, height=8)
 grid.arrange(D, E)
 dev.off()
+
 rm(A,B,C,D,E)
 
 ###Correlation with nutritional and respiratory activity
