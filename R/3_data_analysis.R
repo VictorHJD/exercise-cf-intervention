@@ -401,8 +401,37 @@ colnames(tmp4)<- c("BC_dist", "Patient_number", "Group")
 
 BC_dist.stool<- bind_rows(tmp2, tmp3, tmp4)
 
-ggplot (BC_dist.stool, aes (x = BC_dist, y = Group)) +
-  geom_boxplot (aes (fill = Group)) + 
+BC_dist.stool%>% 
+  wilcox_test(BC_dist ~ Group)%>%
+  adjust_pvalue(method = "bonferroni") %>%
+  add_significance()%>%
+  add_xy_position(x = "Group")-> stats.test
+
+##Save statistical analysis
+x <- stats.test
+x$groups<- NULL
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q3_Sample_Visit_BC.csv")
+
+BC_dist.stool%>%
+  wilcox_effsize(BC_dist ~ Group)
+
+##Plot 
+sdt%>%
+  mutate(V = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  ggplot(aes(x= Visit, y= diversity_shannon))+
+  geom_boxplot(aes(color= material), alpha= 0.5)+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= material), color= "black")+
+  xlab("Visit")+
+  ylab("Diversity (Shannon Index)")+
+  labs(tag= "B)", caption = get_pwc_label(stats.test))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")
+BC_dist.stool%>%
+  ggplot(aes(x =Group, y = BC_dist ))+
+  geom_boxplot (aes(fill = Group)) + 
   geom_point()+
   stat_compare_means (method = "wilcox.test") + 
   xlab ("Bray-Curtis dissimilarity") + ylab ("Differences by visit") + 
