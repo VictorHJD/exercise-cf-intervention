@@ -249,6 +249,13 @@ dev.off()
 rm(A,B)
 
 ##Stool#####################
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> sdt.stool
 
 ##Plot 
 sdt%>%
@@ -459,10 +466,10 @@ stool.microbiome$Genus<- NULL
 ##Transpose dataframe so samples are rows 
 stool.microbiome<- t(stool.microbiome)
 
-x <- log10(stool.microbiome+1) # ASV Log10 (39 samples x 122 genera)
+x <- log10(stool.microbiome+1) # ASV Log10 (39 samples x 205 genera)
 
 ##Select useful metrics
-y<-as.data.frame(sdt.stool)
+y<-as.data.frame(sampleData(PS4.stool))
 
 y<- y[,c(5:7,11:29)]
  
@@ -472,14 +479,14 @@ y <- as.matrix(y) # Metadata (39 samples x 22 technical, respiratory and nutriti
 correlations <- associate(x, y, method = "spearman", mode = "matrix", p.adj.threshold = 0.05, n.signif = 1)
 
 # Or, alternatively, the same output is also available in a handy table format
-correlation.table <- associate(x, y, method = "spearman", mode = "table", p.adj.threshold = 0.05, n.signif = 1)
+correlation.table <- associate(y, x, method = "spearman", mode = "table", n.signif = 1)
 kable(head(correlation.table))
 
-heat(correlation.table, "X1", "X2", fill = "Correlation", star = "p.adj", p.adj.threshold = 0.05) 
+heat((correlation.table), "X1", "X2", fill = "Correlation", star = "p.adj") 
 
 ggplot(correlation.table, aes(X1, X2, group=X1)) + 
   geom_tile(aes(fill = Correlation)) +
-  geom_text(aes(fill = correlation.table$Correlation, label = round(correlation.table$Correlation, 1)), size = 5) +
+  #geom_text(aes(fill = correlation.table$Correlation, label = round(correlation.table$Correlation, 1)), size = 5) +
   scale_fill_gradientn("Spearman's \n Correlation", 
                               breaks = seq(from = -1, to = 1,  by = 0.25), 
                               colours = c("blue", "white", "red"), 
@@ -491,65 +498,9 @@ png("CF_project/exercise-cf-intervention/figures/Q3_Correlation_Stool.png", unit
 A
 dev.off()
 
-## Bray-Curtis dissimilarity estimation among samples 
-foo.matrix<- as.matrix(stool.microbiome)
-foo.braycurt<- vegan::vegdist(foo.matrix, method = "bray")
-as.matrix(foo.braycurt)
-
-###Using pheatmap to include annotations 
-foo.clust <- hclust(dist(foo.braycurt), method = "complete") ##Dendogram
-require(dendextend)
-as.dendrogram(foo.clust) %>%
-  plot(horiz = TRUE)
-
-foo.col <- cutree(tree = foo.clust, k = 2)
-foo.col  <- data.frame(cluster = ifelse(test = foo.col  == 1, yes = "cluster 1", no = "cluster 2"))
-foo.col$SampleID <- rownames(foo.col)
-
-y<-as.data.frame(sdt.stool)
-
-foo.col <- left_join(foo.col, y, by="SampleID", sort= F)
-
-col_groups <- foo.col %>%
-  select("SampleID","Patient_number","Visit","sex") ##Here It is possible to add the expected size 
-
-row.names(col_groups)<- col_groups$SampleID
-
-col_groups$SampleID<- NULL
-
-colour_groups <- list( Visit= c("V1"= "#E3DAC9", "V2"= "pink","V3"= "#440154FF"),
-                       Patient_number= c("P1"= "#8DD3C7","P2"= "#009999" ,"P3"= "#FFFFB3", "P4"= "#BEBADA", "P5"= "#FB8072", "P6"= "#80B1D3",
-                                 "P7"="#FDB462", "P8"= "#B3DE69", "P9"="#FC4E07","P10"= "#FCCDE5", "P11"= "#D9D9D9",
-                                 "P12"="#D95F02", "P13"= "#7570B3", "P14"= "#E7298A", "P15"= "#A6761D", "P16"= "#66A61E", 
-                                 "P17"= "#E6AB02", "P18"= "#D0FF14"))
-require(pheatmap)
-require(viridis)
-BCheatmap.stool <- pheatmap(foo.braycurt, 
-                      color = viridis(100),
-                      border_color = NA,
-                      annotation_col = col_groups, 
-                      annotation_colors = colour_groups,
-                      show_rownames = F,
-                      show_colnames = F,
-                      main= "Bray-Curtis dissimilarity among stool samples")
-png("CF_project/exercise-cf-intervention/figures/Q2_BCHeatmap_Stool.png", units = 'in', res = 300, width=10, height=8)
-BCheatmap.stool
-dev.off()
-
 library("DESeq2"); packageVersion("DESeq2")
 
-tmp2<- sdt.stool[,c(2,9)]
-tmp2<- left_join(genotype, tmp2, "Patient_number")
-tmp2[,2:4]-> tmp2
-tmp2<- as.data.frame(tmp2)
-rownames(tmp2)<- tmp2$SampleID
-tmp2$SampleID<- NULL
-
-tmp2<- cbind(sdt.stool, tmp2)
-rownames(tmp2) <- sample(sample_names(PS3.stool))
-sample_data(PS3.stool)$Severity <- tmp2$Severity
-
-deseq.severity<- phyloseq_to_deseq2(PS3.stool, ~ Severity)
+deseq.severity<- phyloseq_to_deseq2(PS4.stool, ~ Severity)
 # calculate geometric means prior to estimate size factors
 gm_mean = function(x, na.rm=TRUE){
   exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
@@ -586,11 +537,11 @@ ggplot(Bac.sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) +
 
 ######Sputum###################
 ##Bray-Curtis
-BC_dist<- phyloseq::distance(PS3.sput,
+BC_dist<- phyloseq::distance(PS4.sput,
                              method="bray", weighted=F)
-ordination<- ordinate(PS3.sput,
+ordination<- ordinate(PS4.sput,
                       method="PCoA", distance= BC_dist)
-plot_ordination(PS3.sput, ordination, shape= "Visit")+ 
+plot_ordination(PS4.sput, ordination, shape= "Visit")+ 
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(color= Patient_number))+
   #geom_point(color= "black", size= 1.5)+
@@ -599,27 +550,124 @@ plot_ordination(PS3.sput, ordination, shape= "Visit")+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
   labs(shape = "Visit")+
-  xlab("PCo1 (41.1%)")+
-  ylab("PCo2 (20%)")-> A
-
-ordination$values[1,2]
-ordination$values[2,2]
+  xlab(paste0("PCo1 ", round(ordination$values[1,2]*100, digits = 2)))+
+  ylab(paste0("PCo2 ", round(ordination$values[2,2]*100, digits = 2)))-> A
 
 sdt%>%
   dplyr::filter(material=="Sputum")-> tmp1
 
-tmp1<- left_join(tmp1, genotype, "Patient_number")
+##Stratified for Patient number 
+BC.test<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
+                        permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
 
-vegan::adonis(BC_dist~ Patient_number + Severity + Visit + BMI + sex + age,
-              permutations = 999, data = tmp1, na.action = F)
+##BMI significant predictor explaining 7.2% of the variation
 
-##Patient is the only significant factor and explains 79.8% of the variation.
+##Extract pairwise distances per patient
+BC_dist.sputum<- as.matrix(BC_dist)
+tmp1<- cbind(sdt.sputum, BC_dist.sputum)
 
+##V1 vs V2
+tmp1%>%
+  filter(Visit== "V1")%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V3",])))-> V1vsV2.sputum
+
+
+x<- c(V1vsV2.sputum["10P2V1","10P2V2"], V1vsV2.sputum["10P2V1A","10P2V2A"], 
+      V1vsV2.sputum["10P3V1","10P3V2"], V1vsV2.sputum["10P4V1","10P4V2"],
+      V1vsV2.sputum["10P6V1","10P6V2"], V1vsV2.sputum["10P8V1","10P8V2"], 
+      V1vsV2.sputum["10P9V1","10P9V2"], V1vsV2.sputum["10P9V1A","10P9V2"],
+      V1vsV2.sputum["10P10V1","10P10V2"], V1vsV2.sputum["10P11V1","10P11V2"], V1vsV2.sputum["10P14V1","10P14V2"],
+      V1vsV2.sputum["10P15V1","10P15V2"], V1vsV2.sputum["10P18V1","10P18V2"])
+
+y<- c("P2", "P2", "P3", "P4", "P6", "P8", "P9", "P9","P10", "P11", "P14", "P15", "P18")
+
+tmp2<- data.frame(x,y)
+tmp2[,3]<- "V1_V2"
+colnames(tmp2)<- c("BC_dist", "Patient_number", "Group")
+
+##V1 vs V3
+tmp1%>%
+  filter(Visit== "V1")%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V1vsV3.sputum
+
+x<- c(V1vsV3.sputum["10P2V1","10P2V3"], V1vsV3.sputum["10P2V1A","10P2V3A"], 
+      V1vsV3.sputum["10P4V1","10P4V3"], V1vsV3.sputum["10P6V1","10P6V3"],
+      V1vsV3.sputum["10P7V1","10P7V3"],  V1vsV3.sputum["10P9V1","10P9V3"], V1vsV3.sputum["10P9V1A","10P9V3"],
+      V1vsV3.sputum["10P14V1","10P14V3"], V1vsV3.sputum["10P15V1","10P15V3"],
+      V1vsV3.sputum["10P18V1","10P18V3"])
+
+y<- c("P2", "P2", "P4", "P6", "P7", "P9", "P9","P14", "P15", "P18")
+
+tmp3<- data.frame(x,y)
+tmp3[,3]<- "V1_V3"
+colnames(tmp3)<- c("BC_dist", "Patient_number", "Group")
+
+##V2 vs V3
+tmp1%>%
+  filter(Visit== "V2")%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V2vsV3.sputum
+
+x<- c(V2vsV3.sputum["10P2V2","10P2V3"], V2vsV3.sputum["10P2V2A","10P2V3A"], 
+      V2vsV3.sputum["10P4V2","10P4V3"], V2vsV3.sputum["10P6V2","10P6V3"],
+      V2vsV3.sputum["10P9V2","10P9V3"],  V2vsV3.sputum["10P14V2","10P14V3"],
+      V2vsV3.sputum["10P15V2","10P15V3"], V2vsV3.sputum["10P18V2","10P18V3"])
+
+y<- c("P2", "P2", "P4", "P6", "P9", "P14", "P15", "P18")
+
+tmp4<- data.frame(x,y)
+tmp4[,3]<- "V2_V3"
+colnames(tmp4)<- c("BC_dist", "Patient_number", "Group")
+
+##rowbind the 3 dataframes
+
+BC_dist.sputum<- bind_rows(tmp2, tmp3, tmp4)
+
+BC_dist.sputum%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))->BC_dist.sputum
+
+BC_dist.sputum%>% 
+  wilcox_test(BC_dist ~ Group)%>%
+  adjust_pvalue(method = "bonferroni") %>%
+  add_significance()%>%
+  add_xy_position(x = "Group")-> stats.test
+
+##Save statistical analysis
+x <- stats.test
+x$groups<- NULL
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q3_Sample_Visit_BC_Sputum.csv")
+
+BC_dist.sputum%>%
+  wilcox_effsize(BC_dist ~ Group)
+
+##Plot 
+BC_dist.sputum%>%
+  ggplot(aes(x= Group, y= BC_dist))+
+  geom_boxplot(color="black", alpha= 0.5)+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
+  xlab("Visit")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "B)", caption = get_pwc_label(stats.test))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->B
 
 png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum.png", units = 'in', res = 300, width=10, height=8)
-A
+grid.arrange(A, B)
 dev.off()
-rm(A)
 
 ##Glom by genus
 PS.sputum.Gen<- tax_glom(PS3.sput, "Genus", NArm = T)
