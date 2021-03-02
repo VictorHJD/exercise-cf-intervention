@@ -349,10 +349,12 @@ x<- c(V1vsV2.stool["10P1V1","10P1V2"], V1vsV2.stool["10P3V1A","10P3V2A"],
    V1vsV2.stool["10P7V1A","10P7V2"], V1vsV2.stool["10P8V1A","10P8V2A"], V1vsV2.stool["10P9V1B","10P9V2A"],
    V1vsV2.stool["10P13V1","10P13V2"], V1vsV2.stool["10P14V1A","10P14V2A"], V1vsV2.stool["10P15V1A","10P15V2A"],
    V1vsV2.stool["10P16V1","10P16V2"], V1vsV2.stool["10P17V1","10P17V2"])
- 
-tmp2<- data.frame(x)
-tmp2[,2]<- "V1_V2"
-colnames(tmp2)<- c("BC_dist", "Group")
+
+y<- c("P1", "P3", "P4", "P6", "P7", "P8", "P9", "P13", "P14", "P15", "P16", "P17")
+
+tmp2<- data.frame(x,y)
+tmp2[,3]<- "V1_V2"
+colnames(tmp2)<- c("BC_dist", "Patient_number", "Group")
 
 ##V1 vs V3
 tmp1%>%
@@ -369,9 +371,11 @@ x<- c(V1vsV3.stool["10P3V1A","10P3V3"], V1vsV3.stool["10P3V1A","10P3V3A"],
       V1vsV3.stool["10P14V1A","10P14V3A"], V1vsV3.stool["10P15V1A","10P15V3A"],
       V1vsV3.stool["10P18V1A","10P18V3A"])
 
-tmp3<- data.frame(x)
-tmp3[,2]<- "V1_V3"
-colnames(tmp3)<- c("BC_dist", "Group")
+y<- c("P3", "P3", "P4", "P6", "P7", "P9", "P14", "P15", "P18")
+
+tmp3<- data.frame(x,y)
+tmp3[,3]<- "V1_V3"
+colnames(tmp3)<- c("BC_dist", "Patient_number", "Group")
 
 ##V2 vs V3
 tmp1%>%
@@ -387,9 +391,11 @@ x<- c(V2vsV3.stool["10P3V2A","10P3V3"], V2vsV3.stool["10P3V2A","10P3V3A"],
       V2vsV3.stool["10P7V2","10P7V3A"],  V2vsV3.stool["10P9V2A","10P9V3A"],
       V2vsV3.stool["10P14V2A","10P14V3A"], V2vsV3.stool["10P15V2A","10P15V3A"])
 
-tmp4<- data.frame(x)
-tmp4[,2]<- "V2_V3"
-colnames(tmp4)<- c("BC_dist", "Group")
+y<- c("P3", "P3", "P4", "P6", "P7", "P9", "P14", "P15")
+
+tmp4<- data.frame(x,y)
+tmp4[,3]<- "V2_V3"
+colnames(tmp4)<- c("BC_dist", "Patient_number", "Group")
 
 ##rowbind the 3 dataframes
 
