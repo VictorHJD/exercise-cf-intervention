@@ -323,11 +323,6 @@ sdt%>%
 BC.test<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
               permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
 
-png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", units = 'in', res = 300, width=10, height=8)
-D
-dev.off()
-rm(A,B,C,D)
-
 ## Differences are more linked to patient rather than Visit... but difficult to assess. 
 ##Extract pairwise distances per patient
 
@@ -401,6 +396,11 @@ colnames(tmp4)<- c("BC_dist", "Patient_number", "Group")
 
 BC_dist.stool<- bind_rows(tmp2, tmp3, tmp4)
 
+BC_dist.stool%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                    "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                    "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))->BC_dist.stool
+
 BC_dist.stool%>% 
   wilcox_test(BC_dist ~ Group)%>%
   adjust_pvalue(method = "bonferroni") %>%
@@ -416,26 +416,21 @@ BC_dist.stool%>%
   wilcox_effsize(BC_dist ~ Group)
 
 ##Plot 
-sdt%>%
-  mutate(V = fct_relevel(Visit, 
-                             "V1", "V2", "V3"))%>%
-  dplyr::group_by(Visit)%>%
-  ggplot(aes(x= Visit, y= diversity_shannon))+
-  geom_boxplot(aes(color= material), alpha= 0.5)+
-  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= material), color= "black")+
+BC_dist.stool%>%
+  ggplot(aes(x= Group, y= BC_dist))+
+  geom_boxplot(color="black", alpha= 0.5)+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
   xlab("Visit")+
-  ylab("Diversity (Shannon Index)")+
+  ylab("Bray-Curtis dissimilarity")+
   labs(tag= "B)", caption = get_pwc_label(stats.test))+
   theme_bw()+
   theme(text = element_text(size=16))+
-  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")
-BC_dist.stool%>%
-  ggplot(aes(x =Group, y = BC_dist ))+
-  geom_boxplot (aes(fill = Group)) + 
-  geom_point()+
-  stat_compare_means (method = "wilcox.test") + 
-  xlab ("Bray-Curtis dissimilarity") + ylab ("Differences by visit") + 
-  theme(legend.position = "none")
+  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->E
+
+png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", units = 'in', res = 300, width=10, height=8)
+grid.arrange(D, E)
+dev.off()
+rm(A,B,C,D,E)
 
 ###Correlation with nutritional and respiratory activity
 ##Glom by genus
