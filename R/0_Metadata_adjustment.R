@@ -7,22 +7,24 @@ library(tidyverse)
 library(readxl)
 
 ##Load the data
-tech<- read_tsv("~/CF_project/Metadata/technical_Metadata.tsv") ##Contains technical data from DNA (Mainz)
+##Pre-organized data with adjustments to samples:
+##Sample P3V3 stool was incorrectly assigned, it is actually P2V3 stool
+##Sample P17V2 stool, it is P17V3 stool
+
+data.mainz<- read_tsv("~/CF_project/Metadata/Sample_Metadata_combine_rebecca.csv") ##Contains technical data from DNA (Mainz)
+
+#tech<- read_tsv("~/CF_project/Metadata/technical_Metadata.tsv") 
 lung<- read_excel("~/CF_project/Metadata/LungFunction_PhysicalFitness.xlsx") ##Contains lung function data
 nutri<- read_excel("~/CF_project/Metadata/Nutrition_BodyComposition.xlsx") ##Contains nutritional data
 clinic<- read.csv("~/CF_project/Metadata/sample_data_indexed_medication.csv", sep = ";") ##Contains clinical data (Antibiotics, Bacterial isolates, etc)
 genetics<- read_excel("~/CF_project/Metadata/KlinDaten080221.xlsx")
 resp<- read_excel("~/CF_project/Metadata/Responder_nonResponder.xlsx") ##Response to interventions data (ask how were assigned the categories)
 
-##Pre-organized data with adjustments to samples:
-##Sample P3V3 stool was incorrectly assigned, it is actually P2V3 stool
-##Sample P17V2 stool, it is P17V3 stool
-
-data.mainz<- read_tsv("~/CF_project/Metadata/Sample_Metadata_combine_rebecca.csv")
-
 ##Select useful data and uniform columns
+##1) Tech data
+
 data.mainz%>%
-  select(c(1,2,5,7,11,13,16,17,27, 55:75))%>%
+  select(c(1,2,5,7,11,13,16,17,27))%>%
   rename(SampleID= 2, Visit= 10, sex= 11)%>%
   mutate(Visit = paste0("V", Visit))%>%
   mutate(Patient_number= Comed_token)%>%
@@ -30,15 +32,13 @@ data.mainz%>%
   group_by(Patient_number)->data.mainz
 
 
-##Select useful data and uniform columns
-##1) Tech data
-tech%>%
-  select(Comed_token,X.SampleID,Position, 
-         material, extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, Benzoase, Comed_id, Comed_visit)%>%
-  rename(SampleID= 2, Patient_number= 9, Visit= 10)%>%
-  mutate(Patient_number = paste0("P", Patient_number))%>%
-  mutate(Visit = paste0("V", Visit))%>%
-  group_by(Patient_number)-> tech
+#tech%>%
+#  select(Comed_token,X.SampleID,Position, 
+#         material, extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, Benzoase, Comed_id, Comed_visit)%>%
+#  rename(SampleID= 2, Patient_number= 9, Visit= 10)%>%
+#  mutate(Patient_number = paste0("P", Patient_number))%>%
+#  mutate(Visit = paste0("V", Visit))%>%
+#  group_by(Patient_number)-> tech
   
 ##2)Lung function data
 ##Re-shape dataframe
