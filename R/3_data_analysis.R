@@ -480,20 +480,82 @@ stool.microbiome<- t(stool.microbiome)
 x <- log10(stool.microbiome+1) # ASV Log10 (39 samples x 205 genera)
 
 ##Select useful metrics
-y<-as.data.frame(sampleData(PS4.stool))
+y<-sdt.stool
 
-y<- y[,c(5:7,11:29)]
+y<- y[,c(26:27,29:31, 33:51, 53:96)] ##Eliminate non-numeric variables
+
+##Make an adjustment to visit to make it numeric
+y$Visit<- as.numeric(gsub("V", "\\1", y$Visit))
+
+##Transform severity to binary 
+y%>%
+  mutate(Severity = case_when(Severity == "Severe"  ~ 1,
+                           Severity == "Mild" ~ 0))-> y
  
-y <- as.matrix(y) # Metadata (39 samples x 22 technical, respiratory and nutritional variables)
+y <- as.matrix(y) # Metadata (39 samples x 68 technical, respiratory and nutritional variables)
 
 # Cross correlate data sets
 correlations <- associate(x, y, method = "spearman", mode = "matrix", p.adj.threshold = 0.05, n.signif = 1)
+correlations <- associate(x, y, method = "spearman", mode = "matrix", n.signif = 1)
 
 # Or, alternatively, the same output is also available in a handy table format
-correlation.table <- associate(y, x, method = "spearman", mode = "table", n.signif = 1)
+correlation.table <- associate(y, x, method = "spearman", mode = "table", p.adj.threshold = 0.05, n.signif = 1)
 kable(head(correlation.table))
 
-heat((correlation.table), "X1", "X2", fill = "Correlation", star = "p.adj") 
+heat((correlation.table), "X1", "X2", fill = "Correlation", star = "p.adj")
+
+## Let's make nice heatmap
+##First adjust the correlation data frame to a matrix format 
+foo.matrix<- t(as.matrix(correlations$cor))
+
+###Using pheatmap to include annotations 
+foo.clust <- hclust(dist(foo.matrix), method = "complete") ##Dendogram
+require(dendextend)
+as.dendrogram(foo.clust) %>%
+  plot(horiz = TRUE)
+
+foo.col <- cutree(tree = foo.clust, k = 2)
+foo.col  <- data.frame(cluster = ifelse(test = foo.col  == 1, yes = "cluster 1", no = "cluster 2"))
+foo.col$Variable <- rownames(foo.col)
+
+tmp1<- data.frame(colnames(y))
+colnames(tmp1)<- "Variable"
+tmp1%>%
+  mutate(Type = case_when(Variable%in%c("extract_quant_ng_ul", "total_ng_DNA", "dna_quant_ng_DNA","raw_reads", 
+                                        "Visit") ~ "technical",
+                          Variable%in%c("sex", "age","BMI", "Length", "Weight", "Severity") ~ "patient",
+                          Variable%in%c("FFM_Charatsi", "FFM_Luk","kcal_Avg", "kcal_kg_day", "Protein","Lipids", 
+                                        "CHO", "DFr", "EtOH")~ "nutritional",
+                          Variable%in%c("ppFEV1", "Dist","Peak_power", "VO2_A", "VO2_B") ~ "respiratory",
+                          Variable%in%c("Nutrition_Response", "FFM_Response","Sport_Response", "pFVC_Response") ~ "response",
+         TRUE ~ "medication"))-> tmp1
+
+foo.col <- left_join(foo.col, tmp1, by="Variable", sort= F)
+
+col_groups <- foo.col %>%
+  select("Variable","Type") 
+
+row.names(col_groups)<- col_groups$Variable
+
+col_groups$Variable<- NULL
+
+col_groups$Type<- as.factor(col_groups$Type) 
+
+colour_groups <- list( Type= c("technical"= "#8DD3C7","patient"= "#009999" ,"nutritional"= "#FFFFB3", "repiratory"= "#BEBADA", 
+                               "medication"= "#FB8072", "response" = "#7570B3"))
+require(pheatmap)
+require(viridis)
+heatmap.stool <- pheatmap(foo.matrix, 
+                             color = viridis(100),
+                             border_color = NA,
+                             #annotation_row = col_groups, 
+                             annotation_colors = colour_groups,
+                             show_rownames = T,
+                             show_colnames = T,
+                             main= "Spearman's correlation taxa and metadata")
+#png("CF_project/exercise-cf-intervention/figures/Q2_BCHeatmap_Sputum.png", units = 'in', res = 300, width=10, height=8)
+#BCheatmap.sputum
+#dev.off()
 
 ggplot(correlation.table, aes(X1, X2, group=X1)) + 
   geom_tile(aes(fill = Correlation)) +
@@ -737,48 +799,4 @@ ggplot(correlation.table, aes(X1, X2, group=X2)) +
 
 png("CF_project/exercise-cf-intervention/figures/Q3_Correlation_Sputum.png", units = 'in', res = 300, width=10, height=8)
 B
-dev.off()
-
-## Bray-Curtis dissimilarity estimation among samples 
-foo.matrix<- as.matrix(sputum.microbiome)
-foo.braycurt<- vegan::vegdist(foo.matrix, method = "bray")
-as.matrix(foo.braycurt)
-###Using pheatmap to include annotations 
-foo.clust <- hclust(dist(foo.braycurt), method = "complete") ##Dendogram
-require(dendextend)
-as.dendrogram(foo.clust) %>%
-  plot(horiz = TRUE)
-
-foo.col <- cutree(tree = foo.clust, k = 2)
-foo.col  <- data.frame(cluster = ifelse(test = foo.col  == 1, yes = "cluster 1", no = "cluster 2"))
-foo.col$SampleID <- rownames(foo.col)
-
-y<-as.data.frame(sdt.sputum)
-
-foo.col <- left_join(foo.col, y, by="SampleID", sort= F)
-
-col_groups <- foo.col %>%
-  select("SampleID","Patient_number","Visit","sex") ##Here It is possible to add the expected size 
-
-row.names(col_groups)<- col_groups$SampleID
-
-col_groups$SampleID<- NULL
-
-colour_groups <- list( Visit= c("V1"= "#E3DAC9", "V2"= "pink","V3"= "#440154FF"),
-                       Patient_number= c("P1"= "#8DD3C7","P2"= "#009999" ,"P3"= "#FFFFB3", "P4"= "#BEBADA", "P5"= "#FB8072", "P6"= "#80B1D3",
-                                         "P7"="#FDB462", "P8"= "#B3DE69", "P9"="#FC4E07","P10"= "#FCCDE5", "P11"= "#D9D9D9",
-                                         "P12"="#D95F02", "P13"= "#7570B3", "P14"= "#E7298A", "P15"= "#A6761D", "P16"= "#66A61E", 
-                                         "P17"= "#E6AB02", "P18"= "#D0FF14"))
-require(pheatmap)
-require(viridis)
-BCheatmap.sputum <- pheatmap(foo.braycurt, 
-                            color = viridis(100),
-                            border_color = NA,
-                            annotation_col = col_groups, 
-                            annotation_colors = colour_groups,
-                            show_rownames = F,
-                            show_colnames = F,
-                            main= "Bray-Curtis dissimilarity among sputum samples")
-png("CF_project/exercise-cf-intervention/figures/Q2_BCHeatmap_Sputum.png", units = 'in', res = 300, width=10, height=8)
-BCheatmap.sputum
 dev.off()
