@@ -280,7 +280,26 @@ rm(tmp1)
 ##Add genotype 
 left_join(metadata, genotype, by="Patient_number")-> metadata
 
+##Add response data 
+left_join(metadata, resp, by="Patient_number")-> metadata
+
 ##Add medication data
+setdiff(metadata$SampleID, clinic$SampleID)
+
+##In clinic:
+##SampleID 10P3V3 change to 10P2V3B in metadata
+##SampleID 10P17V2 change to 10P17V3A in metadata 
+##Make adjustment before mearging
+
+clinic%>%
+  mutate(SampleID=replace(SampleID, SampleID=="10P3V3", "10P2V3B"))%>%
+  mutate(SampleID=replace(SampleID, SampleID=="10P17V2", "10P17V3A"))-> clinic
+
+##Check that this is fixed
+setdiff(metadata$SampleID, clinic$SampleID)
+
+##Now join medication data
 left_join(metadata, clinic, by="SampleID")-> metadata
+
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
-write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv")
+write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv", row.names = F)
