@@ -29,7 +29,8 @@ data.mainz%>%
   mutate(Visit = paste0("V", Visit))%>%
   mutate(Patient_number= Comed_token)%>%
   mutate(Patient_number = gsub("V\\d+", "\\1", basename(Patient_number)))%>%
-  group_by(Patient_number)->data.mainz
+  group_by(Patient_number)%>%
+  dplyr::select(c(1:10,13))->data.mainz
 
 #tech%>%
 #  select(Comed_token,X.SampleID,Position, 
@@ -255,6 +256,11 @@ rm(genetics)
 clinic%>%
   select(c(SampleID,antibiotics_inh:Cystagon))-> clinic
 
+##6) Responder/non Responder data
+resp%>%
+  select(1:5)%>%
+  rename(Patient_number= 1, Nutrition_Response= 2, FFM_Response= 3, Sport_Response= 4, pFVC_Response= 5)-> resp
+
 ##Merge all the info
 ##Merge Nutritional data with Lung data
 
@@ -265,15 +271,16 @@ lung%>%
 tmp1%>%
   select(-c(Patient_number,Visit))-> tmp1
 
-setdiff(tmp1$Comed_token, tech$Comed_token)
+setdiff(tmp1$Comed_token, data.mainz$Comed_token)
 
-left_join(tech, tmp1, by="Comed_token")-> metadata ##This is partial (clinical info not yet included)
+left_join(data.mainz, tmp1, by="Comed_token")-> metadata ##This is partial (clinical info not yet included)
 
 rm(tmp1)
 
 ##Add genotype 
 left_join(metadata, genotype, by="Patient_number")-> metadata
 
+##Add medication data
 left_join(metadata, clinic, by="SampleID")-> metadata
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
 write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv")
