@@ -630,12 +630,15 @@ sdt%>%
   dplyr::filter(material=="Sputum")-> tmp1
 
 ##Stratified for Patient number 
-BC.test<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
+BC.test.sputum<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
                         permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
 
 ##BMI significant predictor explaining 7.2% of the variation
 
 ##Extract pairwise distances per patient
+sdt%>%
+  dplyr::filter(material=="Sputum")-> sdt.sputum
+
 BC_dist.sputum<- as.matrix(BC_dist)
 tmp1<- cbind(sdt.sputum, BC_dist.sputum)
 
@@ -647,7 +650,6 @@ tmp1%>%
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V3",])))-> V1vsV2.sputum
-
 
 x<- c(V1vsV2.sputum["10P2V1","10P2V2"], V1vsV2.sputum["10P2V1A","10P2V2A"], 
       V1vsV2.sputum["10P3V1","10P3V2"], V1vsV2.sputum["10P4V1","10P4V2"],
@@ -710,7 +712,16 @@ BC_dist.sputum<- bind_rows(tmp2, tmp3, tmp4)
 BC_dist.sputum%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))->BC_dist.sputum
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  left_join(genotype, by="Patient_number")%>%
+  left_join(resp, by="Patient_number")->BC_dist.sputum
+
+##Is nutrition or exercise impacting differences in composition by patient? 
+BC_dist.sputum%>% 
+  group_by(Group)%>%
+  wilcox_test(BC_dist ~ pFVC_Response)%>% ##Change here the type of response
+  adjust_pvalue(method = "bonferroni")%>%
+  add_significance()
 
 BC_dist.sputum%>% 
   wilcox_test(BC_dist ~ Group)%>%
