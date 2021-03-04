@@ -33,6 +33,13 @@ tree<- readRDS("~/CF_project/output/phylo_tree.rds")
 ##To make Phyloseq object
 
 ##1) Use the ASV matrix and transform it to "OTU table" format
+##Correct sample names:
+##Sample 10P3V3 is 10P2V3B after correction from Mainz data
+##Sample 10P17V2 is 10P17V3A
+asvmat%>%
+  rename(X10P3V3 = "X10P2V3B")%>%
+  rename(X10P17V2 = "X10P17V3A")->asvmat
+
 asv<- otu_table(asvmat, taxa_are_rows = T)
 sample_names(asv) <- gsub("X", "\\1", sample_names(asv)) ##eliminate the X at the beginning
 
