@@ -71,7 +71,7 @@ hist(readcount(PS3))
 ##4) Transform to even sampling depth
 ## Rarefy without replacement to the min sequencing depth 
 #PS4<- rarefy_even_depth(PS3, rngseed=2020, sample.size=min(sample_sums(PS3)), replace=F)
-##Normalization Transform to an even sample size
+##Normalization transformation to an even sample size
 PS4<- transform_sample_counts(PS3, function(x) 1E6 * x/sum(x))
 readcount(PS4)
 
@@ -96,7 +96,7 @@ alphaDiv%>%
   rownames_to_column()%>%
   rename(rowname = "SampleID")->tmp1
 
-as_tibble(sample)->tmp2
+as_tibble(sample_data(PS4))->tmp2
 
 tmp1<-inner_join(tmp1, tmp2, by="SampleID")
 rownames(tmp1)<- tmp1$SampleID
