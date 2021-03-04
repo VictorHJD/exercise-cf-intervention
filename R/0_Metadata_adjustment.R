@@ -24,13 +24,12 @@ resp<- read_excel("~/CF_project/Metadata/Responder_nonResponder.xlsx") ##Respons
 ##1) Tech data
 
 data.mainz%>%
-  select(c(1,2,5,7,11,13,16,17,27))%>%
+  dplyr::select(c(1,2,5,7,11,13,16,17,27, 55:57))%>%
   rename(SampleID= 2, Visit= 10, sex= 11)%>%
   mutate(Visit = paste0("V", Visit))%>%
   mutate(Patient_number= Comed_token)%>%
   mutate(Patient_number = gsub("V\\d+", "\\1", basename(Patient_number)))%>%
   group_by(Patient_number)->data.mainz
-
 
 #tech%>%
 #  select(Comed_token,X.SampleID,Position, 
