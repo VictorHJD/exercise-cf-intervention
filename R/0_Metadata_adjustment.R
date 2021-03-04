@@ -259,7 +259,7 @@ clinic%>%
 ##6) Responder/non Responder data
 resp%>%
   select(1:5)%>%
-  rename(Patient_number= 1, Nutrition_Response= 2, FFM_Response= 3, Sport_Response= 4, pFVC_Response= 5)-> resp
+  dplyr::rename(Patient_number= 1, Nutrition_Response= 2, FFM_Response= 3, Sport_Response= 4, pFVC_Response= 5)-> resp
 
 ##Merge all the info
 ##Merge Nutritional data with Lung data
@@ -304,4 +304,4 @@ left_join(metadata, clinic, by="SampleID")-> metadata
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
 write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv", row.names = F)
 
-rm(clinic, data.mainz, genotype, lung, nutri, resp)
+rm(clinic, data.mainz, lung, nutri)

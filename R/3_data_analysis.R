@@ -327,7 +327,7 @@ sdt%>%
   dplyr::filter(material=="Stool")-> tmp1
 
 ##Stratified for Patient number 
-BC.test<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
+BC.test.stool<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
               permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
 
 ## Differences are more linked to patient rather than Visit... but difficult to assess. 
@@ -350,9 +350,9 @@ x<- c(V1vsV2.stool["10P1V1","10P1V2"], V1vsV2.stool["10P3V1A","10P3V2A"],
    V1vsV2.stool["10P4V1A","10P4V2A"], V1vsV2.stool["10P6V1A","10P6V2A"],
    V1vsV2.stool["10P7V1A","10P7V2"], V1vsV2.stool["10P8V1A","10P8V2A"], V1vsV2.stool["10P9V1B","10P9V2A"],
    V1vsV2.stool["10P13V1","10P13V2"], V1vsV2.stool["10P14V1A","10P14V2A"], V1vsV2.stool["10P15V1A","10P15V2A"],
-   V1vsV2.stool["10P16V1","10P16V2"], V1vsV2.stool["10P17V1","10P17V2"])
+   V1vsV2.stool["10P16V1","10P16V2"])
 
-y<- c("P1", "P3", "P4", "P6", "P7", "P8", "P9", "P13", "P14", "P15", "P16", "P17")
+y<- c("P1", "P3", "P4", "P6", "P7", "P8", "P9", "P13", "P14", "P15", "P16")
 
 tmp2<- data.frame(x,y)
 tmp2[,3]<- "V1_V2"
@@ -367,13 +367,13 @@ tmp1%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V1vsV3.stool
 
-x<- c(V1vsV3.stool["10P3V1A","10P3V3"], V1vsV3.stool["10P3V1A","10P3V3A"], 
+x<- c(V1vsV3.stool["10P3V1A","10P3V3A"], 
       V1vsV3.stool["10P4V1A","10P4V3A"], V1vsV3.stool["10P6V1A","10P6V3A"],
       V1vsV3.stool["10P7V1A","10P7V3A"],  V1vsV3.stool["10P9V1B","10P9V3A"],
       V1vsV3.stool["10P14V1A","10P14V3A"], V1vsV3.stool["10P15V1A","10P15V3A"],
-      V1vsV3.stool["10P18V1A","10P18V3A"])
+      V1vsV3.stool["10P17V1","10P17V3A"], V1vsV3.stool["10P18V1A","10P18V3A"])
 
-y<- c("P3", "P3", "P4", "P6", "P7", "P9", "P14", "P15", "P18")
+y<- c("P3", "P4", "P6", "P7", "P9", "P14", "P15", "P17","P18")
 
 tmp3<- data.frame(x,y)
 tmp3[,3]<- "V1_V3"
@@ -388,12 +388,12 @@ tmp1%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V2vsV3.stool
 
-x<- c(V2vsV3.stool["10P3V2A","10P3V3"], V2vsV3.stool["10P3V2A","10P3V3A"], 
+x<- c(V2vsV3.stool["10P2V2B","10P2V3B"], V2vsV3.stool["10P3V2A","10P3V3A"], 
       V2vsV3.stool["10P4V2A","10P4V3A"], V2vsV3.stool["10P6V2A","10P6V3A"],
       V2vsV3.stool["10P7V2","10P7V3A"],  V2vsV3.stool["10P9V2A","10P9V3A"],
       V2vsV3.stool["10P14V2A","10P14V3A"], V2vsV3.stool["10P15V2A","10P15V3A"])
 
-y<- c("P3", "P3", "P4", "P6", "P7", "P9", "P14", "P15")
+y<- c("P2", "P3", "P4", "P6", "P7", "P9", "P14", "P15")
 
 tmp4<- data.frame(x,y)
 tmp4[,3]<- "V2_V3"
@@ -402,12 +402,23 @@ colnames(tmp4)<- c("BC_dist", "Patient_number", "Group")
 ##rowbind the 3 dataframes
 
 BC_dist.stool<- bind_rows(tmp2, tmp3, tmp4)
+rm(tmp2, tmp3, tmp4)
 
 BC_dist.stool%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                     "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                    "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))->BC_dist.stool
+                                    "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  left_join(genotype, by="Patient_number")%>%
+  left_join(resp, by="Patient_number")-> BC_dist.stool
 
+##Is nutrition or exercise impacting differences in composition by patient? 
+BC_dist.stool%>% 
+  group_by(Group)%>%
+  wilcox_test(BC_dist ~ pFVC_Response)%>% ##Change here the type of response
+  adjust_pvalue(method = "bonferroni")%>%
+  add_significance()
+
+##Is visit impacting differences in composition by patient? 
 BC_dist.stool%>% 
   wilcox_test(BC_dist ~ Group)%>%
   adjust_pvalue(method = "bonferroni") %>%
