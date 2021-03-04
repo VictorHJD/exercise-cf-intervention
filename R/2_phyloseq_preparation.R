@@ -58,4 +58,5 @@ tree<- tree$tree
 PS <- merge_phyloseq(asv, tax, sample, tree)
   
   saveRDS(PS, file="~/CF_project/exercise-cf-intervention/data/PhyloSeqComp.Rds")
+  rm(asvmat, asv, dna, taxamat, tax, tree) 
   
