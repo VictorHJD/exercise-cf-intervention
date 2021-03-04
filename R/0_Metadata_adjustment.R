@@ -303,3 +303,5 @@ left_join(metadata, clinic, by="SampleID")-> metadata
 
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
 write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv", row.names = F)
+
+rm(clinic, data.mainz, genotype, lung, nutri, resp)
