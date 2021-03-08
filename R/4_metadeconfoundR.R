@@ -162,13 +162,19 @@ Cun.V1V2+
        tag = "B)", caption = "Using all data with patient as random factor", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
-  theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"))+
+  theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
+        axis.text.y = element_text(size = 9, face="italic", color="black"))+
   scale_x_discrete(labels=c( "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", "Peak_power" = "Peak power",
                             "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
                    "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", 
-                   "Sport_Response" = "Sport Response"))-> B
+                   "Sport_Response" = "Sport Response"))+
+  scale_y_discrete(labels=c( "CAG-56"= "Firmicutes CAG-56","[Ruminococcus]_gnavus_group" = "Ruminococcus gnavus group", 
+                             "DTU089" = "Ruminococcus DTU089", "[Clostridium]_innocuum_group" = "Clostridium innocuum group",
+                             "[Eubacterium]_ventriosum_group" = "Eubacterium ventriosum group"))-> B
 
-
+png("CF_project/exercise-cf-intervention/figures/Q4_Deconfound_Stool_V1V2.png", units = 'in', res = 300, width=10, height=8)
+B
+dev.off()
 #######################2) Sputum####################
 ##Take SampleID in the right order
 SampleID<- rownames(sputum.metadata)
