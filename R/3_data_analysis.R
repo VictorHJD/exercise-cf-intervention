@@ -476,6 +476,7 @@ stool.microbiome$Genus<- NULL
 
 ##Transpose dataframe so samples are rows 
 stool.microbiome<- t(stool.microbiome)
+#saveRDS(stool.microbiome, "~/CF_project/exercise-cf-intervention/data/Stool_rare_ASV.rds")--> For MetadeconfoundR
 
 x <- log10(stool.microbiome+1) # ASV Log10 (39 samples x 205 genera)
 
@@ -493,6 +494,7 @@ y%>%
                            Severity == "Mild" ~ 0))-> y
  
 y <- as.matrix(y) # Metadata (39 samples x 68 technical, respiratory and nutritional variables)
+#saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Stool_rare_Metadata.rds") --> For MetadeconfoundR
 
 # Cross correlate data sets
 correlations <- associate(x, y, method = "spearman", mode = "matrix", p.adj.threshold = 0.05, n.signif = 1)
@@ -754,7 +756,7 @@ grid.arrange(A, B)
 dev.off()
 
 ##Glom by genus
-PS.sputum.Gen<- tax_glom(PS3.sput, "Genus", NArm = T)
+PS.sputum.Gen<- tax_glom(PS4.sput, "Genus", NArm = T)
 
 ##Adjust ASV table for merging with taxa information
 otu<- PS.sputum.Gen@otu_table
@@ -777,17 +779,25 @@ sputum.microbiome$Genus<- NULL
 
 ##Transpose dataframe so samples are rows 
 sputum.microbiome<- t(sputum.microbiome)
+#saveRDS(sputum.microbiome, "~/CF_project/exercise-cf-intervention/data/Sput_rare_ASV.rds") #--> For MetadeconfoundR
 
 x <- log10(sputum.microbiome+1) # ASV Log10 (39 samples x 122 genera)
 
 ##Select useful metrics
-sdt.sputum<- sample_data(PS3.sput)
+y<-sdt.sputum
 
-y<-as.data.frame(sdt.sputum)
+y<- y[,c(26:27,29:31, 33:51, 53:96)] ##Eliminate non-numeric variables
 
-y<- y[,c(5:7,11:29)]
+##Make an adjustment to visit to make it numeric
+y$Visit<- as.numeric(gsub("V", "\\1", y$Visit))
 
-y <- as.matrix(y) # Metadata (39 samples x 22 technical, respiratory and nutritional variables)
+##Transform severity to binary 
+y%>%
+  mutate(Severity = case_when(Severity == "Severe"  ~ 1,
+                              Severity == "Mild" ~ 0))-> y
+
+y <- as.matrix(y) # Metadata (39 samples x 68 technical, respiratory and nutritional variables)
+#saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Sput_rare_Metadata.rds") #--> For MetadeconfoundR
 
 # Cross correlate data sets
 correlations <- associate(x, y, method = "spearman", mode = "matrix", p.adj.threshold = 0.05, n.signif = 1)
