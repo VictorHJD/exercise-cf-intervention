@@ -221,13 +221,13 @@ plot_ordination(PS4, ordination, shape= "material")+
 vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
               permutations = 999, data = sdt, na.action = F, strata = sdt$Patient_number)
 
-png("CF_project/exercise-cf-intervention/figures/Q1_Alpha_div_General.png", units = 'in', res = 300, width=14, height=14)
+#png("CF_project/exercise-cf-intervention/figures/Q1_Alpha_div_General.png", units = 'in', res = 300, width=14, height=14)
 grid.arrange(A, B)
-dev.off()
+#dev.off()
 
-png("CF_project/exercise-cf-intervention/figures/Q1_Beta_div_General.png", units = 'in', res = 300, width=14, height=14)
+#png("CF_project/exercise-cf-intervention/figures/Q1_Beta_div_General.png", units = 'in', res = 300, width=14, height=14)
 C
-dev.off()
+#dev.off()
 
 rm(A,B,C)
 
@@ -256,6 +256,13 @@ sdt%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> sdt.stool
+
+
+sdt.stool%>%
+  wilcox_test(diversity_shannon ~ Visit)%>%
+  adjust_pvalue(method = "fdr") %>%
+  add_significance()%>%
+  add_xy_position(x = "Visit")
 
 ##Plot 
 sdt%>%
@@ -492,7 +499,7 @@ dev.off()
 
 rm(D,E)
 
-###Correlation with nutritional and respiratory activity
+###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
 PS.stool.Gen<-  tax_glom(PS4.stool, "Genus", NArm = T)
 
@@ -547,59 +554,6 @@ kable(head(correlation.table))
 
 heat((correlation.table), "X1", "X2", fill = "Correlation", star = "p.adj")
 
-## Let's make nice heatmap
-##First adjust the correlation data frame to a matrix format 
-foo.matrix<- t(as.matrix(correlations$cor))
-
-###Using pheatmap to include annotations 
-foo.clust <- hclust(dist(foo.matrix), method = "complete") ##Dendogram
-require(dendextend)
-as.dendrogram(foo.clust) %>%
-  plot(horiz = TRUE)
-
-foo.col <- cutree(tree = foo.clust, k = 2)
-foo.col  <- data.frame(cluster = ifelse(test = foo.col  == 1, yes = "cluster 1", no = "cluster 2"))
-foo.col$Variable <- rownames(foo.col)
-
-tmp1<- data.frame(colnames(y))
-colnames(tmp1)<- "Variable"
-tmp1%>%
-  mutate(Type = case_when(Variable%in%c("extract_quant_ng_ul", "total_ng_DNA", "dna_quant_ng_DNA","raw_reads", 
-                                        "Visit") ~ "technical",
-                          Variable%in%c("sex", "age","BMI", "Length", "Weight", "Severity") ~ "patient",
-                          Variable%in%c("FFM_Charatsi", "FFM_Luk","kcal_Avg", "kcal_kg_day", "Protein","Lipids", 
-                                        "CHO", "DFr", "EtOH")~ "nutritional",
-                          Variable%in%c("ppFEV1", "Dist","Peak_power", "VO2_A", "VO2_B") ~ "respiratory",
-                          Variable%in%c("Nutrition_Response", "FFM_Response","Sport_Response", "pFVC_Response") ~ "response",
-         TRUE ~ "medication"))-> tmp1
-
-foo.col <- left_join(foo.col, tmp1, by="Variable", sort= F)
-
-col_groups <- foo.col %>%
-  select("Variable","Type") 
-
-row.names(col_groups)<- col_groups$Variable
-
-col_groups$Variable<- NULL
-
-col_groups$Type<- as.factor(col_groups$Type) 
-
-colour_groups <- list( Type= c("technical"= "#8DD3C7","patient"= "#009999" ,"nutritional"= "#FFFFB3", "repiratory"= "#BEBADA", 
-                               "medication"= "#FB8072", "response" = "#7570B3"))
-require(pheatmap)
-require(viridis)
-heatmap.stool <- pheatmap(foo.matrix, 
-                             color = viridis(100),
-                             border_color = NA,
-                             #annotation_row = col_groups, 
-                             annotation_colors = colour_groups,
-                             show_rownames = T,
-                             show_colnames = T,
-                             main= "Spearman's correlation taxa and metadata")
-#png("CF_project/exercise-cf-intervention/figures/Q2_BCHeatmap_Sputum.png", units = 'in', res = 300, width=10, height=8)
-#BCheatmap.sputum
-#dev.off()
-
 ggplot(correlation.table, aes(X1, X2, group=X1)) + 
   geom_tile(aes(fill = Correlation)) +
   #geom_text(aes(fill = correlation.table$Correlation, label = round(correlation.table$Correlation, 1)), size = 5) +
@@ -614,42 +568,50 @@ png("CF_project/exercise-cf-intervention/figures/Q3_Correlation_Stool.png", unit
 A
 dev.off()
 
+
+###Deseq2 analysis
 library("DESeq2"); packageVersion("DESeq2")
 
 deseq.severity<- phyloseq_to_deseq2(PS4.stool, ~ Severity)
+
 # calculate geometric means prior to estimate size factors
-gm_mean = function(x, na.rm=TRUE){
+gm_mean <- function(x, na.rm=TRUE){
   exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
 }
 geoMeans<- apply(counts(deseq.severity), 1, gm_mean)
 deseq.severity<- estimateSizeFactors(deseq.severity, geoMeans = geoMeans)
-deseq.severity<- DESeq(deseq.severity, test="LRT", fitType="parametric", reduced= ~ 1)
+deseq.severity<- DESeq(deseq.severity, fitType="local")
 
-ac.res <- results(deseq.severity, cooksCutoff = FALSE)
-alpha <- 0.05
-Bac.sigtab <- deseq.severity[which(deseq.severity$padj < alpha), ]
-Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS.PA.genus)[rownames(Bac.sigtab), ], "matrix"))
-rownames(Bac.sigtab) <- NULL
-Bac.sigtab
+ac.res <- results(deseq.severity)
+##Remove NA
+ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
 
-# Phylum order
-x <- tapply(Bac.sigtab$log2FoldChange, Bac.sigtab$Phylum, function(x) max(x))
-x <- sort(x, TRUE)
-Bac.sigtab$Phylum <- factor(as.character(Bac.sigtab$Phylum), levels=names(x))
-# Genus order
-x <- tapply(Bac.sigtab$log2FoldChange, Bac.sigtab$Genus, function(x) max(x))
-x <- sort(x, TRUE)
-Bac.sigtab$Genus <- factor(as.character(Bac.sigtab$Genus), levels=names(x))
+##Select cut-off value
+alpha <- 0.01
+Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
 
-ggplot(Bac.sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) +
+Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS4.stool)[rownames(Bac.sigtab), ], "matrix"))
+
+##Adjust value
+Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > 0, ]
+Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
+
+###Negative Binomial in Microbiome Differential Abundance Testing (plot)
+ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, color=Phylum)) +
   geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
   scale_fill_brewer(palette = "Set1")+
   coord_flip()+
-  geom_hline(aes(yintercept = 0), color = "gray70", size = 0.6)+
-  xlab("Bacteria Genus")+
-  ylab("Ascaris <-- Log-2-Fold-Change --> Jejunum")+
-  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16))+
-  theme_bw()
+  geom_hline(aes(yintercept = 25), color = "gray70", size = 0.6)+
+  xlab("ASVs Genus-level")+
+  ylab("Mild <-- Log-2-Fold-Change --> Severe")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16), 
+        axis.text.y = element_text(face="italic", color="black"))+
+  labs(tag = "A)")-> A
+
+png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_days.png", units = 'in', res = 300, width=10, height=8)
+A
+dev.off()
 
 ######Sputum###################
 ##Bray-Curtis
