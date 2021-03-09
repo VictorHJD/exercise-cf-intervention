@@ -409,7 +409,7 @@ Cun.V1V2+
   ylab("ASVs Genus-level")+
   #geom_point(aes(color = cyl, size = , shape = gear))+
   labs(title="MetaDeconfoundR summarizing coneiform plot (Sputum Control: V1 vs Case: V2)",
-       tag = "B)", caption = "Using all data with patient as random factor", 
+       tag = "B)", caption = "Using V1-V2 data (205 genus and 68 variables)", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
   theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
@@ -436,7 +436,7 @@ Cun.V2V3+
   ylab("ASVs Genus-level")+
   #geom_point(aes(color = cyl, size = , shape = gear))+
   labs(title="MetaDeconfoundR summarizing coneiform plot (Sputum Control: V2 vs Case: V3)",
-       tag = "C)", caption = "Using all data with patient as random factor", 
+       tag = "C)", caption = "Using V2-V3 data (205 genus and 68 variables)", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
   theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
@@ -464,7 +464,7 @@ Cun.V1V3+
   ylab("ASVs Genus-level")+
   #geom_point(aes(color = cyl, size = , shape = gear))+
   labs(title="MetaDeconfoundR summarizing coneiform plot (Sputum Control: V1 vs Case: V3)",
-       tag = "D)", caption = "Using all data with patient as random factor", 
+       tag = "D)", caption = "Using V1-V3 data (205 genus and 68 variables)", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
   theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),

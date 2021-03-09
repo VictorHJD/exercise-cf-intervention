@@ -266,14 +266,32 @@ sdt%>%
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Visit, y= chao1))+
-  geom_boxplot(color= "black", outlier.colour = "white")+
-  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black")+
+  geom_violin(color= "black", outlier.colour = "white", trim = F)+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black", alpha= 0.5)+
   xlab("Visit")+
   ylab("Richness (Chao1 Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
   labs(tag= "A)")+
   theme_bw()+
-  theme(text = element_text(size=16))
+  theme(text = element_text(size=16))-> A
+
+
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Visit, y= chao1))+
+  geom_violin(color= "black", outlier.colour = "white", trim = F)+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black", alpha= 0.5)+
+  xlab("Visit")+
+  ylab("Richness (Chao1 Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  labs(tag= "C)")+
+  theme_bw()+
+  theme(text = element_text(size=16))-> C
 
 ##Shannon diversity 
 sdt%>% 
@@ -296,14 +314,37 @@ sdt%>%
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Visit, y= diversity_shannon))+
-  geom_boxplot(color= "black", outlier.colour = "white")+
-  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black")+
+  geom_violin(color= "black", outlier.colour = "white", trim = F)+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black", alpha= 0.5)+
   xlab("Visit")+
   ylab("Diversity (Shannon Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
   labs(tag= "B)")+
   theme_bw()+
-  theme(text = element_text(size=16))
+  theme(text = element_text(size=16))-> B
+
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Visit, y= diversity_shannon))+
+  geom_violin(color= "black", outlier.colour = "white", trim = F)+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black", alpha= 0.5)+
+  xlab("Visit")+
+  ylab("Diversity (Shannon Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  labs(tag= "D)")+
+  theme_bw()+
+  theme(text = element_text(size=16))-> D
+
+png("CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png", units = 'in', res = 300, width=10, height=8)
+ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+dev.off()
+
+rm(A,B, C,D)
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.stool,
@@ -446,10 +487,10 @@ BC_dist.stool%>%
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->E
 
 png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", units = 'in', res = 300, width=10, height=8)
-grid.arrange(D, E)
+ggarrange(D, E, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 dev.off()
 
-rm(A,B,C,D,E)
+rm(D,E)
 
 ###Correlation with nutritional and respiratory activity
 ##Glom by genus
@@ -752,7 +793,7 @@ BC_dist.sputum%>%
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->B
 
 png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum.png", units = 'in', res = 300, width=10, height=8)
-grid.arrange(A, B)
+ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 dev.off()
 
 ##Glom by genus
