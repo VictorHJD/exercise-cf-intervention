@@ -408,7 +408,7 @@ Cun.V1V2+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
   #geom_point(aes(color = cyl, size = , shape = gear))+
-  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool Control: V1 vs Case: V2)",
+  labs(title="MetaDeconfoundR summarizing coneiform plot (Sputum Control: V1 vs Case: V2)",
        tag = "B)", caption = "Using all data with patient as random factor", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
@@ -435,7 +435,7 @@ Cun.V2V3+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
   #geom_point(aes(color = cyl, size = , shape = gear))+
-  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool Control: V2 vs Case: V3)",
+  labs(title="MetaDeconfoundR summarizing coneiform plot (Sputum Control: V2 vs Case: V3)",
        tag = "C)", caption = "Using all data with patient as random factor", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
@@ -463,7 +463,7 @@ Cun.V1V3+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
   #geom_point(aes(color = cyl, size = , shape = gear))+
-  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool Control: V1 vs Case: V3)",
+  labs(title="MetaDeconfoundR summarizing coneiform plot (Sputum Control: V1 vs Case: V3)",
        tag = "D)", caption = "Using all data with patient as random factor", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
