@@ -151,26 +151,65 @@ Cun.all+
   labs(tag = "A)", caption = "Using all data with patient as random factor", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
-  theme(axis.text.x = element_text(size = 10, angle = 90))+
-  scale_fill_continuous(guide = "colourbar") +
-  scale_size(guide = "legend")-> A
+  theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
+        axis.text.y = element_text(size = 9, face="italic", color="black"))+
+  scale_x_discrete(labels=c( "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
+                             "Peak_power" = "Peak power" , "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
+                             "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", 
+                             "Sport_Response" = "Sport Response", "extract_quant_ng_ul"= "DNA concentration (ng/µL)", "total_ng_DNA"= "Total DNA (ng)",
+                             "Nutrition_supplementation"="Nutrition supp.", "heart_med"= "Heart medication", "DNAse_inh"= "DNAse inh"))+
+  scale_y_discrete(labels=c( "CAG-56"= "Firmicutes CAG:56","[Ruminococcus]_gnavus_group" = "Ruminococcus gnavus group", 
+                             "DTU089" = "Ruminococcus DTU:089", "[Clostridium]_innocuum_group" = "Clostridium innocuum group",
+                             "[Eubacterium]_ventriosum_group" = "Eubacterium ventriosum group", 
+                             "Erysipelotrichaceae_UCG-003"= "Erysipelotrichaceae UCG:003", 
+                             "Lachnospiraceae_UCG-004"= "Lachnospiraceae UCG:004", "CAG-352"=  "Clostridium CAG:352",
+                             "Family_XIII_UCG-001"= "Family XIII UCG:001", "Lachnospiraceae_FCS020_group"= "Lachnospiraceae FCS020 group",
+                             "UCG-002"= "Ruminococcaceae UCG:002", "Lachnospiraceae_NK4A136_group"= "Lachnospiraceae NK4A136 group",
+                             "NK4A214_group"= "Lachnospiraceae NK4A214 group",  "[Eubacterium]_hallii_group" = "Eubacterium hallii group", 
+                             "Lachnospiraceae_UCG-009"= "Lachnospiraceae UCG:009", "Lachnospiraceae_UCG-010"= "Lachnospiraceae UCG:010",
+                             "UCG-003"="Lachnospiraceae UCG:003"))-> A
 
 Cun.V1V2+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
-  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool V1 vs V2)",
-       tag = "B)", caption = "Using all data with patient as random factor", 
+  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool Control: V1 vs Case: V2)",
+       tag = "B)", caption = "Using V1V2 data", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
   theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
         axis.text.y = element_text(size = 9, face="italic", color="black"))+
-  scale_x_discrete(labels=c( "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", "Peak_power" = "Peak power",
-                            "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
+  scale_x_discrete(labels=c( "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
+                             "Peak_power" = "Peak power" , "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
                    "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", 
                    "Sport_Response" = "Sport Response"))+
-  scale_y_discrete(labels=c( "CAG-56"= "Firmicutes CAG-56","[Ruminococcus]_gnavus_group" = "Ruminococcus gnavus group", 
-                             "DTU089" = "Ruminococcus DTU089", "[Clostridium]_innocuum_group" = "Clostridium innocuum group",
-                             "[Eubacterium]_ventriosum_group" = "Eubacterium ventriosum group"))-> B
+  scale_y_discrete(labels=c( "CAG-56"= "Firmicutes CAG:56","[Ruminococcus]_gnavus_group" = "Ruminococcus gnavus group", 
+                             "DTU089" = "Ruminococcus DTU:089", "[Clostridium]_innocuum_group" = "Clostridium innocuum group",
+                             "[Eubacterium]_ventriosum_group" = "Eubacterium ventriosum group", 
+                             "Erysipelotrichaceae_UCG-003"= "Erysipelotrichaceae UCG:003", 
+                             "Lachnospiraceae_UCG-004"= "Lachnospiraceae UCG:004", "CAG-352"=  "Clostridium CAG:352",
+                             "Family_XIII_UCG-001"= "Family XIII UCG:001"))-> B
+Cun.V2V3+
+  xlab("Variables")+
+  ylab("ASVs Genus-level")+
+  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool Control: V2 vs Case: V3)",
+       tag = "B)", caption = "Using V1V2 data", 
+       fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
+  theme(legend.key = element_rect(color = "black"))+
+  theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
+        axis.text.y = element_text(size = 9, face="italic", color="black"))+
+  scale_x_discrete(labels=c( "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
+                             "Peak_power" = "Peak power" , "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
+                             "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", 
+                             "Sport_Response" = "Sport Response", "VO2_B"))+
+  scale_y_discrete(labels=c( "CAG-56"= "Firmicutes CAG:56","[Ruminococcus]_gnavus_group" = "Ruminococcus gnavus group", 
+                             "DTU089" = "Ruminococcus DTU:089", "[Clostridium]_innocuum_group" = "Clostridium innocuum group",
+                             "[Eubacterium]_ventriosum_group" = "Eubacterium ventriosum group", 
+                             "Erysipelotrichaceae_UCG-003"= "Erysipelotrichaceae UCG:003", 
+                             "Lachnospiraceae_UCG-004"= "Lachnospiraceae UCG:004", "CAG-352"=  "Clostridium CAG:352",
+                             "Family_XIII_UCG-001"= "Family XIII UCG:001"))-> B
+
+
+
 
 png("CF_project/exercise-cf-intervention/figures/Q4_Deconfound_Stool_V1V2.png", units = 'in', res = 300, width=10, height=8)
 B
