@@ -567,11 +567,12 @@ ggplot(correlation.table, aes(X1, X2, group=X1)) +
 png("CF_project/exercise-cf-intervention/figures/Q3_Correlation_Stool.png", units = 'in', res = 300, width=10, height=8)
 A
 dev.off()
-
+###Let's run this with metadeconfoundR (other script for that)
 
 ###Deseq2 analysis
 library("DESeq2"); packageVersion("DESeq2")
 
+##Severity classification based on genotype
 deseq.severity<- phyloseq_to_deseq2(PS4.stool, ~ Severity)
 
 # calculate geometric means prior to estimate size factors
@@ -612,6 +613,55 @@ ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, col
 png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_days.png", units = 'in', res = 300, width=10, height=8)
 A
 dev.off()
+
+###Analysis by time points
+###Make Phloseq subsets to run the analysis
+##V1V2
+PS4.stool12<- subset_samples(PS4.stool, Visit%in%c("V1", "V2"))
+##V2V3
+PS4.stool23<- subset_samples(PS4.stool, Visit%in%c("V2", "V3"))
+##V1V3
+PS4.stool13<- subset_samples(PS4.stool, Visit%in%c("V1", "V3"))
+
+deseq.visit<- phyloseq_to_deseq2(PS4.stool13, ~ Visit)
+
+geoMeans<- apply(counts(deseq.visit), 1, gm_mean)
+deseq.visit<- estimateSizeFactors(deseq.visit, geoMeans = geoMeans)
+deseq.visit<- DESeq(deseq.visit, fitType="local")
+
+ac.res <- results(deseq.visit)
+##Remove NA
+ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
+
+##Select cut-off value
+alpha <- 0.01
+Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
+
+Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS4.stool13)[rownames(Bac.sigtab), ], "matrix")) ##Change based on the visit
+
+##Adjust value
+Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > 0, ]
+Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
+
+###Negative Binomial in Microbiome Differential Abundance Testing (plot)
+ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, color=Phylum)) +
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
+  scale_fill_brewer(palette = "Set1")+
+  coord_flip()+
+  geom_hline(aes(yintercept = 25), color = "gray70", size = 0.6)+
+  xlab("ASVs Genus-level")+
+  ylab("V1 <-- Log-2-Fold-Change --> V3")+ ##Change this based on the visit
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16), 
+        axis.text.y = element_text(face="italic", color="black"))+
+  labs(tag = "C)")->C
+
+##Save just when the three objects are in the environment
+#png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Visit.png", units = 'in', res = 300, width=10, height=13)
+#ggarrange(A, B, C, ncol=1, nrow=3, common.legend = F, legend="right")
+#dev.off()
+
+rm(A,B,C)
 
 ######Sputum###################
 ##Bray-Curtis
