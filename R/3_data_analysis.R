@@ -824,3 +824,42 @@ ggplot(correlation.table, aes(X1, X2, group=X2)) +
 png("CF_project/exercise-cf-intervention/figures/Q3_Correlation_Sputum.png", units = 'in', res = 300, width=10, height=8)
 B
 dev.off()
+
+###Deseq2 analysis
+deseq.severity<- phyloseq_to_deseq2(PS4.sput, ~ Severity)
+
+# calculate geometric means prior to estimate size factors
+geoMeans<- apply(counts(deseq.severity), 1, gm_mean)
+deseq.severity<- estimateSizeFactors(deseq.severity, geoMeans = geoMeans)
+deseq.severity<- DESeq(deseq.severity, fitType="local")
+
+ac.res <- results(deseq.severity)
+##Remove NA
+ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
+
+##Select cut-off value
+alpha <- 0.01
+Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
+
+Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS4.sput)[rownames(Bac.sigtab), ], "matrix"))
+
+##Adjust value
+Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > 0, ]
+Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
+
+###Negative Binomial in Microbiome Differential Abundance Testing (plot)
+ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, color=Phylum)) +
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
+  scale_fill_brewer(palette = "Set1")+
+  coord_flip()+
+  geom_hline(aes(yintercept = 25), color = "gray70", size = 0.6)+
+  xlab("ASVs Genus-level")+
+  ylab("Mild <-- Log-2-Fold-Change --> Severe")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16), 
+        axis.text.y = element_text(face="italic", color="black"))+
+  labs(tag = "B)")-> B
+
+png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Sputum_days.png", units = 'in', res = 300, width=10, height=8)
+B
+dev.off()

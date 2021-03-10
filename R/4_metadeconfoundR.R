@@ -148,7 +148,8 @@ Cun.all+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
   #geom_point(aes(color = cyl, size = , shape = gear))+
-  labs(tag = "A)", caption = "Using all data with patient as random factor", 
+  labs(title = "MetaDeconfoundR summarizing coneiform plot (Stool Control: Mild vs Case: Severe)",tag = "A)", 
+       caption = "Using all data", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
   theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
