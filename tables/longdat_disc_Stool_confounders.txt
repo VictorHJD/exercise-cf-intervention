@@ -1,0 +1,1 @@
+	Confounder1	Confounding_type1	Effect_size1	Confounder2	Confounding_type2	Effect_size2	Confounder3	Confounding_type3	Effect_size3	Confounder4	Confounding_type4	Effect_size4	Confounder5	Confounding_type5	Effect_size5
