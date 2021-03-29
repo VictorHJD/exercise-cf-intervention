@@ -456,17 +456,27 @@ colnames(tmp4)<- c("BC_dist", "Patient_number", "Group")
 BC_dist.stool<- bind_rows(tmp2, tmp3, tmp4)
 rm(tmp2, tmp3, tmp4)
 
+##From metadata extract responders and severity status 
+metadata%>%
+  dplyr::filter(material=="Stool")%>%
+  group_by(Patient_number)%>%
+  distinct(Patient_number, .keep_all = TRUE)%>%
+  dplyr::select(c(Patient_number, Nutrition_Response, FFM_Response, pFVC_Response, Phenotype_severity, 
+                  Pseudomonas_status, Sport_Response, Mutation_severity))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> tmp2
+
 BC_dist.stool%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                     "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                     "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  left_join(genotype, by="Patient_number")%>%
-  left_join(resp, by="Patient_number")-> BC_dist.stool
+  left_join(tmp2, by="Patient_number")-> BC_dist.stool
 
 ##Is nutrition or exercise impacting differences in composition by patient? 
 BC_dist.stool%>% 
   group_by(Group)%>%
-  wilcox_test(BC_dist ~ pFVC_Response)%>% ##Change here the type of response
+  wilcox_test(BC_dist ~ Sport_Response)%>% ##Change here the type of response
   adjust_pvalue(method = "bonferroni")%>%
   add_significance()
 
@@ -535,16 +545,20 @@ x <- log10(stool.microbiome+1) # ASV Log10 (39 samples x 205 genera)
 ##Select useful metrics
 y<-sdt.stool
 
-y<- y[,c(26:27,29:31, 33:51, 53:96)] ##Eliminate non-numeric variables
+y<- y[,c(26:27,29:98)] ##Eliminate non-numeric variables
 
-##Make an adjustment to visit to make it numeric
+##Make an adjustment to make visit and patient numeric
 y$Visit<- as.numeric(gsub("V", "\\1", y$Visit))
+y$Patient_number<- as.numeric(gsub("P", "\\1", y$Patient_number))
 
 ##Transform severity to binary 
 y%>%
-  mutate(Severity = case_when(Severity == "Severe"  ~ 1,
-                           Severity == "Mild" ~ 0))-> y
- 
+  mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+                                        Phenotype_severity == 1 ~ 0))%>%
+  mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+                                        Mutation_severity == 1 ~ 0))-> y
+
+
 y <- as.matrix(y) # Metadata (39 samples x 68 technical, respiratory and nutritional variables)
 #saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Stool_rare_Metadata.rds") --> For MetadeconfoundR
 
@@ -576,8 +590,12 @@ dev.off()
 ###Deseq2 analysis
 library("DESeq2"); packageVersion("DESeq2")
 
-##Severity classification based on genotype
-deseq.severity<- phyloseq_to_deseq2(PS4.stool, ~ Severity)
+##Severity classification based on:
+#genotype
+deseq.severity<- phyloseq_to_deseq2(PS4.stool, ~ Mutation_severity)
+
+##Phenotype
+#deseq.severity<- phyloseq_to_deseq2(PS4.stool, ~ Phenotype_severity)
 
 # calculate geometric means prior to estimate size factors
 gm_mean <- function(x, na.rm=TRUE){
@@ -606,16 +624,20 @@ ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, col
   geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
   scale_fill_brewer(palette = "Set1")+
   coord_flip()+
-  geom_hline(aes(yintercept = 25), color = "gray70", size = 0.6)+
+  geom_hline(aes(yintercept = 15), color = "gray70", size = 0.6)+
   xlab("ASVs Genus-level")+
   ylab("Mild <-- Log-2-Fold-Change --> Severe")+
   theme_bw()+
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16), 
         axis.text.y = element_text(face="italic", color="black"))+
-  labs(tag = "A)")-> A
+  labs(tag = "A)")-> A #Change to B when Phenotype
 
 png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_days.png", units = 'in', res = 300, width=10, height=8)
 A
+dev.off()
+
+png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Phen.png", units = 'in', res = 300, width=10, height=8)
+B
 dev.off()
 
 ###Analysis by time points
