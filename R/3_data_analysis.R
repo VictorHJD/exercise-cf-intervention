@@ -704,17 +704,17 @@ plot_ordination(PS4.sput, ordination, shape= "Visit")+
   ylab(paste0("PCo2 ", round(ordination$values[2,2]*100, digits = 2)))-> A
 
 sdt%>%
-  dplyr::filter(material=="Sputum")-> tmp1
+  dplyr::filter(Benzoase==1)-> tmp1
 
 ##Stratified for Patient number 
-BC.test.sputum<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
+BC.test.sputum<- vegan::adonis(BC_dist~ Phenotype_severity+ Mutation_severity + sex + age +  Visit + BMI,
                         permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
 
-##BMI significant predictor explaining 7.2% of the variation
+##BMI significant predictor explaining 4% of the variation
 
 ##Extract pairwise distances per patient
 sdt%>%
-  dplyr::filter(material=="Sputum")-> sdt.sputum
+  dplyr::filter(Benzoase==1)-> sdt.sputum
 
 BC_dist.sputum<- as.matrix(BC_dist)
 tmp1<- cbind(sdt.sputum, BC_dist.sputum)
