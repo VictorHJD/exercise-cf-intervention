@@ -632,12 +632,8 @@ ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, col
         axis.text.y = element_text(face="italic", color="black"))+
   labs(tag = "A)")-> A #Change to B when Phenotype
 
-png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_days.png", units = 'in', res = 300, width=10, height=8)
-A
-dev.off()
-
-png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Phen.png", units = 'in', res = 300, width=10, height=8)
-B
+png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Severity.png", units = 'in', res = 300, width=20, height=10)
+ggarrange(A, B, ncol=2, nrow=1, common.legend = T, legend="right")
 dev.off()
 
 ###Analysis by time points
@@ -649,7 +645,7 @@ PS4.stool23<- subset_samples(PS4.stool, Visit%in%c("V2", "V3"))
 ##V1V3
 PS4.stool13<- subset_samples(PS4.stool, Visit%in%c("V1", "V3"))
 
-deseq.visit<- phyloseq_to_deseq2(PS4.stool13, ~ Visit)
+deseq.visit<- phyloseq_to_deseq2(PS4.stool12, ~ Visit)
 
 geoMeans<- apply(counts(deseq.visit), 1, gm_mean)
 deseq.visit<- estimateSizeFactors(deseq.visit, geoMeans = geoMeans)
@@ -676,15 +672,15 @@ ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, col
   coord_flip()+
   geom_hline(aes(yintercept = 25), color = "gray70", size = 0.6)+
   xlab("ASVs Genus-level")+
-  ylab("V1 <-- Log-2-Fold-Change --> V3")+ ##Change this based on the visit
+  ylab("V1 <-- Log-2-Fold-Change --> V2")+ ##Change this based on the visit
   theme_bw()+
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16), 
         axis.text.y = element_text(face="italic", color="black"))+
-  labs(tag = "C)")->C
+  labs(tag = "A)")->A
 
 ##Save just when the three objects are in the environment
 #png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Visit.png", units = 'in', res = 300, width=10, height=13)
-#ggarrange(A, B, C, ncol=1, nrow=3, common.legend = F, legend="right")
+ggarrange(A, B, C, ncol=1, nrow=3, common.legend = F, legend="right")
 #dev.off()
 
 rm(A,B,C)
