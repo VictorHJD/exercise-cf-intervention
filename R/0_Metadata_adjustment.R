@@ -19,31 +19,25 @@ nutri<- read_excel("~/CF_project/Metadata/Nutrition_BodyComposition.xlsx") ##Con
 clinic<- read.csv("~/CF_project/Metadata/sample_data_indexed_medication.csv", sep = ";") ##Contains clinical data (Antibiotics, Bacterial isolates, etc)
 genetics<- read_excel("~/CF_project/Metadata/KlinDaten080221.xlsx")
 resp<- read_excel("~/CF_project/Metadata/Responder_nonResponder.xlsx") ##Response to interventions data (ask how were assigned the categories)
+classifier<- read.csv("~/CF_project/Metadata/sample_data_indexed_classifier.csv") ##Classification phenotic, genotipic, severity, Pseudomonas, Sport
 
 ##Select useful data and uniform columns
 ##1) Tech data
 
 data.mainz%>%
   dplyr::select(c(1,2,5,7,11,13,16,17,27, 55:57))%>%
-  rename(SampleID= 2, Visit= 10, sex= 11)%>%
+  rename(X.SampleID= "SampleID",Comed_visit = "Visit", "sex(m1_w2)"= "sex")%>%
   mutate(Visit = paste0("V", Visit))%>%
   mutate(Patient_number= Comed_token)%>%
   mutate(Patient_number = gsub("V\\d+", "\\1", basename(Patient_number)))%>%
   group_by(Patient_number)%>%
   dplyr::select(c(1:10,13))->data.mainz
 
-#tech%>%
-#  select(Comed_token,X.SampleID,Position, 
-#         material, extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, Benzoase, Comed_id, Comed_visit)%>%
-#  rename(SampleID= 2, Patient_number= 9, Visit= 10)%>%
-#  mutate(Patient_number = paste0("P", Patient_number))%>%
-#  mutate(Visit = paste0("V", Visit))%>%
-#  group_by(Patient_number)-> tech
-  
+
 ##2)Lung function data
 ##Re-shape dataframe
 lung%>%
-  rename(Patient_number= 1, sex=2)%>%
+  rename(ID= "Patient_number", `sex (m1_w2)`= "sex")%>%
   select(Patient_number, sex, age, ppFEV1_V1, ppFEV1_V2, ppFEV1_V3)%>%
   gather(ppFEV1_Visit, ppFEV1, ppFEV1_V1:ppFEV1_V3)%>%
   separate(ppFEV1_Visit, c("Test", "Visit"))%>%
@@ -51,7 +45,7 @@ lung%>%
   select(Patient_number, sex, age, Visit, Comed_token, ppFEV1)-> tmp1
 
 lung%>%
-  rename(Patient_number= 1)%>%
+  rename(ID= "Patient_number")%>%
   select(Patient_number, DistanzV1:DistanzV3)%>%
   gather(Dist_Visit, Dist, DistanzV1:DistanzV3)%>%
   mutate(Visit = case_when(Dist_Visit == "DistanzV1"  ~ "V1",
@@ -63,7 +57,7 @@ lung%>%
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 
 lung%>%
-  rename(Patient_number= 1)%>%
+  rename(ID= "Patient_number")%>%
   select(Patient_number, `Peakpower (W/kg)V1`,`Peakpower (W/kg)V2`, `Peakpower (W/kg)V3`)%>%
   gather(Peak_power_Visit, Peak_power, `Peakpower (W/kg)V1`:`Peakpower (W/kg)V3`)%>%
   mutate(Visit = case_when(Peak_power_Visit == "Peakpower (W/kg)V1"  ~ "V1",
@@ -75,7 +69,7 @@ lung%>%
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 
 lung%>%
-  rename(Patient_number= 1)%>%
+  rename(ID= "Patient_number")%>%
   select(Patient_number, `VO2peak (ml/min/kg)V1`:`VO2peak (ml/min/kg)V3`)%>%
   gather(V02_Visit, V02_A, `VO2peak (ml/min/kg)V1`:`VO2peak (ml/min/kg)V3`)%>%
   mutate(Visit = case_when(V02_Visit == "VO2peak (ml/min/kg)V1"  ~ "V1",
@@ -87,7 +81,7 @@ lung%>%
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 
 lung%>%
-  rename(Patient_number= 1)%>%
+  rename(ID= "Patient_number")%>%
   select(Patient_number, `VO2peak (l/min)V1`:`VO2peak (l/min)V3`)%>%
   gather(V02_Visit, V02_B, `VO2peak (l/min)V1`:`VO2peak (l/min)V3`)%>%
   mutate(Visit = case_when(V02_Visit == "VO2peak (l/min)V1"  ~ "V1",
@@ -99,7 +93,7 @@ lung%>%
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 
 lung%>%
-  rename(Patient_number= 1)%>%
+  rename(ID= "Patient_number")%>%
   select(Patient_number, BMIV1:BMIV3)%>%
   gather(BMI_Visit, BMI, BMIV1:BMIV3)%>%
   mutate(Visit = case_when(BMI_Visit == "BMIV1"  ~ "V1",
@@ -115,7 +109,7 @@ rm(tmp1, tmp2)
 ##Re-shape dataframe
 ##Eliminate BMI that was already included in the previous table (this value actually can be computed based on wight and lenght)
 nutri%>%
-  rename(Patient_number= 1)%>%
+  rename(Patient= "Patient_number")%>%
   mutate(Patient_number = paste0("P", Patient_number))%>%
   select(-c(V1_BMI:V3_BMI))-> nutri
 ##Fat free mass (Charatsi)
@@ -239,18 +233,23 @@ nutri%>%
 nutri<- left_join(tmp1, tmp2, by= "Comed_token")
 rm(tmp1, tmp2)
 
-##4)Genetic data
+##4)Severity classification
 ##Re-shape dataframe
 ##Select not redundant tables
-genetics%>%
-  dplyr::rename(Patient_number= 1)%>%
-  select(c(Patient_number, Mutation))-> genotype
+classifier%>%
+  select(c(SampleID, Benzoase, Phenotype_severity, Pseudomonas_status, Sport_responderVO2max.5ml.min.kg, Mutation_severity))%>%
+  dplyr::rename(Sport_Response= 5)-> severity
 
-genotype%>%
-  mutate(Severity = case_when(Mutation == "F508del/F508del"  ~ "Severe",
-                              Mutation != "F508del/F508del" ~ "Mild"))-> genotype
+rm(classifier)
+#genetics%>%
+#  dplyr::rename(Patient_number= 1)%>%
+#  select(c(Patient_number, Mutation))-> genotype
 
-rm(genetics)
+#genotype%>%
+#  mutate(Severity = case_when(Mutation == "F508del/F508del"  ~ "Severe",
+#                              Mutation != "F508del/F508del" ~ "Mild"))-> genotype
+
+#rm(genetics)
 
 ##5) Medication data 
 clinic%>%
@@ -259,11 +258,11 @@ clinic%>%
 ##6) Responder/non Responder data
 resp%>%
   select(1:5)%>%
-  dplyr::rename(Patient_number= 1, Nutrition_Response= 2, FFM_Response= 3, Sport_Response= 4, pFVC_Response= 5)-> resp
+  dplyr::rename(Patient_number= 1, Nutrition_Response= 2, FFM_Response= 3, Sport_Response= 4, pFVC_Response= 5)%>%
+  select(1,2,3,5)-> resp
 
 ##Merge all the info
 ##Merge Nutritional data with Lung data
-
 lung%>%
   select(-c(Patient_number,Visit))%>%
   left_join(nutri, lung, by= "Comed_token")-> tmp1
@@ -276,9 +275,6 @@ setdiff(tmp1$Comed_token, data.mainz$Comed_token)
 left_join(data.mainz, tmp1, by="Comed_token")-> metadata ##This is partial (clinical info not yet included)
 
 rm(tmp1)
-
-##Add genotype 
-left_join(metadata, genotype, by="Patient_number")-> metadata
 
 ##Add response data 
 left_join(metadata, resp, by="Patient_number")-> metadata
@@ -301,7 +297,10 @@ setdiff(metadata$SampleID, clinic$SampleID)
 ##Now join medication data
 left_join(metadata, clinic, by="SampleID")-> metadata
 
+##Add genotype 
+left_join(metadata, severity, by="SampleID")-> metadata
+
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
 write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv", row.names = F)
 
-rm(clinic, data.mainz, lung, nutri)
+rm(clinic, data.mainz, lung, nutri, severity)
