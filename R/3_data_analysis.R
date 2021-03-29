@@ -728,14 +728,14 @@ tmp1%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V3",])))-> V1vsV2.sputum
 
-x<- c(V1vsV2.sputum["10P2V1","10P2V2"], V1vsV2.sputum["10P2V1A","10P2V2A"], 
+x<- c(V1vsV2.sputum["10P2V1","10P2V2A"], 
       V1vsV2.sputum["10P3V1","10P3V2"], V1vsV2.sputum["10P4V1","10P4V2"],
       V1vsV2.sputum["10P6V1","10P6V2"], V1vsV2.sputum["10P8V1","10P8V2"], 
-      V1vsV2.sputum["10P9V1","10P9V2"], V1vsV2.sputum["10P9V1A","10P9V2"],
+      V1vsV2.sputum["10P9V1","10P9V2"],
       V1vsV2.sputum["10P10V1","10P10V2"], V1vsV2.sputum["10P11V1","10P11V2"], V1vsV2.sputum["10P14V1","10P14V2"],
       V1vsV2.sputum["10P15V1","10P15V2"], V1vsV2.sputum["10P18V1","10P18V2"])
 
-y<- c("P2", "P2", "P3", "P4", "P6", "P8", "P9", "P9","P10", "P11", "P14", "P15", "P18")
+y<- c("P2", "P3", "P4", "P6", "P8", "P9","P10", "P11", "P14", "P15", "P18")
 
 tmp2<- data.frame(x,y)
 tmp2[,3]<- "V1_V2"
@@ -750,13 +750,13 @@ tmp1%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V1vsV3.sputum
 
-x<- c(V1vsV3.sputum["10P2V1","10P2V3"], V1vsV3.sputum["10P2V1A","10P2V3A"], 
+x<- c(V1vsV3.sputum["10P2V1","10P2V3"], 
       V1vsV3.sputum["10P4V1","10P4V3"], V1vsV3.sputum["10P6V1","10P6V3"],
-      V1vsV3.sputum["10P7V1","10P7V3"],  V1vsV3.sputum["10P9V1","10P9V3"], V1vsV3.sputum["10P9V1A","10P9V3"],
+      V1vsV3.sputum["10P7V1","10P7V3"],  V1vsV3.sputum["10P9V1","10P9V3"],
       V1vsV3.sputum["10P14V1","10P14V3"], V1vsV3.sputum["10P15V1","10P15V3"],
       V1vsV3.sputum["10P18V1","10P18V3"])
 
-y<- c("P2", "P2", "P4", "P6", "P7", "P9", "P9","P14", "P15", "P18")
+y<- c("P2", "P4", "P6", "P7", "P9","P14", "P15", "P18")
 
 tmp3<- data.frame(x,y)
 tmp3[,3]<- "V1_V3"
@@ -771,12 +771,12 @@ tmp1%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
   select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V2vsV3.sputum
 
-x<- c(V2vsV3.sputum["10P2V2","10P2V3"], V2vsV3.sputum["10P2V2A","10P2V3A"], 
+x<- c(V2vsV3.sputum["10P2V2","10P2V3"], 
       V2vsV3.sputum["10P4V2","10P4V3"], V2vsV3.sputum["10P6V2","10P6V3"],
       V2vsV3.sputum["10P9V2","10P9V3"],  V2vsV3.sputum["10P14V2","10P14V3"],
       V2vsV3.sputum["10P15V2","10P15V3"], V2vsV3.sputum["10P18V2","10P18V3"])
 
-y<- c("P2", "P2", "P4", "P6", "P9", "P14", "P15", "P18")
+y<- c("P2", "P4", "P6", "P9", "P14", "P15", "P18")
 
 tmp4<- data.frame(x,y)
 tmp4[,3]<- "V2_V3"
