@@ -235,6 +235,9 @@ rm(A,B,C)
 PS4.stool<- subset_samples(PS4, material%in%c("Stool"))
 PS4.sput<-  subset_samples(PS4, material%in%c("Sputum"))
 
+##Subset those samples with Benzose treatment
+PS4.sput<-  subset_samples(PS4, Benzoase==1)
+
 plot_bar(PS4.stool, fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   labs(tag= "A)")-> A
@@ -282,9 +285,9 @@ sdt%>%
   theme_bw()+
   theme(text = element_text(size=16))-> A
 
-
 sdt%>%
   dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
   mutate(Visit = fct_relevel(Visit, 
                              "V1", "V2", "V3"))%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
@@ -332,6 +335,7 @@ sdt%>%
 
 sdt%>%
   dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
   mutate(Visit = fct_relevel(Visit, 
                              "V1", "V2", "V3"))%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
@@ -375,10 +379,10 @@ sdt%>%
   dplyr::filter(material=="Stool")-> tmp1
 
 ##Stratified for Patient number 
-BC.test.stool<- vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
+BC.test.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + sex + age +  Visit + BMI,
               permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
 
-## Differences are more linked to patient rather than Visit... but difficult to assess. 
+## Differences are not linked to severity phenotype or genotype. 
 ##Extract pairwise distances per patient
 
 BC_dist.stool<- as.matrix(BC_dist)
