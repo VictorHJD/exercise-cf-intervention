@@ -108,8 +108,10 @@ x.V1V3$SampleID<- NULL
 x%>%
   mutate(sex = case_when(sex == 1  ~ 0,
                          sex == 2 ~ 1))%>%
-  relocate(Severity)%>%
-  dplyr::rename(Status= Severity)-> x.all
+  mutate(Mutation_severity = case_when(Mutation_severity == 1  ~ 0,
+                                       Mutation_severity == 2 ~ 1))%>%
+  relocate(Mutation_severity)%>%
+  dplyr::rename(Status= Mutation_severity)-> x.all
 
 x.all$SampleID<- gsub("V\\d+", "\\1", x.all$SampleID)
 x.all$SampleID<- gsub("^10P", "\\1", x.all$SampleID)
@@ -156,7 +158,7 @@ Cun.all+
         axis.text.y = element_text(size = 9, face="italic", color="black"))+
   scale_x_discrete(labels=c( "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
                              "Peak_power" = "Peak power" , "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
-                             "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", 
+                             "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", "DFr" = "Fiber",
                              "Sport_Response" = "Sport Response", "extract_quant_ng_ul"= "DNA concentration (ng/µL)", "total_ng_DNA"= "Total DNA (ng)",
                              "Nutrition_supplementation"="Nutrition supp.", "heart_med"= "Heart medication", "DNAse_inh"= "DNAse inh"))+
   scale_y_discrete(labels=c( "CAG-56"= "Firmicutes CAG:56","[Ruminococcus]_gnavus_group" = "Ruminococcus gnavus group", 
