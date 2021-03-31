@@ -1,0 +1,4 @@
+"","baseMean","log2FoldChange","lfcSE","padj","Phylum","Class","Family","Genus"
+"ASV49",37.5053568857442,-24.3482716446786,2.99700577615074,6.88998788376131e-14,"Firmicutes","Negativicutes","Acidaminococcaceae","Acidaminococcus"
+"ASV261",12.1159481218729,-22.8154350264842,2.9979162936559,2.0898532453736e-12,"Actinobacteriota","Coriobacteriia","Eggerthellaceae","Senegalimassilia"
+"ASV129",166.479795257984,-5.64246700025509,1.68830524345099,0.0424066454960372,"Firmicutes","Clostridia","Lachnospiraceae","[Eubacterium] eligens group"

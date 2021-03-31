@@ -74,6 +74,11 @@ hist(readcount(PS3))
 ##Normalization transformation to an even sample size
 PS4<- transform_sample_counts(PS3, function(x) 1E6 * x/sum(x))
 readcount(PS4)
+##Tiny adjustment
+patient<- get_variable(PS4, "Patient_number")
+patient<- fct_relevel(patient, "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18")
+sample_data(PS4)$Patient_number <- patient
 
 ## Merge ASVs that have the same taxonomy at a certain taxonomic rank (in this case Phylum and Family)
 PS.Fam<-  tax_glom(PS4, "Family", NArm = F)
@@ -179,29 +184,6 @@ sdt%>%
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")-> B
 
 ##Beta diversity
-patient<- get_variable(PS4, "Patient_number")
-patient<- fct_relevel(patient, "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18")
-sample_data(PS4)$Patient_number <- patient
-
-##Weighted Unifrac
-wunifrac_dist<- phyloseq::distance(PS4,
-                                   method="unifrac", weighted=T)
-ordination<- ordinate(PS4,
-                      method="PCoA", distance=wunifrac_dist)
-plot_ordination(PS4, ordination, shape= "material")+ 
-  theme(aspect.ratio=1)+
-  geom_point(size=3, aes(color= Patient_number))+
-  geom_point(color= "black", size= 1.5)+
-  labs(title = "Weighted UniFrac",tag= "A)")+
-  theme_bw()+
-  theme(text = element_text(size=16))+
-  labs(colour = "Patient")+
-  labs(shape = "Sample type")
-
-vegan::adonis(wunifrac_dist~ Severity + sex + age +  Visit + BMI,
-                        permutations = 999, data = sdt, na.action = F, strata = sdt$Patient_number)
-
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4, method="bray", weighted=T)
 ordination<- ordinate(PS4,
@@ -216,7 +198,7 @@ plot_ordination(PS4, ordination, shape= "material")+
   labs(colour = "Patient")+
   labs(shape = "Sample type")+
   xlab("PCo1 (24.8%)")+
-  ylab("PCo2 (14.0%)")-> C
+  ylab("PCo2 (14.0%)")
 
 vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
               permutations = 999, data = sdt, na.action = F, strata = sdt$Patient_number)
@@ -225,25 +207,21 @@ vegan::adonis(BC_dist~ Severity + sex + age +  Visit + BMI,
 grid.arrange(A, B)
 #dev.off()
 
-#png("CF_project/exercise-cf-intervention/figures/Q1_Beta_div_General.png", units = 'in', res = 300, width=14, height=14)
-C
-#dev.off()
-
-rm(A,B,C)
-
 ##Q2: Analysis by sample type
 PS4.stool<- subset_samples(PS4, material%in%c("Stool"))
-PS4.sput<-  subset_samples(PS4, material%in%c("Sputum"))
+#PS4.sput<-  subset_samples(PS4, material%in%c("Sputum"))
 
-##Subset those samples with Benzose treatment
+##Subset those samples with Benzose treatment (Correct Sputum samples)
 PS4.sput<-  subset_samples(PS4, Benzoase==1)
 
-plot_bar(PS4.stool, fill="Phylum")+ 
+plot_bar(PS4.stool, x = "Patient_number", fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  xlab("Patient number")+
   labs(tag= "A)")-> A
 
-plot_bar(PS4.sput, fill="Phylum")+ 
+plot_bar(PS4.sput, x = "Patient_number",fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  xlab("Patient number")+
   labs(tag= "B)")-> B
 
 png("CF_project/exercise-cf-intervention/figures/Q1_Composition_General.png", units = 'in', res = 300, width=10, height=8)
@@ -357,6 +335,27 @@ dev.off()
 
 rm(A,B, C,D)
 
+##Try linear models 
+library("lme4")
+library("lmtest")
+library("rcompanion")
+
+p0<- lm(chao1~ 1, data = sdt.stool, na.action = na.exclude)
+p1<- lm(chao1~ Visit + Patient_number, data = sdt.stool, na.action = na.exclude)
+p2<- lm(chao1~ Visit, data = sdt.stool, na.action = na.exclude)
+p3<- lm(chao1~ Patient_number, data = sdt.stool, na.action = na.exclude)
+
+lrtest(p0, p1)
+
+p0<- lm(diversity_shannon~ 1, data = sdt.stool, na.action = na.exclude)
+p1<- lm(diversity_shannon~ Visit + Patient_number, data = sdt.stool, na.action = na.exclude)
+p2<- lm(diversity_shannon~ Visit, data = sdt.stool, na.action = na.exclude)
+p3<- lm(diversity_shannon~ Patient_number, data = sdt.stool, na.action = na.exclude)
+
+lrtest(p0, p1)
+
+rm(p0, p1, p2, p3)
+
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.stool,
                              method="bray", weighted=F)
@@ -375,12 +374,10 @@ plot_ordination(PS4.stool, ordination, shape= "Visit")+
   xlab(paste0("PCo1 ", round(ordination$values[1,2]*100, digits = 2)))+
   ylab(paste0("PCo2 ", round(ordination$values[2,2]*100, digits = 2)))-> D
 
-sdt%>%
-  dplyr::filter(material=="Stool")-> tmp1
 
 ##Stratified for Patient number 
 BC.test.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + sex + age +  Visit + BMI,
-              permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
+              permutations = 999, data = sdt.stool, na.action = F, strata = sdt.stool$Patient_number)
 
 ## Differences are not linked to severity phenotype or genotype. 
 ##Extract pairwise distances per patient
@@ -538,7 +535,7 @@ stool.microbiome$Genus<- NULL
 
 ##Transpose dataframe so samples are rows 
 stool.microbiome<- t(stool.microbiome)
-#saveRDS(stool.microbiome, "~/CF_project/exercise-cf-intervention/data/Stool_rare_ASV.rds")--> For MetadeconfoundR
+#saveRDS(stool.microbiome, "~/CF_project/exercise-cf-intervention/data/Stool_rare_ASV.rds")#--> For MetadeconfoundR
 
 x <- log10(stool.microbiome+1) # ASV Log10 (39 samples x 205 genera)
 
@@ -560,13 +557,9 @@ y%>%
 
 
 y <- as.matrix(y) # Metadata (39 samples x 68 technical, respiratory and nutritional variables)
-#saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Stool_rare_Metadata.rds") --> For MetadeconfoundR
+#saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Stool_rare_Metadata.rds")#--> For MetadeconfoundR
 
-# Cross correlate data sets
-correlations <- associate(x, y, method = "spearman", mode = "matrix", p.adj.threshold = 0.05, n.signif = 1)
-correlations <- associate(x, y, method = "spearman", mode = "matrix", n.signif = 1)
-
-# Or, alternatively, the same output is also available in a handy table format
+# Cross correlate data sets, output is also available in a handy table format
 correlation.table <- associate(y, x, method = "spearman", mode = "table", p.adj.threshold = 0.05, n.signif = 1)
 kable(head(correlation.table))
 
@@ -580,22 +573,23 @@ ggplot(correlation.table, aes(X1, X2, group=X1)) +
                               colours = c("blue", "white", "red"), 
                               limits = c(-1, 1)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  labs(x = "", y = "", tag = "A)")-> A
+  labs(x = "", y = "", tag = "A)")
 
-png("CF_project/exercise-cf-intervention/figures/Q3_Correlation_Stool.png", units = 'in', res = 300, width=10, height=8)
-A
-dev.off()
 ###Let's run this with metadeconfoundR (other script for that)
 
 ###Deseq2 analysis
 library("DESeq2"); packageVersion("DESeq2")
 
+##Get raw data to run this
+PS2.stool<- subset_samples(PS2, material%in%c("Stool"))
+PS2.stool<- tax_glom(PS2.stool, "Genus")
+
 ##Severity classification based on:
 #genotype
-deseq.severity<- phyloseq_to_deseq2(PS4.stool, ~ Mutation_severity)
+deseq.severity<- phyloseq_to_deseq2(PS2.stool, ~ Mutation_severity)
 
 ##Phenotype
-#deseq.severity<- phyloseq_to_deseq2(PS4.stool, ~ Phenotype_severity)
+#deseq.severity<- phyloseq_to_deseq2(PS2.stool, ~ Phenotype_severity)
 
 # calculate geometric means prior to estimate size factors
 gm_mean <- function(x, na.rm=TRUE){
@@ -610,17 +604,21 @@ ac.res <- results(deseq.severity)
 ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
 
 ##Select cut-off value
-alpha <- 0.01
+alpha <- 0.05
 Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
 
-Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS4.stool)[rownames(Bac.sigtab), ], "matrix"))
+Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS2.stool)[rownames(Bac.sigtab), ], "matrix"))
 
 ##Adjust value
-Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > 0, ]
+Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > -10, ]
 Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
 
+##Save table 
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_Severity.csv") #Genotype
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_Phen_Severity.csv") #Phenotype
+
 ###Negative Binomial in Microbiome Differential Abundance Testing (plot)
-ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, color=Phylum)) +
+ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -log2FoldChange), y=log2FoldChange, color=Phylum)) +
   geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
   scale_fill_brewer(palette = "Set1")+
   coord_flip()+
@@ -632,20 +630,20 @@ ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, col
         axis.text.y = element_text(face="italic", color="black"))+
   labs(tag = "A)")-> A #Change to B when Phenotype
 
-png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Severity.png", units = 'in', res = 300, width=20, height=10)
-ggarrange(A, B, ncol=2, nrow=1, common.legend = T, legend="right")
-dev.off()
+#png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Severity.png", units = 'in', res = 300, width=20, height=10)
+ggarrange(A, B, ncol=2, nrow=1, common.legend = F, legend="right")
+#dev.off()
 
 ###Analysis by time points
 ###Make Phloseq subsets to run the analysis
 ##V1V2
-PS4.stool12<- subset_samples(PS4.stool, Visit%in%c("V1", "V2"))
+PS2.stool12<- subset_samples(PS2.stool, Visit%in%c("V1", "V2"))
 ##V2V3
-PS4.stool23<- subset_samples(PS4.stool, Visit%in%c("V2", "V3"))
+PS2.stool23<- subset_samples(PS2.stool, Visit%in%c("V2", "V3"))
 ##V1V3
-PS4.stool13<- subset_samples(PS4.stool, Visit%in%c("V1", "V3"))
+PS2.stool13<- subset_samples(PS2.stool, Visit%in%c("V1", "V3"))
 
-deseq.visit<- phyloseq_to_deseq2(PS4.stool12, ~ Visit)
+deseq.visit<- phyloseq_to_deseq2(PS2.stool13, ~ Visit)
 
 geoMeans<- apply(counts(deseq.visit), 1, gm_mean)
 deseq.visit<- estimateSizeFactors(deseq.visit, geoMeans = geoMeans)
@@ -656,27 +654,31 @@ ac.res <- results(deseq.visit)
 ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
 
 ##Select cut-off value
-alpha <- 0.01
+alpha <- 0.05
 Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
-
-Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS4.stool13)[rownames(Bac.sigtab), ], "matrix")) ##Change based on the visit
+##Adjust based on the visit combination
+Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS2.stool12)[rownames(Bac.sigtab), ], "matrix")) ##Change based on the visit
 
 ##Adjust value
-Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > 0, ]
+Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > -30, ]
 Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
+
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_V1V2.csv") 
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_V2V3.csv") 
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_V1V3.csv") 
 
 ###Negative Binomial in Microbiome Differential Abundance Testing (plot)
 ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, color=Phylum)) +
   geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
   scale_fill_brewer(palette = "Set1")+
   coord_flip()+
-  geom_hline(aes(yintercept = 25), color = "gray70", size = 0.6)+
+  geom_hline(aes(yintercept = 0), color = "gray70", size = 0.6)+
   xlab("ASVs Genus-level")+
-  ylab("V1 <-- Log-2-Fold-Change --> V2")+ ##Change this based on the visit
+  ylab("V1 <-- Log-2-Fold-Change --> V3")+ ##Change this based on the visit
   theme_bw()+
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16), 
         axis.text.y = element_text(face="italic", color="black"))+
-  labs(tag = "A)")->A
+  labs(tag = "C)")->C
 
 ##Save just when the three objects are in the environment
 #png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Visit.png", units = 'in', res = 300, width=10, height=13)
@@ -686,6 +688,13 @@ ggarrange(A, B, C, ncol=1, nrow=3, common.legend = F, legend="right")
 rm(A,B,C)
 
 ######Sputum###################
+sdt%>%
+  dplyr::filter(Benzoase==1)%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> sdt.sputum
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.sput,
                              method="bray", weighted=F)
@@ -703,19 +712,13 @@ plot_ordination(PS4.sput, ordination, shape= "Visit")+
   xlab(paste0("PCo1 ", round(ordination$values[1,2]*100, digits = 2)))+
   ylab(paste0("PCo2 ", round(ordination$values[2,2]*100, digits = 2)))-> A
 
-sdt%>%
-  dplyr::filter(Benzoase==1)-> tmp1
-
 ##Stratified for Patient number 
 BC.test.sputum<- vegan::adonis(BC_dist~ Phenotype_severity+ Mutation_severity + sex + age +  Visit + BMI,
-                        permutations = 999, data = tmp1, na.action = F, strata = tmp1$Patient_number)
+                        permutations = 999, data = sdt.sputum, na.action = F, strata = sdt.sputum$Patient_number)
 
 ##BMI significant predictor explaining 4% of the variation
 
 ##Extract pairwise distances per patient
-sdt%>%
-  dplyr::filter(Benzoase==1)-> sdt.sputum
-
 BC_dist.sputum<- as.matrix(BC_dist)
 tmp1<- cbind(sdt.sputum, BC_dist.sputum)
 
@@ -786,12 +789,21 @@ colnames(tmp4)<- c("BC_dist", "Patient_number", "Group")
 
 BC_dist.sputum<- bind_rows(tmp2, tmp3, tmp4)
 
+metadata%>%
+  dplyr::filter(Benzoase==1)%>%
+  group_by(Patient_number)%>%
+  distinct(Patient_number, .keep_all = TRUE)%>%
+  dplyr::select(c(Patient_number, Nutrition_Response, FFM_Response, pFVC_Response, Phenotype_severity, 
+                  Pseudomonas_status, Sport_Response, Mutation_severity))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> tmp2
+
 BC_dist.sputum%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  left_join(genotype, by="Patient_number")%>%
-  left_join(resp, by="Patient_number")->BC_dist.sputum
+  left_join(tmp2, by="Patient_number")-> BC_dist.sputum
 
 ##Is nutrition or exercise impacting differences in composition by patient? 
 BC_dist.sputum%>% 
@@ -816,6 +828,9 @@ BC_dist.sputum%>%
 
 ##Plot 
 BC_dist.sputum%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Group, y= BC_dist))+
   geom_boxplot(color="black", alpha= 0.5)+
   geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
@@ -826,9 +841,9 @@ BC_dist.sputum%>%
   theme(text = element_text(size=16))+
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->B
 
-png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum.png", units = 'in', res = 300, width=10, height=8)
+#png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum.png", units = 'in', res = 300, width=10, height=8)
 ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
-dev.off()
+#dev.off()
 
 ##Glom by genus
 PS.sputum.Gen<- tax_glom(PS4.sput, "Genus", NArm = T)
@@ -856,28 +871,29 @@ sputum.microbiome$Genus<- NULL
 sputum.microbiome<- t(sputum.microbiome)
 #saveRDS(sputum.microbiome, "~/CF_project/exercise-cf-intervention/data/Sput_rare_ASV.rds") #--> For MetadeconfoundR
 
-x <- log10(sputum.microbiome+1) # ASV Log10 (39 samples x 122 genera)
+x <- log10(sputum.microbiome+1) # ASV Log10 (39 samples x 205 genera)
 
 ##Select useful metrics
 y<-sdt.sputum
 
-y<- y[,c(26:27,29:31, 33:51, 53:96)] ##Eliminate non-numeric variables
+y<- y[,c(26:27,29:98)] ##Eliminate non-numeric variables
 
-##Make an adjustment to visit to make it numeric
+##Make an adjustment to visit and patient to make it numeric
 y$Visit<- as.numeric(gsub("V", "\\1", y$Visit))
+y$Patient_number<- as.numeric(gsub("P", "\\1", y$Patient_number))
 
 ##Transform severity to binary 
 y%>%
-  mutate(Severity = case_when(Severity == "Severe"  ~ 1,
-                              Severity == "Mild" ~ 0))-> y
+  mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+                                        Phenotype_severity == 1 ~ 0))%>%
+  mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+                                       Mutation_severity == 1 ~ 0))-> y
 
-y <- as.matrix(y) # Metadata (39 samples x 68 technical, respiratory and nutritional variables)
+
+y <- as.matrix(y) # Metadata (39 samples x 72 technical, respiratory and nutritional variables)
 #saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Sput_rare_Metadata.rds") #--> For MetadeconfoundR
 
-# Cross correlate data sets
-correlations <- associate(x, y, method = "spearman", mode = "matrix", p.adj.threshold = 0.05, n.signif = 1)
-
-# Or, alternatively, the same output is also available in a handy table format
+# Cross correlate data sets, output is also available in a handy table format
 correlation.table <- associate(x, y, method = "spearman", mode = "table", p.adj.threshold = 0.05, n.signif = 1)
 kable(head(correlation.table))
 
@@ -891,14 +907,19 @@ ggplot(correlation.table, aes(X1, X2, group=X2)) +
                        colours = c("blue", "white", "red"), 
                        limits = c(-1, 1)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  labs(x = "", y = "", tag = "B)")-> B
-
-png("CF_project/exercise-cf-intervention/figures/Q3_Correlation_Sputum.png", units = 'in', res = 300, width=10, height=8)
-B
-dev.off()
+  labs(x = "", y = "", tag = "B)")
 
 ###Deseq2 analysis
-deseq.severity<- phyloseq_to_deseq2(PS4.sput, ~ Severity)
+##Get raw data to run this
+PS2.sputum<- subset_samples(PS2, Benzoase%in%c(1))
+PS2.sputum<- tax_glom(PS2.sputum, "Genus")
+
+##Severity classification based on:
+#genotype
+deseq.severity<- phyloseq_to_deseq2(PS2.sputum, ~ Mutation_severity)
+
+##Phenotype
+#deseq.severity<- phyloseq_to_deseq2(PS2.sputum, ~ Phenotype_severity)
 
 # calculate geometric means prior to estimate size factors
 geoMeans<- apply(counts(deseq.severity), 1, gm_mean)
@@ -910,21 +931,25 @@ ac.res <- results(deseq.severity)
 ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
 
 ##Select cut-off value
-alpha <- 0.01
+alpha <- 0.05
 Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
 
-Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS4.sput)[rownames(Bac.sigtab), ], "matrix"))
+Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS2.sputum)[rownames(Bac.sigtab), ], "matrix"))
 
 ##Adjust value
-Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > 0, ]
+Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > -7, ]
 Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
 
+##Save table 
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_Gen_Severity.csv") #Genotype
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_Phen_Severity.csv") #Phenotype
+
 ###Negative Binomial in Microbiome Differential Abundance Testing (plot)
-ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, color=Phylum)) +
+ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -log2FoldChange), y=log2FoldChange, color=Phylum)) +
   geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
   scale_fill_brewer(palette = "Set1")+
   coord_flip()+
-  geom_hline(aes(yintercept = 25), color = "gray70", size = 0.6)+
+  geom_hline(aes(yintercept = 0), color = "gray70", size = 0.6)+
   xlab("ASVs Genus-level")+
   ylab("Mild <-- Log-2-Fold-Change --> Severe")+
   theme_bw()+
@@ -932,6 +957,41 @@ ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -padj), y=log2FoldChange, col
         axis.text.y = element_text(face="italic", color="black"))+
   labs(tag = "B)")-> B
 
-png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Sputum_days.png", units = 'in', res = 300, width=10, height=8)
-B
-dev.off()
+#png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Sputum_Severity.png", units = 'in', res = 300, width=20, height=10)
+ggarrange(A, B, ncol=2, nrow=1, common.legend = F, legend="right")
+#dev.off()
+
+###Analysis by time points
+###Make Phloseq subsets to run the analysis
+##V1V2
+PS2.sputum12<- subset_samples(PS2.sputum, Visit%in%c("V1", "V2"))
+##V2V3
+PS2.sputum23<- subset_samples(PS2.sputum, Visit%in%c("V2", "V3"))
+##V1V3
+PS2.sputum13<- subset_samples(PS2.sputum, Visit%in%c("V1", "V3"))
+
+deseq.visit<- phyloseq_to_deseq2(PS2.sputum13, ~ Visit)
+
+geoMeans<- apply(counts(deseq.visit), 1, gm_mean)
+deseq.visit<- estimateSizeFactors(deseq.visit, geoMeans = geoMeans)
+deseq.visit<- DESeq(deseq.visit, fitType="local")
+
+ac.res <- results(deseq.visit)
+##Remove NA
+ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
+
+##Select cut-off value
+alpha <- 0.05
+Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
+##Adjust based on the visit combination
+Bac.sigtab <- cbind(as(ac.res, "data.frame"), as(tax_table(PS2.sputum13)[rownames(ac.res), ], "matrix")) ##Change based on the visit
+
+##Adjust value
+Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > -30, ]
+Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
+
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_V1V2.csv") 
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_V2V3.csv") 
+#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_V1V3.csv") 
+
+### IN sputum nothing was significant between days by DeSeq2

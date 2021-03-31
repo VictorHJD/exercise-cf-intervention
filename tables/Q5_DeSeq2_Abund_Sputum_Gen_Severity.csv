@@ -1,0 +1,4 @@
+"","baseMean","log2FoldChange","lfcSE","padj","Phylum","Class","Family","Genus"
+"ASV152",15.8582354026984,17.0608797564882,3.452203072756,1.23703399582271e-05,"Proteobacteria","Gammaproteobacteria","Neisseriaceae","Neisseria"
+"ASV486",18.6465895229326,17.1776159103368,3.45261304602978,1.23703399582271e-05,"Spirochaetota","Spirochaetia","Spirochaetaceae","Treponema"
+"ASV71",109.949886506455,8.47197512496389,2.3772343537259,0.00389900718308285,"Bacteroidota","Bacteroidia","Porphyromonadaceae","Porphyromonas"

@@ -1,0 +1,4 @@
+"","baseMean","log2FoldChange","lfcSE","padj","Phylum","Class","Family","Genus"
+"ASV120",6.44508120807213,16.984661279092,2.96505070009467,3.6116146046822e-07,"Firmicutes","Clostridia","Peptostreptococcaceae","Clostridioides"
+"ASV66",280.047267788649,-7.2499992170989,1.5714768796752,0.000117466835251616,"Proteobacteria","Gammaproteobacteria","Sutterellaceae","Sutterella"
+"ASV89",46.5738107629041,-9.86969130593294,2.27549116108291,0.000366641929020976,"Firmicutes","Clostridia","Peptostreptococcaceae","Peptostreptococcus"
