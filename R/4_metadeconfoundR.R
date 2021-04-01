@@ -263,11 +263,6 @@ dev.off()
 ##Take SampleID in the right order
 SampleID<- rownames(sputum.metadata)
 
-##Eliminate rows in microbiome not present in metadata (correct that later from the original file)
-sputum.microbiome <- sputum.microbiome[!rownames(sputum.microbiome) %in% rownames(sputum.metadata), ]
-
-setdiff(rownames(sputum.microbiome), rownames(sputum.metadata))
-
 ##Transform metadata to dataframe 
 x<- as.data.frame(sputum.metadata)
 y<- as.data.frame(sputum.microbiome)

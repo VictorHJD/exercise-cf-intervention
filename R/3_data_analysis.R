@@ -18,7 +18,7 @@ if(!exists("PS")){
   if(isTRUE(reRun)){
     source("R/2_phyloseq_preparation.R") ## Run the script at base directory of repository!   
   } else {
-    metadata<- readRDS(file = "~/CF_project/exercise-cf-intervention/data/PhyloSeqComp.Rds") ##New annotation SILVA
+    PS<- readRDS(file = "~/CF_project/exercise-cf-intervention/data/PhyloSeqComp.Rds") ##New annotation SILVA
   }
 }
 
@@ -99,7 +99,7 @@ kable(head(alphaDiv))
 
 alphaDiv%>%
   rownames_to_column()%>%
-  rename(rowname = "SampleID")->tmp1
+  dplyr::rename(SampleID = rowname)->tmp1
 
 as_tibble(sample_data(PS4))->tmp2
 
