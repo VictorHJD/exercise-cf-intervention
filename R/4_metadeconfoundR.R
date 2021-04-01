@@ -52,7 +52,8 @@ x.V1V2%>%
   mutate(sex = case_when(sex == 1  ~ 0,
                          sex == 2 ~ 1))%>%
   relocate(Visit)%>%
-  dplyr::rename(Status= Visit)-> x.V1V2
+  dplyr::rename(Status= Visit)%>%
+  select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V1V2  ###Without technical confunders
 
 x.V1V2$SampleID<- NULL
 
@@ -76,7 +77,8 @@ x.V2V3%>%
   mutate(sex = case_when(sex == 1  ~ 0,
                          sex == 2 ~ 1))%>%
   relocate(Visit)%>%
-  dplyr::rename(Status= Visit)-> x.V2V3
+  dplyr::rename(Status= Visit)%>%
+  select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V2V3  ###Without technical confunders
 
 x.V2V3$SampleID<- NULL
 
@@ -100,7 +102,8 @@ x.V1V3%>%
   mutate(sex = case_when(sex == 1  ~ 0,
                          sex == 2 ~ 1))%>%
   relocate(Visit)%>%
-  dplyr::rename(Status= Visit)-> x.V1V3
+  dplyr::rename(Status= Visit)%>%
+  select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V1V3  ###Without technical confunders
 
 x.V1V3$SampleID<- NULL
 
@@ -119,17 +122,17 @@ x.all$SampleID<- gsub("\\D+", "\\1", x.all$SampleID)
 x.all$SampleID
 x.all$SampleID<- as.numeric(x.all$SampleID)
 x.all%>%
-  rename(SampleID= "Patient")-> x.all
+  dplyr::rename(Patient = SampleID)%>%
+  select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.all ###Without technical confunders
 
 y.all<- y
 y.all$SampleID<- NULL
 
-
 ###Let's run the pipeline!!!
 
-MD.V1V2<- MetaDeconfound(featureMat = y.V1V2, metaMat = x.V1V2, nnodes = 25)
-MD.V2V3<- MetaDeconfound(featureMat = y.V2V3, metaMat = x.V2V3, nnodes = 25)
-MD.V1V3<- MetaDeconfound(featureMat = y.V1V3, metaMat = x.V1V3, nnodes = 25)
+MD.V1V2<- MetaDeconfound(featureMat = y.V1V2, metaMat = x.V1V2, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
+MD.V2V3<- MetaDeconfound(featureMat = y.V2V3, metaMat = x.V2V3, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
+MD.V1V3<- MetaDeconfound(featureMat = y.V1V3, metaMat = x.V1V3, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
 MD.all<- MetaDeconfound(featureMat = y.all, metaMat = x.all, nnodes = 25, randomVar = list("+ (1 | Patient)" , c("Patient")))
 
 ##Plot the results 
@@ -150,7 +153,7 @@ Cun.all+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
   #geom_point(aes(color = cyl, size = , shape = gear))+
-  labs(title = "MetaDeconfoundR summarizing coneiform plot (Stool Control: Mild vs Case: Severe)",tag = "A)", 
+  labs(title = "MetaDeconfoundR summarizing coneiform plot (Stool Microbiome)",tag = "A)", 
        caption = "Using all data", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
@@ -175,7 +178,7 @@ Cun.all+
 Cun.V1V2+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
-  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool Control: V1 vs Case: V2)",
+  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool microbiome V1 vs V2)",
        tag = "B)", caption = "Using V1V2 data", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
@@ -194,7 +197,7 @@ Cun.V1V2+
 Cun.V2V3+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
-  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool Control: V2 vs Case: V3)",
+  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool microbiome V2 vs V3)",
        tag = "C)", caption = "Using V2V3 data", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
@@ -202,7 +205,7 @@ Cun.V2V3+
         axis.text.y = element_text(size = 9, face="italic", color="black"))+
   scale_x_discrete(labels=c( "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
                              "Peak_power" = "Peak power" , "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
-                             "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", 
+                             "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", "DFr" = "Fiber",
                              "Sport_Response" = "Sport Response", "extract_quant_ng_ul"= "DNA concentration (ng/µL)", 
                              "dna_quant_ng_ul"= "DNA sequenced (ng/µL)", "total_ng_DNA"= "Total DNA (ng)","anticholinergic_inh"= "Anticholinergic (inh)", "V02_B"= "Volume Oxygen (B)",
                              "Nutrition_supplementation"="Nutrition supp.", "heart_med"= "Heart medication", "DNAse_inh"= "DNAse (inh)"))+
@@ -220,7 +223,7 @@ Cun.V2V3+
 Cun.V1V3+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
-  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool Control: V1 vs Case: V3)",
+  labs(title="MetaDeconfoundR summarizing coneiform plot (Stool microbiome V1 vs V3)",
        tag = "D)", caption = "Using V1V3 data", 
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
@@ -260,6 +263,11 @@ dev.off()
 ##Take SampleID in the right order
 SampleID<- rownames(sputum.metadata)
 
+##Eliminate rows in microbiome not present in metadata (correct that later from the original file)
+sputum.microbiome <- sputum.microbiome[!rownames(sputum.microbiome) %in% rownames(sputum.metadata), ]
+
+setdiff(rownames(sputum.microbiome), rownames(sputum.metadata))
+
 ##Transform metadata to dataframe 
 x<- as.data.frame(sputum.metadata)
 y<- as.data.frame(sputum.microbiome)
@@ -288,7 +296,8 @@ x.V1V2%>%
   mutate(sex = case_when(sex == 1  ~ 0,
                          sex == 2 ~ 1))%>%
   relocate(Visit)%>%
-  dplyr::rename(Status= Visit)-> x.V1V2
+  dplyr::rename(Status= Visit)%>%
+  select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V1V2  ###Without technical confunders
 
 x.V1V2$SampleID<- NULL
 
@@ -312,7 +321,8 @@ x.V2V3%>%
   mutate(sex = case_when(sex == 1  ~ 0,
                          sex == 2 ~ 1))%>%
   relocate(Visit)%>%
-  dplyr::rename(Status= Visit)-> x.V2V3
+  dplyr::rename(Status= Visit)%>%
+  select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V2V3  ###Without technical confunders
 
 x.V2V3$SampleID<- NULL
 
@@ -336,7 +346,8 @@ x.V1V3%>%
   mutate(sex = case_when(sex == 1  ~ 0,
                          sex == 2 ~ 1))%>%
   relocate(Visit)%>%
-  dplyr::rename(Status= Visit)-> x.V1V3
+  dplyr::rename(Status= Visit)%>%
+  select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V1V3  ###Without technical confunders
 
 x.V1V3$SampleID<- NULL
 
@@ -344,8 +355,10 @@ x.V1V3$SampleID<- NULL
 x%>%
   mutate(sex = case_when(sex == 1  ~ 0,
                          sex == 2 ~ 1))%>%
-  relocate(Severity)%>%
-  dplyr::rename(Status= Severity)-> x.all
+  mutate(Mutation_severity = case_when(Mutation_severity == 1  ~ 0,
+                                       Mutation_severity == 2 ~ 1))%>%
+  relocate(Mutation_severity)%>%
+  dplyr::rename(Status= Mutation_severity)-> x.all
 
 x.all$SampleID<- gsub("V\\d+", "\\1", x.all$SampleID)
 x.all$SampleID<- gsub("^10P", "\\1", x.all$SampleID)
@@ -353,7 +366,8 @@ x.all$SampleID<- gsub("\\D+", "\\1", x.all$SampleID)
 x.all$SampleID
 x.all$SampleID<- as.numeric(x.all$SampleID)
 x.all%>%
-  rename(SampleID= "Patient")-> x.all
+  dplyr::rename(Patient = SampleID)%>%
+  select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.all ###Without technical confunders
 
 y.all<- y
 y.all$SampleID<- NULL
@@ -361,9 +375,9 @@ y.all$SampleID<- NULL
 
 ###Let's run the pipeline!!!
 
-MD.V1V2<- MetaDeconfound(featureMat = y.V1V2, metaMat = x.V1V2, nnodes = 25)
-MD.V2V3<- MetaDeconfound(featureMat = y.V2V3, metaMat = x.V2V3, nnodes = 25)
-MD.V1V3<- MetaDeconfound(featureMat = y.V1V3, metaMat = x.V1V3, nnodes = 25)
+MD.V1V2<- MetaDeconfound(featureMat = y.V1V2, metaMat = x.V1V2, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
+MD.V2V3<- MetaDeconfound(featureMat = y.V2V3, metaMat = x.V2V3, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
+MD.V1V3<- MetaDeconfound(featureMat = y.V1V3, metaMat = x.V1V3, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
 MD.all<- MetaDeconfound(featureMat = y.all, metaMat = x.all, nnodes = 25, randomVar = list("+ (1 | Patient)" , c("Patient")))
 
 ##Plot the results 
