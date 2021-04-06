@@ -21,7 +21,7 @@ if(!exists("stool.microbiome")){
 }
 
 if(!exists("sputum.microbiome")){
-  sputum.microbiome<- readRDS("CF_project/exercise-cf-intervention/data/Stool_rare_ASV.rds")
+  sputum.microbiome<- readRDS("CF_project/exercise-cf-intervention/data/Sput_rare_ASV.rds")
 }
 
 if(!exists("stool.metadata")){
