@@ -22,6 +22,8 @@ if(!exists("PS")){
   }
 }
 
+training<- read_tsv("~/CF_project/Metadata/sample_data_indexed_training.csv")
+
 ##Have a look into the data
 summarize_phyloseq(PS) ##Non-Normalized
 
@@ -79,6 +81,20 @@ patient<- get_variable(PS4, "Patient_number")
 patient<- fct_relevel(patient, "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18")
 sample_data(PS4)$Patient_number <- patient
+
+##Count ASVs
+asv.sample<- as.data.frame(PS3@otu_table)
+test<- data.frame()
+for (i in 1:ncol(asv.sample)) {
+  asv<- data.frame()
+  asv[1,1]<- sum(asv.sample[,i]!=0)
+  rownames(asv)<- paste0("Sample", i)
+  test <- rbind(test, asv) ### Join all the "individual" data frames into the final data frame 
+}
+
+asv.sample<- test
+
+summary(asv.sample$V1)
 
 ## Merge ASVs that have the same taxonomy at a certain taxonomic rank (in this case Phylum and Family)
 PS.Fam<-  tax_glom(PS4, "Family", NArm = F)
@@ -209,25 +225,28 @@ grid.arrange(A, B)
 
 ##Q2: Analysis by sample type
 PS4.stool<- subset_samples(PS4, material%in%c("Stool"))
+PS4.stool.Phy<-  tax_glom(PS4.stool, "Phylum", NArm = F)
 #PS4.sput<-  subset_samples(PS4, material%in%c("Sputum"))
 
 ##Subset those samples with Benzose treatment (Correct Sputum samples)
 PS4.sput<-  subset_samples(PS4, Benzoase==1)
+PS4.sput.Phy<-  tax_glom(PS4.sput, "Phylum", NArm = F)
 
-plot_bar(PS4.stool, x = "Patient_number", fill="Phylum")+ 
+plot_bar(PS4.stool.Phy, x = "Patient_number", fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   xlab("Patient number")+
   labs(tag= "A)")-> A
 
-plot_bar(PS4.sput, x = "Patient_number",fill="Phylum")+ 
+plot_bar(PS4.sput.Phy, x = "Patient_number",fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   xlab("Patient number")+
   labs(tag= "B)")-> B
 
-png("CF_project/exercise-cf-intervention/figures/Q1_Composition_General.png", units = 'in', res = 300, width=10, height=8)
-grid.arrange(A, B)
-dev.off()
-rm(A,B)
+C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_General.pdf", plot = C, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_General.png", plot = C, width = 10, height = 8)
+rm(A,B,C)
 
 ##Stool#####################
 sdt%>%
@@ -237,7 +256,6 @@ sdt%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> sdt.stool
-
 
 sdt.stool%>%
   wilcox_test(diversity_shannon ~ Visit)%>%
@@ -329,11 +347,11 @@ sdt%>%
   theme_bw()+
   theme(text = element_text(size=16))-> D
 
-png("CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png", units = 'in', res = 300, width=10, height=8)
-ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
-dev.off()
+E<- ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
 
-rm(A,B, C,D)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.pdf", plot = E, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png", plot = E, width = 10, height = 8)
+rm(A,B,C,D,E)
 
 ##Try linear models 
 library("lme4")
@@ -374,14 +392,12 @@ plot_ordination(PS4.stool, ordination, shape= "Visit")+
   xlab(paste0("PCo1 ", round(ordination$values[1,2]*100, digits = 2)))+
   ylab(paste0("PCo2 ", round(ordination$values[2,2]*100, digits = 2)))-> D
 
-
 ##Stratified for Patient number 
 BC.test.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + sex + age +  Visit + BMI,
               permutations = 999, data = sdt.stool, na.action = F, strata = sdt.stool$Patient_number)
 
 ## Differences are not linked to severity phenotype or genotype. 
 ##Extract pairwise distances per patient
-
 BC_dist.stool<- as.matrix(BC_dist)
 tmp1<- cbind(sdt.stool, BC_dist.stool)
 
@@ -466,9 +482,47 @@ metadata%>%
 
 BC_dist.stool%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
-                                    "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                    "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   left_join(tmp2, by="Patient_number")-> BC_dist.stool
+
+rm(tmp2)
+
+##Add training information
+training%>%
+  dplyr::filter(material=="Stool")%>%
+  group_by(Patient_number)%>%
+  distinct(Patient_number, .keep_all = TRUE)%>%
+  dplyr::select(c(Patient_number, Mean_MET_V1V2:Percentage_Trainingsweeks_n52))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> training
+
+training%>%
+  dplyr::select(-c(Mean_Trainingtime_womissingvalues_V1V2, Mean_Trainingfrequency_womissingvalues_V1V2))%>%
+  gather(key = "Measurment", value = "Value",
+         Mean_MET_V1V2:Percentage_Trainingsweeks_n52)%>%
+  separate(Measurment, c("A", "Measurment", "Group"))-> tmp3
+
+tmp3$Group<- gsub("n52", "V1V3", basename(tmp3$Group))
+
+tmp3%>%
+  dplyr::filter(A!= "Percentage")%>%
+  dplyr::select(c(Patient_number, Measurment, Group, Value))%>%
+  dplyr::mutate(Measurment= as.factor(Measurment))%>%
+  spread(key = "Measurment", value = "Value")%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::select(-c(Patient_number, Group))-> tmp3
+
+tmp3$Patient_number<- NULL
+tmp3$ID<- gsub('(V\\d+)(V\\d+)$', '\\1_\\2', basename(tmp3$ID))
+
+BC_dist.stool%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  left_join(tmp3, by="ID")-> BC_dist.stool
 
 ##Is nutrition or exercise impacting differences in composition by patient? 
 BC_dist.stool%>% 
@@ -504,11 +558,61 @@ BC_dist.stool%>%
   theme(text = element_text(size=16))+
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->E
 
-png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", units = 'in', res = 300, width=10, height=8)
-ggarrange(D, E, ncol=1, nrow=2, common.legend = TRUE, legend="right")
-dev.off()
+f<-ggarrange(D, E, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
-rm(D,E)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.pdf", plot = f, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", plot = f, width = 10, height = 8)
+
+rm(D,E,f)
+
+##Correlation with training 
+##Frequency
+BC_dist.stool%>%
+  ggplot(aes(x= Trainingfrequency, y= BC_dist))+
+  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Training frequency")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "A)")+
+  stat_cor(label.x = 2, label.y = 0.8, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE)-> A
+
+##Time
+BC_dist.stool%>%
+  ggplot(aes(x= Trainingtime, y= BC_dist))+
+  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Training time")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "B)")+
+  stat_cor(label.x = 100, label.y = 0.8, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE)-> B
+
+##Weeks
+BC_dist.stool%>%
+  ggplot(aes(x= Trainingsweeks, y= BC_dist))+
+  geom_point(shape= 22, position=position_jitter(0.2), size=2.5, aes(fill= Patient_number), color= "black")+
+  xlab("Training weeks")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "C)")+
+  stat_cor(label.x = 30, label.y = 0.8, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE) -> C
+
+D<-ggarrange(A, B, C, ncol=1, nrow=3, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.pdf", plot = D, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.png", plot = D, width = 10, height = 12)
+
+rm(A,B.C,D)
 
 ###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
