@@ -614,6 +614,13 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Tra
 
 rm(A,B.C,D)
 
+###Mixed effect models 
+library(lme4)
+
+training_glm <- glm(BC_dist ~ Trainingfrequency + Trainingsweeks + 
+                           Trainingtime, data = BC_dist.stool)
+summary(training_glm)
+
 ###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
 PS.stool.Gen<-  tax_glom(PS4.stool, "Genus", NArm = T)
