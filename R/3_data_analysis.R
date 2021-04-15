@@ -12,6 +12,12 @@ library(data.table)
 library(knitr)
 library(grid)
 library(gridExtra)
+##For analysis with linear models
+library("lme4")
+library("lmtest")
+library("rcompanion")
+library("car")
+library("merTools")
 
 ##Load data 
 if(!exists("PS")){
@@ -354,10 +360,6 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png
 rm(A,B,C,D,E)
 
 ##Try linear models 
-library("lme4")
-library("lmtest")
-library("rcompanion")
-
 p0<- lm(chao1~ 1, data = sdt.stool, na.action = na.exclude)
 p1<- lm(chao1~ Visit + Patient_number, data = sdt.stool, na.action = na.exclude)
 p2<- lm(chao1~ Visit, data = sdt.stool, na.action = na.exclude)
@@ -568,41 +570,44 @@ rm(D,E,f)
 ##Correlation with training 
 ##Frequency
 BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Trainingfrequency, y= BC_dist))+
   geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   xlab("Training frequency")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "A)")+
-  stat_cor(label.x = 2, label.y = 0.8, 
-           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   theme_bw()+
   theme(text = element_text(size=16))+
   geom_smooth(method = lm, se=FALSE)-> A
 
 ##Time
 BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Trainingtime, y= BC_dist))+
   geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   xlab("Training time")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "B)")+
-  stat_cor(label.x = 100, label.y = 0.8, 
-           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   theme_bw()+
   theme(text = element_text(size=16))+
   geom_smooth(method = lm, se=FALSE)-> B
 
 ##Weeks
 BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Trainingsweeks, y= BC_dist))+
   geom_point(shape= 22, position=position_jitter(0.2), size=2.5, aes(fill= Patient_number), color= "black")+
   xlab("Training weeks")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "C)")+
-  stat_cor(label.x = 30, label.y = 0.8, 
-           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   theme_bw()+
   theme(text = element_text(size=16))+
   geom_smooth(method = lm, se=FALSE) -> C
@@ -612,14 +617,84 @@ D<-ggarrange(A, B, C, ncol=1, nrow=3, common.legend = TRUE, legend="right")
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.pdf", plot = D, width = 10, height = 12)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.png", plot = D, width = 10, height = 12)
 
-rm(A,B.C,D)
+rm(A,B,C,D)
 
 ###Mixed effect models 
-library(lme4)
+##Check for complete cases
+#BC_dist.stool%>% 
+#  group_by(Patient_number)%>%
+#  arrange(Group, .by_group = TRUE)%>%
+#  summarise(n(), .groups = "keep")%>%
+#  dplyr::rename(n = "n()")%>%
+#  filter(n == 3)-> Keep
 
-training_glm <- glm(BC_dist ~ Trainingfrequency + Trainingsweeks + 
-                           Trainingtime, data = BC_dist.stool)
-summary(training_glm)
+#Keep<- Keep$Patient_number
+
+##Select just patients in Keep
+#BC_dist.stool[BC_dist.stool$Patient_number%in%Keep, ]-> x
+
+BC_dist.stool%>%
+dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                           "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                           "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> BC_dist.stool
+##qqPlots
+qqPlot(BC_dist.stool$BC_dist)
+qqPlot(BC_dist.stool$Trainingfrequency)
+qqPlot(BC_dist.stool$Trainingtime)
+
+##GLM (Training weeks was omited due to a lot of NAs)
+tr0<- glm(BC_dist ~ 1, data = BC_dist.stool, na.action = na.exclude) ##Null model
+tr1<- glm(BC_dist ~ Trainingfrequency, data =BC_dist.stool, na.action = na.exclude)
+tr2<- glm(BC_dist ~ Trainingtime, data = BC_dist.stool, na.action = na.exclude)
+tr3<- glm(BC_dist ~ Trainingfrequency + Trainingtime, data = BC_dist.stool, na.action = na.exclude)
+tr4<- glm(BC_dist ~ Trainingfrequency*Trainingtime , data =BC_dist.stool, na.action = na.exclude) ##Full model
+
+##Comparisons between models
+lrtest(tr1, tr2) ##Significant difference Training Frequency seems to be a better predictor for microbial differences among visits
+lrtest(tr1, tr3) ##Not significant difference 
+lrtest(tr2, tr3) ##Not significant difference 
+lrtest(tr1, tr4) ##No difference between model with training frequency alone and its interaction with time
+lrtest(tr2, tr4) ##No difference between model with training time alone and its interaction with frequency
+lrtest(tr3, tr4) ##No difference between model with training time and frequency and their interaction 
+
+##Mixed effect models
+##with patient as random effect
+tr5<-lmer(BC_dist ~ Trainingfrequency + Trainingtime + (1 | Patient_number), data = BC_dist.stool)
+summary(tr5)
+confint(tr5) ##Confidence interval for each fixed effect
+ranef(tr5)$Patient_number ##Estimates for random effect
+predictInterval(tr5)  ## for various model predictions, possibly with new data
+REsim(tr5) ## mean, median and sd of the random effect estimates
+
+A<- plotREsim(REsim(tr5))  ## plot the interval estimates
+A$data%>%
+  dplyr::mutate(groupID = fct_relevel(groupID, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                           "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> A$data
+A+
+  geom_point(aes(color= groupID))+
+  xlab(label = NULL)+
+  labs(title = NULL, color = "Patiente \n number")+
+  theme(strip.background = element_blank(),
+    strip.text.x = element_blank(), text = element_text(size=16))-> A
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training_Effect_Ranges.png", plot = A, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training_Effect_Ranges.pdf", plot = A, width = 8, height = 8)
+
+rm(A)
+
+##Visit interval as random effect
+tr6<-lmer(BC_dist ~ Trainingfrequency + Trainingtime + (1 | Group), data = BC_dist.stool)
+
+summary(tr6)
+confint(tr6) ##Confidence interval for each fixed effect
+ranef(tr6)$Patient_number ##Estimates for random effect
+predictInterval(tr6)  ## for various model predictions, possibly with new data
+REsim(tr6) ## mean, median and sd of the random effect estimates
+
+plotREsim(REsim(tr6))  ## plot the interval estimates
+
+rm(p0, p1, p2, p3)
 
 ###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
