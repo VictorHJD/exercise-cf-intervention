@@ -526,13 +526,6 @@ BC_dist.stool%>%
   dplyr::mutate(ID= paste0(Patient_number, Group))%>%
   left_join(tmp3, by="ID")-> BC_dist.stool
 
-##Is nutrition or exercise impacting differences in composition by patient? 
-BC_dist.stool%>% 
-  group_by(Group)%>%
-  wilcox_test(BC_dist ~ Sport_Response)%>% ##Change here the type of response
-  adjust_pvalue(method = "bonferroni")%>%
-  add_significance()
-
 ##Is visit impacting differences in composition by patient? 
 BC_dist.stool%>% 
   wilcox_test(BC_dist ~ Group)%>%
@@ -659,12 +652,14 @@ lrtest(tr3, tr4) ##No difference between model with training time and frequency 
 
 ##Mixed effect models
 ##with patient as random effect
-tr5<-lmer(BC_dist ~ Trainingfrequency + Trainingtime + (1 | Patient_number), data = BC_dist.stool)
+tr5<-lmer(BC_dist ~ Trainingfrequency * Trainingtime + (1 | Patient_number), data = BC_dist.stool)
 summary(tr5)
 confint(tr5) ##Confidence interval for each fixed effect
 ranef(tr5)$Patient_number ##Estimates for random effect
 predictInterval(tr5)  ## for various model predictions, possibly with new data
 REsim(tr5) ## mean, median and sd of the random effect estimates
+
+lrtest(tr4, tr5)
 
 A<- plotREsim(REsim(tr5))  ## plot the interval estimates
 A$data%>%
@@ -683,18 +678,41 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Tra
 
 rm(A)
 
-##Visit interval as random effect
-tr6<-lmer(BC_dist ~ Trainingfrequency + Trainingtime + (1 | Group), data = BC_dist.stool)
+##Nutritional, pFVC, FFM response with patient random effect
+##Adjust to binary 1 responders = Improvement, 0 No responders= Stable, decreased or not detected
+BC_dist.stool%>%
+  dplyr::mutate(Nutrition_Response = case_when(Nutrition_Response == 1  ~ 1,
+                                        Nutrition_Response %in% c(0, 2,3) ~ 0))%>%
+  dplyr::mutate(FFM_Response = case_when(FFM_Response == 1  ~ 1,
+                                         FFM_Response %in% c(0, 2,3) ~ 0))%>%
+  dplyr::mutate(pFVC_Response = case_when(pFVC_Response == 1  ~ 1,
+                                          pFVC_Response %in% c(0, 2,3) ~ 0))-> BC_dist.stool
 
-summary(tr6)
-confint(tr6) ##Confidence interval for each fixed effect
-ranef(tr6)$Patient_number ##Estimates for random effect
-predictInterval(tr6)  ## for various model predictions, possibly with new data
-REsim(tr6) ## mean, median and sd of the random effect estimates
+##Does the nutrition response is linked to changes in microbial composition?
+p1<- glm(Nutrition_Response ~ BC_dist, data = BC_dist.stool, na.action = na.exclude, 
+         family = binomial()) ## NS
 
-plotREsim(REsim(tr6))  ## plot the interval estimates
+##Does improvement on fat free mass response is linked to changes in microbial composition?
+p2<- glm(FFM_Response ~ BC_dist, data = BC_dist.stool, na.action = na.exclude,
+         family = binomial()) ## NS
 
-rm(p0, p1, p2, p3)
+##Does improvement in predicted forced vital capacity linked to changes in microbiota or training?
+p3<- glm(pFVC_Response ~ BC_dist, data = BC_dist.stool, na.action = na.exclude,
+         family = binomial())
+p4<- glm(pFVC_Response ~ Trainingfrequency, data = BC_dist.stool, na.action = na.exclude,
+         family = binomial())
+p5<- glm(pFVC_Response ~ Trainingtime, data = BC_dist.stool, na.action = na.exclude,
+         family = binomial())
+p6<- glm(pFVC_Response ~ BC_dist + Trainingfrequency, data = BC_dist.stool, na.action = na.exclude,
+         family = binomial())
+p7<- glm(pFVC_Response ~ BC_dist + Trainingtime, data = BC_dist.stool, na.action = na.exclude,
+         family = binomial())
+p8<- glm(pFVC_Response ~ Trainingfrequency + Trainingtime, data = BC_dist.stool, na.action = na.exclude,
+         family = binomial())
+p9<- glm(pFVC_Response ~ BC_dist + Trainingfrequency + Trainingtime, data = BC_dist.stool, na.action = na.exclude,
+         family = binomial())
+p10<- glm(pFVC_Response ~ BC_dist*Trainingfrequency*Trainingtime, data = BC_dist.stool, na.action = na.exclude,
+          family = binomial())
 
 ###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
