@@ -409,8 +409,8 @@ tmp1%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V3",])))-> V1vsV2.stool
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V3",])))-> V1vsV2.stool
 
 
 x<- c(V1vsV2.stool["10P1V1","10P1V2"], V1vsV2.stool["10P3V1A","10P3V2A"], 
@@ -431,8 +431,8 @@ tmp1%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V1vsV3.stool
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V1vsV3.stool
 
 x<- c(V1vsV3.stool["10P3V1A","10P3V3A"], 
       V1vsV3.stool["10P4V1A","10P4V3A"], V1vsV3.stool["10P6V1A","10P6V3A"],
@@ -452,8 +452,8 @@ tmp1%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V2vsV3.stool
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V2vsV3.stool
 
 x<- c(V2vsV3.stool["10P2V2B","10P2V3B"], V2vsV3.stool["10P3V2A","10P3V3A"], 
       V2vsV3.stool["10P4V2A","10P4V3A"], V2vsV3.stool["10P6V2A","10P6V3A"],
@@ -727,7 +727,7 @@ otu<- rownames_to_column(otu, var = "ASV")
 tax<- PS.stool.Gen@tax_table
 tax<-as.data.frame(tax)
 tax%>%
-  select(Genus)-> tax
+  dplyr::select(Genus)-> tax
 tax$Genus<-gsub(" ", "_", basename(tax$Genus))
 tax<- rownames_to_column(tax, var = "ASV")
 
@@ -932,8 +932,8 @@ tmp1%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V3",])))-> V1vsV2.sputum
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V3",])))-> V1vsV2.sputum
 
 x<- c(V1vsV2.sputum["10P2V1","10P2V2A"], 
       V1vsV2.sputum["10P3V1","10P3V2"], V1vsV2.sputum["10P4V1","10P4V2"],
@@ -954,8 +954,8 @@ tmp1%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V1vsV3.sputum
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V1vsV3.sputum
 
 x<- c(V1vsV3.sputum["10P2V1","10P2V3"], 
       V1vsV3.sputum["10P4V1","10P4V3"], V1vsV3.sputum["10P6V1","10P6V3"],
@@ -975,8 +975,8 @@ tmp1%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
-  select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V2vsV3.sputum
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V1",])))%>%
+  dplyr::select(-c(rownames(tmp1[tmp1$Visit=="V2",])))-> V2vsV3.sputum
 
 x<- c(V2vsV3.sputum["10P2V2","10P2V3"], 
       V2vsV3.sputum["10P4V2","10P4V3"], V2vsV3.sputum["10P6V2","10P6V3"],
@@ -1009,13 +1009,34 @@ BC_dist.sputum%>%
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   left_join(tmp2, by="Patient_number")-> BC_dist.sputum
 
-##Is nutrition or exercise impacting differences in composition by patient? 
-BC_dist.sputum%>% 
-  group_by(Group)%>%
-  wilcox_test(BC_dist ~ pFVC_Response)%>% ##Change here the type of response
-  adjust_pvalue(method = "bonferroni")%>%
-  add_significance()
+##Add training information
+training%>%
+  dplyr::select(-c(Mean_Trainingtime_womissingvalues_V1V2, Mean_Trainingfrequency_womissingvalues_V1V2))%>%
+  gather(key = "Measurment", value = "Value",
+         Mean_MET_V1V2:Percentage_Trainingsweeks_n52)%>%
+  separate(Measurment, c("A", "Measurment", "Group"))-> tmp3
 
+tmp3$Group<- gsub("n52", "V1V3", basename(tmp3$Group))
+
+tmp3%>%
+  dplyr::filter(A!= "Percentage")%>%
+  dplyr::select(c(Patient_number, Measurment, Group, Value))%>%
+  dplyr::mutate(Measurment= as.factor(Measurment))%>%
+  spread(key = "Measurment", value = "Value")%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::select(-c(Patient_number, Group))-> tmp3
+
+tmp3$Patient_number<- NULL
+tmp3$ID<- gsub('(V\\d+)(V\\d+)$', '\\1_\\2', basename(tmp3$ID))
+
+BC_dist.sputum%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  left_join(tmp3, by="ID")-> BC_dist.sputum
+
+#### By visit
 BC_dist.sputum%>% 
   wilcox_test(BC_dist ~ Group)%>%
   adjust_pvalue(method = "bonferroni") %>%
@@ -1045,9 +1066,166 @@ BC_dist.sputum%>%
   theme(text = element_text(size=16))+
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->B
 
-#png("CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum.png", units = 'in', res = 300, width=10, height=8)
-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
-#dev.off()
+C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum.pdf", plot = C, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum.png", plot = C, width = 10, height = 8)
+
+rm(A,B,C)
+
+##Correlation with training 
+##Frequency
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Trainingfrequency, y= BC_dist))+
+  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Training frequency")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "A)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE)-> A
+
+##Time
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Trainingtime, y= BC_dist))+
+  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Training time")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "B)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE)-> B
+
+##Weeks
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Trainingsweeks, y= BC_dist))+
+  geom_point(shape= 22, position=position_jitter(0.2), size=2.5, aes(fill= Patient_number), color= "black")+
+  xlab("Training weeks")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "C)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE) -> C
+
+D<-ggarrange(A, B, C, ncol=1, nrow=3, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training.pdf", plot = D, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training.png", plot = D, width = 10, height = 12)
+
+rm(A,B,C,D)
+
+###Mixed effect models 
+##Check for complete cases
+#BC_dist.sputum%>% 
+#  group_by(Patient_number)%>%
+#  arrange(Group, .by_group = TRUE)%>%
+#  summarise(n(), .groups = "keep")%>%
+#  dplyr::rename(n = "n()")%>%
+#  filter(n == 3)-> Keep
+
+#Keep<- Keep$Patient_number
+
+##Select just patients in Keep
+#BC_dist.sputum[BC_dist.sputum$Patient_number%in%Keep, ]-> x
+
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> BC_dist.sputum
+##qqPlots
+qqPlot(BC_dist.sputum$BC_dist)
+qqPlot(BC_dist.sputum$Trainingfrequency)
+qqPlot(BC_dist.sputum$Trainingtime)
+
+##GLM (Training weeks was omited due to a lot of NAs)
+tr0<- glm(BC_dist ~ 1, data = BC_dist.sputum, na.action = na.exclude) ##Null model
+tr1<- glm(BC_dist ~ Trainingfrequency, data =BC_dist.sputum, na.action = na.exclude)
+tr2<- glm(BC_dist ~ Trainingtime, data = BC_dist.sputum, na.action = na.exclude)
+tr3<- glm(BC_dist ~ Trainingfrequency + Trainingtime, data = BC_dist.sputum, na.action = na.exclude)
+tr4<- glm(BC_dist ~ Trainingfrequency*Trainingtime , data =BC_dist.sputum, na.action = na.exclude) ##Full model
+
+##Comparisons between models
+lrtest(tr1, tr2) ##Significant difference Training Frequency seems to be a better predictor for microbial differences among visits
+lrtest(tr1, tr3) ##Not significant difference 
+lrtest(tr2, tr3) ##Not significant difference 
+lrtest(tr1, tr4) ##No difference between model with training frequency alone and its interaction with time
+lrtest(tr2, tr4) ##No difference between model with training time alone and its interaction with frequency
+lrtest(tr3, tr4) ##No difference between model with training time and frequency and their interaction 
+
+##Mixed effect models
+##with patient as random effect
+tr5<-lmer(BC_dist ~ Trainingfrequency * Trainingtime + (1 | Patient_number), data = BC_dist.sputum)
+summary(tr5)
+confint(tr5) ##Confidence interval for each fixed effect
+ranef(tr5)$Patient_number ##Estimates for random effect
+predictInterval(tr5)  ## for various model predictions, possibly with new data
+REsim(tr5) ## mean, median and sd of the random effect estimates
+
+lrtest(tr4, tr5)
+
+A<- plotREsim(REsim(tr5))  ## plot the interval estimates
+A$data%>%
+  dplyr::mutate(groupID = fct_relevel(groupID, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> A$data
+A+
+  geom_point(aes(color= groupID))+
+  xlab(label = NULL)+
+  labs(title = NULL, color = "Patiente \n number")+
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank(), text = element_text(size=16))-> A
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.png", plot = A, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.pdf", plot = A, width = 8, height = 8)
+
+rm(A)
+
+##Nutritional, pFVC, FFM response with patient random effect
+##Adjust to binary 1 responders = Improvement, 0 No responders= Stable, decreased or not detected
+BC_dist.sputum%>%
+  dplyr::mutate(Nutrition_Response = case_when(Nutrition_Response == 1  ~ 1,
+                                               Nutrition_Response %in% c(0, 2,3) ~ 0))%>%
+  dplyr::mutate(FFM_Response = case_when(FFM_Response == 1  ~ 1,
+                                         FFM_Response %in% c(0, 2,3) ~ 0))%>%
+  dplyr::mutate(pFVC_Response = case_when(pFVC_Response == 1  ~ 1,
+                                          pFVC_Response %in% c(0, 2,3) ~ 0))-> BC_dist.sputum
+
+##Does the nutrition response is linked to changes in microbial composition?
+p1<- glm(Nutrition_Response ~ BC_dist, data = BC_dist.sputum, na.action = na.exclude, 
+         family = binomial()) ## NS
+
+##Does improvement on fat free mass response is linked to changes in microbial composition?
+p2<- glm(FFM_Response ~ BC_dist, data = BC_dist.sputum, na.action = na.exclude,
+         family = binomial()) ## NS
+
+##Does improvement in predicted forced vital capacity linked to changes in microbiota or training?
+p3<- glm(pFVC_Response ~ BC_dist, data = BC_dist.sputum, na.action = na.exclude,
+         family = binomial())
+p4<- glm(pFVC_Response ~ Trainingfrequency, data = BC_dist.sputum, na.action = na.exclude,
+         family = binomial())
+p5<- glm(pFVC_Response ~ Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
+         family = binomial())
+p6<- glm(pFVC_Response ~ BC_dist + Trainingfrequency, data = BC_dist.sputum, na.action = na.exclude,
+         family = binomial())
+p7<- glm(pFVC_Response ~ BC_dist + Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
+         family = binomial())
+p8<- glm(pFVC_Response ~ Trainingfrequency + Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
+         family = binomial())
+p9<- glm(pFVC_Response ~ BC_dist + Trainingfrequency + Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
+         family = binomial())
+p10<- glm(pFVC_Response ~ BC_dist*Trainingfrequency*Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
+          family = binomial())
 
 ##Glom by genus
 PS.sputum.Gen<- tax_glom(PS4.sput, "Genus", NArm = T)
@@ -1061,7 +1239,7 @@ otu<- rownames_to_column(otu, var = "ASV")
 tax<- PS.sputum.Gen@tax_table
 tax<-as.data.frame(tax)
 tax%>%
-  select(Genus)-> tax
+  dplyr::select(Genus)-> tax
 tax$Genus<-gsub(" ", "_", basename(tax$Genus))
 tax<- rownames_to_column(tax, var = "ASV")
 
