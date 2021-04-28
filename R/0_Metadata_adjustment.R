@@ -300,7 +300,13 @@ left_join(metadata, clinic, by="SampleID")-> metadata
 ##Add genotype 
 left_join(metadata, severity, by="SampleID")-> metadata
 
-saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
+metadata$FFM_Luk<- NULL
+metadata$Nutrition_Response<- NULL
+metadata$FFM_Response<- NULL
+metadata$pFVC_Response<- NULL
+
 write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv", row.names = F)
+
+saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
 
 rm(clinic, data.mainz, lung, nutri, severity)
