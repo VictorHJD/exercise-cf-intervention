@@ -8,6 +8,8 @@ library(ggplot2)
 library(dplyr)
 library(Biostrings)
 
+reRun<- FALSE
+
 ##Load data 
 if(!exists("metadata")){
   if(isTRUE(reRun)){
