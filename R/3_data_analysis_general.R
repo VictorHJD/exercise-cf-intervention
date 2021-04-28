@@ -213,8 +213,8 @@ sdt%>%
 
 C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Q1_Alpha_div_General.pdf", plot = C, width = 10, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Q1_Alpha_div_General.png", plot = C, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_div_General.pdf", plot = C, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_div_General.png", plot = C, width = 10, height = 8)
 rm(A,B,C)
 
 ##Beta diversity
