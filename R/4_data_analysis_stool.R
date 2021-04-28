@@ -36,13 +36,7 @@ sdt%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> sdt.stool
-
-sdt.stool%>%
-  wilcox_test(diversity_shannon ~ Visit)%>%
-  adjust_pvalue(method = "fdr") %>%
-  add_significance()%>%
-  add_xy_position(x = "Visit")
-
+##Richness
 ##Plot 
 sdt%>%
   dplyr::filter(material=="Stool")%>%
@@ -80,17 +74,6 @@ sdt%>%
   theme(text = element_text(size=16))-> C
 
 ##Shannon diversity 
-sdt%>% 
-  dplyr::filter(material=="Stool")%>%
-  mutate(Visit = fct_relevel(Visit, 
-                             "V1", "V2", "V3"))%>%
-  mutate(Patient_number = fct_relevel(Patient_number, 
-                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  wilcox_test(diversity_shannon ~ Patient_number)%>%
-  add_significance()%>%
-  add_xy_position(x = "Visit")
-
 ##Plot 
 sdt%>%
   dplyr::filter(material=="Stool")%>%
@@ -245,12 +228,12 @@ colnames(tmp4)<- c("BC_dist", "Patient_number", "Group")
 BC_dist.stool<- bind_rows(tmp2, tmp3, tmp4)
 rm(tmp2, tmp3, tmp4)
 
-##From metadata extract responders and severity status 
+##From metadata extract classifiers and severity status 
 metadata%>%
   dplyr::filter(material=="Stool")%>%
   group_by(Patient_number)%>%
   distinct(Patient_number, .keep_all = TRUE)%>%
-  dplyr::select(c(Patient_number, Nutrition_Response, FFM_Response, pFVC_Response, Phenotype_severity, 
+  dplyr::select(c(Patient_number, Phenotype_severity, 
                   Pseudomonas_status, Sport_Response, Mutation_severity))%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
@@ -272,9 +255,9 @@ training%>%
   dplyr::select(c(Patient_number, Mean_MET_V1V2:Percentage_Trainingsweeks_n52))%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> training
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> training.stool
 
-training%>%
+training.stool%>%
   dplyr::select(-c(Mean_Trainingtime_womissingvalues_V1V2, Mean_Trainingfrequency_womissingvalues_V1V2))%>%
   gather(key = "Measurment", value = "Value",
          Mean_MET_V1V2:Percentage_Trainingsweeks_n52)%>%
@@ -299,6 +282,20 @@ tmp3$ID<- gsub('(V\\d+)(V\\d+)$', '\\1_\\2', basename(tmp3$ID))
 BC_dist.stool%>%
   dplyr::mutate(ID= paste0(Patient_number, Group))%>%
   left_join(tmp3, by="ID")-> BC_dist.stool
+
+##Extract ppFEV1 and estimate deltas per Visit combination 
+metadata%>%
+  dplyr::filter(material=="Stool")%>%
+  group_by(Patient_number)%>%
+  dplyr::select(c(Patient_number, Visit, ppFEV1))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  spread(Visit, ppFEV1)%>%
+  dplyr::mutate(V1_V2= V1 - V2)%>%
+  dplyr::mutate(V1_V3= V1 - V3)%>%
+  dplyr::mutate(V2_V3= V2 - V3)
 
 ##Is visit impacting differences in composition by patient? 
 BC_dist.stool%>% 

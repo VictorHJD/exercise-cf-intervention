@@ -26,81 +26,93 @@ classifier<- read.csv("~/CF_project/Metadata/sample_data_indexed_classifier.csv"
 
 data.mainz%>%
   dplyr::select(c(1,2,5,7,11,13,16,17,27, 55:57))%>%
-  rename(X.SampleID= "SampleID",Comed_visit = "Visit", "sex(m1_w2)"= "sex")%>%
-  mutate(Visit = paste0("V", Visit))%>%
-  mutate(Patient_number= Comed_token)%>%
-  mutate(Patient_number = gsub("V\\d+", "\\1", basename(Patient_number)))%>%
-  group_by(Patient_number)%>%
+  dplyr::rename(SampleID= X.SampleID, Visit= Comed_visit, sex= "sex(m1_w2)")%>%
+  dplyr::mutate(Visit = paste0("V", Visit))%>%
+  dplyr::mutate(Patient_number= Comed_token)%>%
+  dplyr::mutate(Patient_number = gsub("V\\d+", "\\1", basename(Patient_number)))%>%
+  dplyr::  group_by(Patient_number)%>%
   dplyr::select(c(1:10,13))->data.mainz
 
 
 ##2)Lung function data
 ##Re-shape dataframe
 lung%>%
-  rename(ID= "Patient_number", `sex (m1_w2)`= "sex")%>%
-  select(Patient_number, sex, age, ppFEV1_V1, ppFEV1_V2, ppFEV1_V3)%>%
+  dplyr::rename(Patient_number= ID, sex= `sex (m1_w2)`)%>%
+  dplyr::select(Patient_number, sex, age, ppFEV1_V1, ppFEV1_V2, ppFEV1_V3)%>%
   gather(ppFEV1_Visit, ppFEV1, ppFEV1_V1:ppFEV1_V3)%>%
   separate(ppFEV1_Visit, c("Test", "Visit"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Patient_number, sex, age, Visit, Comed_token, ppFEV1)-> tmp1
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Patient_number, sex, age, Visit, Comed_token, ppFEV1)-> tmp1
 
 lung%>%
-  rename(ID= "Patient_number")%>%
-  select(Patient_number, DistanzV1:DistanzV3)%>%
-  gather(Dist_Visit, Dist, DistanzV1:DistanzV3)%>%
-  mutate(Visit = case_when(Dist_Visit == "DistanzV1"  ~ "V1",
-                           Dist_Visit == "DistanzV2" ~ "V2",
-                           Dist_Visit == "DistanzV3" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, Dist)-> tmp2
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, ppFVC_V1:ppFVC_V3)%>%
+  gather(ppFVC_Visit, ppFVC, ppFVC_V1:ppFVC_V3)%>%
+  dplyr::mutate(Visit = case_when(ppFVC_Visit == "ppFVC_V1"  ~ "V1",
+                                  ppFVC_Visit == "ppFVC_V2" ~ "V2",
+                                  ppFVC_Visit == "ppFVC_V3" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, ppFVC)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 
 lung%>%
-  rename(ID= "Patient_number")%>%
-  select(Patient_number, `Peakpower (W/kg)V1`,`Peakpower (W/kg)V2`, `Peakpower (W/kg)V3`)%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, DistanzV1:DistanzV3)%>%
+  gather(Dist_Visit, Dist, DistanzV1:DistanzV3)%>%
+  dplyr::mutate(Visit = case_when(Dist_Visit == "DistanzV1"  ~ "V1",
+                                  Dist_Visit == "DistanzV2" ~ "V2",
+                                  Dist_Visit == "DistanzV3" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, Dist)-> tmp2
+
+tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
+
+lung%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, `Peakpower (W/kg)V1`,`Peakpower (W/kg)V2`, `Peakpower (W/kg)V3`)%>%
   gather(Peak_power_Visit, Peak_power, `Peakpower (W/kg)V1`:`Peakpower (W/kg)V3`)%>%
-  mutate(Visit = case_when(Peak_power_Visit == "Peakpower (W/kg)V1"  ~ "V1",
+  dplyr::mutate(Visit = case_when(Peak_power_Visit == "Peakpower (W/kg)V1"  ~ "V1",
                            Peak_power_Visit == "Peakpower (W/kg)V2" ~ "V2",
                            Peak_power_Visit == "Peakpower (W/kg)V3" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, Peak_power)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, Peak_power)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 
 lung%>%
-  rename(ID= "Patient_number")%>%
-  select(Patient_number, `VO2peak (ml/min/kg)V1`:`VO2peak (ml/min/kg)V3`)%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, `VO2peak (ml/min/kg)V1`:`VO2peak (ml/min/kg)V3`)%>%
   gather(V02_Visit, V02_A, `VO2peak (ml/min/kg)V1`:`VO2peak (ml/min/kg)V3`)%>%
-  mutate(Visit = case_when(V02_Visit == "VO2peak (ml/min/kg)V1"  ~ "V1",
+  dplyr::mutate(Visit = case_when(V02_Visit == "VO2peak (ml/min/kg)V1"  ~ "V1",
                            V02_Visit == "VO2peak (ml/min/kg)V2" ~ "V2",
                            V02_Visit == "VO2peak (ml/min/kg)V3" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, V02_A)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, V02_A)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 
 lung%>%
-  rename(ID= "Patient_number")%>%
-  select(Patient_number, `VO2peak (l/min)V1`:`VO2peak (l/min)V3`)%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, `VO2peak (l/min)V1`:`VO2peak (l/min)V3`)%>%
   gather(V02_Visit, V02_B, `VO2peak (l/min)V1`:`VO2peak (l/min)V3`)%>%
-  mutate(Visit = case_when(V02_Visit == "VO2peak (l/min)V1"  ~ "V1",
+  dplyr::mutate(Visit = case_when(V02_Visit == "VO2peak (l/min)V1"  ~ "V1",
                            V02_Visit == "VO2peak (l/min)V2" ~ "V2",
                            V02_Visit == "VO2peak (l/min)V3" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, V02_B)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, V02_B)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 
 lung%>%
-  rename(ID= "Patient_number")%>%
-  select(Patient_number, BMIV1:BMIV3)%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, BMIV1:BMIV3)%>%
   gather(BMI_Visit, BMI, BMIV1:BMIV3)%>%
-  mutate(Visit = case_when(BMI_Visit == "BMIV1"  ~ "V1",
+  dplyr::mutate(Visit = case_when(BMI_Visit == "BMIV1"  ~ "V1",
                            BMI_Visit == "BMIV2" ~ "V2",
                            BMI_Visit == "BMIV3" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, BMI)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, BMI)-> tmp2
 
 lung<- left_join(tmp1, tmp2, by= "Comed_token") ##Index table usable in R
 rm(tmp1, tmp2)
