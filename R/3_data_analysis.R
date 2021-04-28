@@ -30,6 +30,19 @@ if(!exists("PS")){
 
 training<- read_tsv("~/CF_project/Metadata/sample_data_indexed_training.csv")
 
+##Discard some variables after discussion with Rebecca 
+metadata<- readRDS(file = "~/CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
+metadata$FFM_Luk<- NULL
+metadata$Nutrition_Response<- NULL
+metadata$FFM_Response<- NULL
+metadata$pFVC_Response<- NULL
+
+##Also in the PS object
+sample_data(PS)$FFM_Luk<- NULL
+sample_data(PS)$Nutrition_Response<- NULL
+sample_data(PS)$FFM_Response<- NULL
+sample_data(PS)$pFVC_Response<- NULL
+
 ##Have a look into the data
 summarize_phyloseq(PS) ##Non-Normalized
 
