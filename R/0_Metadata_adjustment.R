@@ -284,7 +284,7 @@ tmp1%>%
 
 setdiff(tmp1$Comed_token, data.mainz$Comed_token)
 
-left_join(data.mainz, tmp1, by="Comed_token")-> metadata ##This is partial (clinical info not yet included)
+left_join(tmp1, data.mainz, by="Comed_token")-> metadata ##This is partial (clinical info not yet included)
 
 rm(tmp1)
 
@@ -321,4 +321,4 @@ write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed
 
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
 
-rm(clinic, data.mainz, lung, nutri, severity)
+rm(clinic, data.mainz, lung, nutri, severity, resp, genetics)
