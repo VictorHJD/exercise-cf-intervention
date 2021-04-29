@@ -285,14 +285,15 @@ tmp1%>%
 setdiff(tmp1$Comed_token, data.mainz$Comed_token)
 
 left_join(tmp1, data.mainz, by="Comed_token")-> metadata ##This is partial (clinical info not yet included)
-
+left_join(data.mainz, tmp1,  by="Comed_token")-> metadata.ps ##This is partial (for phyloseq object)
 rm(tmp1)
 
 ##Add response data 
 left_join(metadata, resp, by="Patient_number")-> metadata
-
+left_join(metadata.ps, resp, by="Patient_number")-> metadata.ps
 ##Add medication data
 setdiff(metadata$SampleID, clinic$SampleID)
+setdiff(metadata.ps$SampleID, clinic$SampleID)
 
 ##In clinic:
 ##SampleID 10P3V3 change to 10P2V3B in metadata
@@ -305,20 +306,29 @@ clinic%>%
 
 ##Check that this is fixed
 setdiff(metadata$SampleID, clinic$SampleID)
+setdiff(metadata.ps$SampleID, clinic$SampleID)
 
 ##Now join medication data
 left_join(metadata, clinic, by="SampleID")-> metadata
-
+left_join(metadata.ps, clinic, by="SampleID")-> metadata.ps
 ##Add genotype 
 left_join(metadata, severity, by="SampleID")-> metadata
+left_join(metadata.ps, severity, by="SampleID")-> metadata.ps
 
 metadata$FFM_Luk<- NULL
 metadata$Nutrition_Response<- NULL
 metadata$FFM_Response<- NULL
 metadata$pFVC_Response<- NULL
 
-write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv", row.names = F)
+metadata.ps$FFM_Luk<- NULL
+metadata.ps$Nutrition_Response<- NULL
+metadata.ps$FFM_Response<- NULL
+metadata.ps$pFVC_Response<- NULL
 
+write.csv(metadata, "~/CF_project/exercise-cf-intervention/data/metadata_indexed.csv", row.names = F)
 saveRDS(metadata, "CF_project/exercise-cf-intervention/data/metadata_indexed.rds")
+
+write.csv(metadata.ps, "~/CF_project/exercise-cf-intervention/data/metadata_PS.csv", row.names = F)
+saveRDS(metadata.ps, "CF_project/exercise-cf-intervention/data/metadata_PS.rds")
 
 rm(clinic, data.mainz, lung, nutri, severity, resp, genetics)
