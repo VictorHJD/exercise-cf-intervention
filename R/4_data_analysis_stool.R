@@ -285,17 +285,53 @@ BC_dist.stool%>%
 
 ##Extract ppFEV1 and estimate deltas per Visit combination 
 metadata%>%
-  dplyr::filter(material=="Stool")%>%
+  dplyr::select(c(Comed_token, ppFEV1))%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
   group_by(Patient_number)%>%
   dplyr::select(c(Patient_number, Visit, ppFEV1))%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::distinct()%>%
   spread(Visit, ppFEV1)%>%
   dplyr::mutate(V1_V2= V1 - V2)%>%
   dplyr::mutate(V1_V3= V1 - V3)%>%
-  dplyr::mutate(V2_V3= V2 - V3)
+  dplyr::mutate(V2_V3= V2 - V3)%>%
+  dplyr::select(c(Patient_number, V1_V2, V2_V3, V1_V3))%>%
+  pivot_longer(!Patient_number, names_to = "Group", values_to = "ppFEV1")%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::ungroup()%>%
+  dplyr::select(c(ID, ppFEV1))-> tmp2
+
+BC_dist.stool%>%
+  left_join(tmp2, by="ID")-> BC_dist.stool
+
+##Extract ppFVC and estimate deltas per Visit
+metadata%>%
+  dplyr::select(c(Comed_token, ppFVC))%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  group_by(Patient_number)%>%
+  dplyr::select(c(Patient_number, Visit, ppFVC))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::distinct()%>%
+  spread(Visit, ppFVC)%>%
+  dplyr::mutate(V1_V2= V1 - V2)%>%
+  dplyr::mutate(V1_V3= V1 - V3)%>%
+  dplyr::mutate(V2_V3= V2 - V3)%>%
+  dplyr::select(c(Patient_number, V1_V2, V2_V3, V1_V3))%>%
+  pivot_longer(!Patient_number, names_to = "Group", values_to = "ppFVC")%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::ungroup()%>%
+  dplyr::select(c(ID, ppFVC))-> tmp2
+
+BC_dist.stool%>%
+  left_join(tmp2, by="ID")-> BC_dist.stool
 
 ##Is visit impacting differences in composition by patient? 
 BC_dist.stool%>% 
@@ -376,12 +412,42 @@ BC_dist.stool%>%
   theme(text = element_text(size=16))+
   geom_smooth(method = lm, se=FALSE) -> C
 
-D<-ggarrange(A, B, C, ncol=1, nrow=3, common.legend = TRUE, legend="right")
+##ppFEV1
+BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= ppFEV1, y= BC_dist))+
+  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Difference in ppFEV1 between visits")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "D)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE)-> D
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.pdf", plot = D, width = 10, height = 12)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.png", plot = D, width = 10, height = 12)
+##ppFEV1
+BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= ppFVC, y= BC_dist))+
+  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Difference in ppFVC between visits")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "E)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE)-> E
 
-rm(A,B,C,D)
+plot<-ggarrange(A, B, C, D, E, ncol=2, nrow=3, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.pdf", plot = plot, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.png", plot = plot, width = 10, height = 12)
+
+rm(A,B,C,D, E, plot)
 
 ###Mixed effect models 
 ##Check for complete cases
