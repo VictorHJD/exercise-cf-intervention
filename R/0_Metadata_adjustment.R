@@ -121,126 +121,126 @@ rm(tmp1, tmp2)
 ##Re-shape dataframe
 ##Eliminate BMI that was already included in the previous table (this value actually can be computed based on wight and lenght)
 nutri%>%
-  rename(Patient= "Patient_number")%>%
-  mutate(Patient_number = paste0("P", Patient_number))%>%
-  select(-c(V1_BMI:V3_BMI))-> nutri
+  dplyr::rename(Patient_number= Patient)%>%
+  dplyr::mutate(Patient_number = paste0("P", Patient_number))%>%
+  dplyr::select(-c(V1_BMI:V3_BMI))-> nutri
 ##Fat free mass (Charatsi)
 nutri%>%
-  select(Patient_number, `FFM_V1_Charatsi(kg)`:`FFM_V3_Charatsi(kg)`)%>%
+  dplyr::select(Patient_number, `FFM_V1_Charatsi(kg)`:`FFM_V3_Charatsi(kg)`)%>%
   gather(FFM_Visit, FFM_Charatsi, `FFM_V1_Charatsi(kg)`:`FFM_V3_Charatsi(kg)`)%>%
-  mutate(Visit = case_when(FFM_Visit == "FFM_V1_Charatsi(kg)"  ~ "V1",
+  dplyr::mutate(Visit = case_when(FFM_Visit == "FFM_V1_Charatsi(kg)"  ~ "V1",
                            FFM_Visit == "FFM_V2_Charatsi(kg)" ~ "V2",
                            FFM_Visit == "FFM_V3_Charatsi(kg)" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Patient_number, Visit, Comed_token, FFM_Charatsi)-> tmp1
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Patient_number, Visit, Comed_token, FFM_Charatsi)-> tmp1
 ##Lenght (cm)
 nutri%>%
-  select(Patient_number, V1_length_cm:V3_length_cm)%>%
+  dplyr::select(Patient_number, V1_length_cm:V3_length_cm)%>%
   gather(Length_Visit, Length, V1_length_cm:V3_length_cm)%>%
-  mutate(Visit = case_when(Length_Visit == "V1_length_cm"  ~ "V1",
+  dplyr::mutate(Visit = case_when(Length_Visit == "V1_length_cm"  ~ "V1",
                            Length_Visit == "V2_length_cm" ~ "V2",
                            Length_Visit == "V3_length_cm" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, Length)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, Length)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Weight (kg)
 nutri%>%
-  select(Patient_number, V1_weight_kg:V3_weight_kg)%>%
+  dplyr::select(Patient_number, V1_weight_kg:V3_weight_kg)%>%
   gather(Weight_Visit, Weight, V1_weight_kg:V3_weight_kg)%>%
-  mutate(Visit = case_when(Weight_Visit == "V1_weight_kg"  ~ "V1",
+  dplyr::mutate(Visit = case_when(Weight_Visit == "V1_weight_kg"  ~ "V1",
                            Weight_Visit == "V2_weight_kg" ~ "V2",
                            Weight_Visit == "V3_weight_kg" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, Weight)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, Weight)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Fat free mass (Lukaski) bioelectrical impedance measurements
 nutri%>%
-  select(Patient_number, `V1_FFM_%(Lukaski)`:`V3_FFM_%(Lukaski)`)%>%
+  dplyr::select(Patient_number, `V1_FFM_%(Lukaski)`:`V3_FFM_%(Lukaski)`)%>%
   gather(FFM_Luk_Visit, FFM_Luk,`V1_FFM_%(Lukaski)`:`V3_FFM_%(Lukaski)`)%>%
-  mutate(Visit = case_when(FFM_Luk_Visit == "V1_FFM_%(Lukaski)"  ~ "V1",
+  dplyr::mutate(Visit = case_when(FFM_Luk_Visit == "V1_FFM_%(Lukaski)"  ~ "V1",
                            FFM_Luk_Visit == "V2_FFM_%(Lukaski)" ~ "V2",
                            FFM_Luk_Visit == "V3_FFM_%(Lukaski)" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, FFM_Luk)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, FFM_Luk)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Average of kcal
 nutri%>%
-  select(Patient_number, `V2 kcal Durchschnitt`:`V3 kcal Durchschnitt`)%>%
+  dplyr::select(Patient_number, `V2 kcal Durchschnitt`:`V3 kcal Durchschnitt`)%>%
   gather(kcal_Visit, kcal_Avg,`V2 kcal Durchschnitt`:`V3 kcal Durchschnitt`)%>%
-  mutate(Visit = case_when(kcal_Visit == "V1 kcal Durchschnitt"  ~ "V1",
+  dplyr::mutate(Visit = case_when(kcal_Visit == "V1 kcal Durchschnitt"  ~ "V1",
                            kcal_Visit == "V2 kcal Durchschnitt" ~ "V2",
                            kcal_Visit == "V3 kcal Durchschnitt" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, kcal_Avg)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, kcal_Avg)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Kcal body weight ratio per day
 nutri%>%
-  select(Patient_number, `V2_kcal_kg(BW)/d`:`V3_kcal_kg(BW)/d`)%>%
+  dplyr::select(Patient_number, `V2_kcal_kg(BW)/d`:`V3_kcal_kg(BW)/d`)%>%
   gather(kcal_Visit, kcal_kg_day,`V2_kcal_kg(BW)/d`:`V3_kcal_kg(BW)/d`)%>%
-  mutate(Visit = case_when(kcal_Visit == "V1_kcal_kg(BW)/d"  ~ "V1",
+  dplyr::mutate(Visit = case_when(kcal_Visit == "V1_kcal_kg(BW)/d"  ~ "V1",
                            kcal_Visit == "V2_kcal_kg(BW)/d" ~ "V2",
                            kcal_Visit == "V3_kcal_kg(BW)/d" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, kcal_kg_day)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, kcal_kg_day)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Protein (%)
 nutri%>%
-  select(Patient_number, `V2_Eiweiß(%)`:`V3_Eiweiß(%)`)%>%
+  dplyr::select(Patient_number, `V2_Eiweiß(%)`:`V3_Eiweiß(%)`)%>%
   gather(Prot_Visit, Protein,`V2_Eiweiß(%)`:`V3_Eiweiß(%)`)%>%
-  mutate(Visit = case_when(Prot_Visit == "V1_Eiweiß(%)"  ~ "V1",
+  dplyr::mutate(Visit = case_when(Prot_Visit == "V1_Eiweiß(%)"  ~ "V1",
                            Prot_Visit == "V2_Eiweiß(%)" ~ "V2",
                            Prot_Visit == "V3_Eiweiß(%)" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, Protein)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, Protein)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Lipids (%)
 nutri%>%
-  select(Patient_number,  `V2_Fett(%)`:`V3_Fett(%)`)%>%
+  dplyr::select(Patient_number,  `V2_Fett(%)`:`V3_Fett(%)`)%>%
   gather(Lip_Visit, Lipids,`V2_Fett(%)`:`V3_Fett(%)`)%>%
-  mutate(Visit = case_when(Lip_Visit == "V1_Fett(%)"  ~ "V1",
+  dplyr::mutate(Visit = case_when(Lip_Visit == "V1_Fett(%)"  ~ "V1",
                            Lip_Visit == "V2_Fett(%)" ~ "V2",
                            Lip_Visit == "V3_Fett(%)" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, Lipids)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, Lipids)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Carbohydrates (%CHO)
 nutri%>%
-  select(Patient_number, `V2_Kohlenhydrate(%)`:`V3_Kohlenhydrate(%)`)%>%
+  dplyr::select(Patient_number, `V2_Kohlenhydrate(%)`:`V3_Kohlenhydrate(%)`)%>%
   gather(CHO_Visit, CHO,`V2_Kohlenhydrate(%)`:`V3_Kohlenhydrate(%)`)%>%
-  mutate(Visit = case_when(CHO_Visit == "V1_Kohlenhydrate(%)"  ~ "V1",
+  dplyr::mutate(Visit = case_when(CHO_Visit == "V1_Kohlenhydrate(%)"  ~ "V1",
                            CHO_Visit == "V2_Kohlenhydrate(%)" ~ "V2",
                            CHO_Visit == "V3_Kohlenhydrate(%)" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, CHO)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, CHO)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Dietary fiber (%DFr)
 nutri%>%
-  select(Patient_number, c(`V2_Ballaststoffe(%)`,`V3_Ballaststoffe(%)`))%>%
+  dplyr::select(Patient_number, c(`V2_Ballaststoffe(%)`,`V3_Ballaststoffe(%)`))%>%
   gather(DFr_Visit, DFr,c(`V2_Ballaststoffe(%)`,`V3_Ballaststoffe(%)`))%>%
-  mutate(Visit = case_when(DFr_Visit == "V1_Ballaststoffe(%)"  ~ "V1",
+  dplyr::mutate(Visit = case_when(DFr_Visit == "V1_Ballaststoffe(%)"  ~ "V1",
                            DFr_Visit == "V2_Ballaststoffe(%)" ~ "V2",
                            DFr_Visit == "V3_Ballaststoffe(%)" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, DFr)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, DFr)-> tmp2
 
 tmp1<- left_join(tmp1, tmp2, by= "Comed_token")
 ##Alcohol (%EtOH)
 nutri%>%
-  select(Patient_number, c(`V2_Alkohol(%)`,`V3_Alkohol(%)`))%>%
+  dplyr::select(Patient_number, c(`V2_Alkohol(%)`,`V3_Alkohol(%)`))%>%
   gather(EtOH_Visit, EtOH,c(`V2_Alkohol(%)`,`V3_Alkohol(%)`))%>%
-  mutate(Visit = case_when(EtOH_Visit == "V1_Alkohol(%)"  ~ "V1",
+  dplyr::mutate(Visit = case_when(EtOH_Visit == "V1_Alkohol(%)"  ~ "V1",
                            EtOH_Visit == "V2_Alkohol(%)" ~ "V2",
                            EtOH_Visit == "V3_Alkohol(%)" ~ "V3"))%>%
-  mutate(Comed_token= paste0(Patient_number, Visit))%>%
-  select(Comed_token, EtOH)-> tmp2
+  dplyr::mutate(Comed_token= paste0(Patient_number, Visit))%>%
+  dplyr::select(Comed_token, EtOH)-> tmp2
 
 nutri<- left_join(tmp1, tmp2, by= "Comed_token")
 rm(tmp1, tmp2)
@@ -249,7 +249,7 @@ rm(tmp1, tmp2)
 ##Re-shape dataframe
 ##Select not redundant tables
 classifier%>%
-  select(c(SampleID, Benzoase, Phenotype_severity, Pseudomonas_status, Sport_responderVO2max.5ml.min.kg, Mutation_severity))%>%
+  dplyr::select(c(SampleID, Benzoase, Phenotype_severity, Pseudomonas_status, Sport_responderVO2max.5ml.min.kg, Mutation_severity))%>%
   dplyr::rename(Sport_Response= 5)-> severity
 
 rm(classifier)
@@ -265,22 +265,22 @@ rm(classifier)
 
 ##5) Medication data 
 clinic%>%
-  select(c(SampleID,antibiotics_inh:Cystagon))-> clinic
+  dplyr::select(c(SampleID,antibiotics_inh:Cystagon))-> clinic
 
 ##6) Responder/non Responder data
 resp%>%
-  select(1:5)%>%
+  dplyr::select(1:5)%>%
   dplyr::rename(Patient_number= 1, Nutrition_Response= 2, FFM_Response= 3, Sport_Response= 4, pFVC_Response= 5)%>%
-  select(1,2,3,5)-> resp
+  dplyr::select(1,2,3,5)-> resp
 
 ##Merge all the info
 ##Merge Nutritional data with Lung data
 lung%>%
-  select(-c(Patient_number,Visit))%>%
+  dplyr::select(-c(Patient_number,Visit))%>%
   left_join(nutri, lung, by= "Comed_token")-> tmp1
 
 tmp1%>%
-  select(-c(Patient_number,Visit))-> tmp1
+  dplyr::select(-c(Patient_number,Visit))-> tmp1
 
 setdiff(tmp1$Comed_token, data.mainz$Comed_token)
 
@@ -300,8 +300,8 @@ setdiff(metadata$SampleID, clinic$SampleID)
 ##Make adjustment before mearging
 
 clinic%>%
-  mutate(SampleID=replace(SampleID, SampleID=="10P3V3", "10P2V3B"))%>%
-  mutate(SampleID=replace(SampleID, SampleID=="10P17V2", "10P17V3A"))-> clinic
+  dplyr::mutate(SampleID=replace(SampleID, SampleID=="10P3V3", "10P2V3B"))%>%
+  dplyr::mutate(SampleID=replace(SampleID, SampleID=="10P17V2", "10P17V3A"))-> clinic
 
 ##Check that this is fixed
 setdiff(metadata$SampleID, clinic$SampleID)
