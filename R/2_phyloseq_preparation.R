@@ -11,11 +11,11 @@ library(Biostrings)
 reRun<- FALSE
 
 ##Load data 
-if(!exists("metadata")){
+if(!exists("metadata.ps")){
   if(isTRUE(reRun)){
     source("R/0_Metadata_adjustment.R") ## Run the script at base directory of repository!   
   } else {
-    metadata<- readRDS(file = "~/CF_project/exercise-cf-intervention/data/metadata_indexed.rds") ##New annotation SILVA
+    metadata<- readRDS(file = "CF_project/exercise-cf-intervention/data/metadata_PS.rds") 
   }
 }
 
@@ -46,7 +46,7 @@ asv<- otu_table(asvmat, taxa_are_rows = T)
 sample_names(asv) <- gsub("X", "\\1", sample_names(asv)) ##eliminate the X at the beginning
 
 ##2) Use metadata dataframe and transform it to "sample data" format
-sample<- sample_data(metadata)
+sample<- sample_data(metadata.ps)
 sample_names(sample) <- sample$SampleID 
 
 ##3) Use taxa matrix and transform it to "tax table" format
@@ -60,5 +60,5 @@ tree<- tree$tree
 PS <- merge_phyloseq(asv, tax, sample, tree)
   
   saveRDS(PS, file="~/CF_project/exercise-cf-intervention/data/PhyloSeqComp.Rds")
-  rm(asvmat, asv, dna, taxamat, tax, tree) 
+  rm(asvmat, asv, dna, taxamat, tax, tree, sample) 
   
