@@ -647,18 +647,17 @@ y <- as.matrix(y) # Metadata (39 samples x 65 respiratory and nutritional variab
 ###Let's run this with metadeconfoundR (other script for that)
 
 ###Deseq2 analysis
-library("DESeq2"); packageVersion("DESeq2")
+library("DESeq2")
 
 ##Get raw data to run this
-PS2.stool<- subset_samples(PS2, material%in%c("Stool"))
-PS2.stool<- tax_glom(PS2.stool, "Genus")
-
+PS3.stool<- subset_samples(PS3, material%in%c("Stool"))
+PS3.stool<- tax_glom(PS3.stool, "Genus")
+##Adjustment make phenotype and genotype as factor 
+PS3.stool@sam_data$Phenotype_severity <- as.factor(PS3.stool@sam_data$Phenotype_severity)
+PS3.stool@sam_data$Mutation_severity <- as.factor(PS3.stool@sam_data$Mutation_severity)
 ##Severity classification based on:
 #genotype
-deseq.severity<- phyloseq_to_deseq2(PS2.stool, ~ Mutation_severity)
-
-##Phenotype
-#deseq.severity<- phyloseq_to_deseq2(PS2.stool, ~ Phenotype_severity)
+deseq.severity<- phyloseq_to_deseq2(PS3.stool, ~ Mutation_severity)
 
 # calculate geometric means prior to estimate size factors
 gm_mean <- function(x, na.rm=TRUE){
@@ -669,39 +668,83 @@ deseq.severity<- estimateSizeFactors(deseq.severity, geoMeans = geoMeans)
 deseq.severity<- DESeq(deseq.severity, fitType="local")
 
 ac.res <- results(deseq.severity)
-##Remove NA
-ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
 
 ##Select cut-off value
-alpha <- 0.05
-Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
+sigtab <- cbind(as(ac.res,"data.frame"), as(tax_table(PS3.stool)[rownames(ac.res), ], "matrix"))
+sigtab$Species<- NULL
+head(sigtab,20)
 
-Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS2.stool)[rownames(Bac.sigtab), ], "matrix"))
+##Volcano plot to detect differential taxa in stool microbiome between severity 
+#The significantly deferentially abundant genes are the ones found upper-left and upper-right corners
+##Add a column to the data specifying if they are highly (positive) or lowly abundant (negative)
+## Considering the comparison D21 vs D0
 
-##Adjust value
-Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > -10, ]
-Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
+# add a column of Non-significant
+sigtab$AbundLev <- "NS"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "High" 
+sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
+
+#Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
+#plot adding up all layers we have seen so far
+sigtab%>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
+  geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
+  ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
+  scale_fill_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
+  geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
+  labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Taxa \n abundance")+
+  theme_bw()+
+  theme(text = element_text(size=16))-> A
 
 ##Save table 
-#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_Severity.csv") #Genotype
-#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_Phen_Severity.csv") #Phenotype
+#write.csv(sigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_Severity.csv") #Genotype
+#write.csv(sigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_Gen_Severity.csv") #Phenotype
 
-###Negative Binomial in Microbiome Differential Abundance Testing (plot)
-ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -log2FoldChange), y=log2FoldChange, color=Phylum)) +
-  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
-  scale_fill_brewer(palette = "Set1")+
-  coord_flip()+
-  geom_hline(aes(yintercept = 15), color = "gray70", size = 0.6)+
-  xlab("ASVs Genus-level")+
-  ylab("Mild <-- Log-2-Fold-Change --> Severe")+
+##Phenotype
+deseq.severity<- phyloseq_to_deseq2(PS3.stool, ~ Phenotype_severity)
+# calculate geometric means prior to estimate size factors
+geoMeans<- apply(counts(deseq.severity), 1, gm_mean)
+deseq.severity<- estimateSizeFactors(deseq.severity, geoMeans = geoMeans)
+deseq.severity<- DESeq(deseq.severity, fitType="local")
+
+ac.res <- results(deseq.severity)
+
+##Select cut-off value
+sigtab <- cbind(as(ac.res,"data.frame"), as(tax_table(PS3.stool)[rownames(ac.res), ], "matrix"))
+sigtab$Species<- NULL
+head(sigtab,20)
+
+# add a column of Non-significant
+sigtab$AbundLev <- "NS"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "High" 
+sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
+
+#Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
+#plot adding up all layers we have seen so far
+sigtab%>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
+  geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
+  ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
+  scale_fill_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
+  geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
+  labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Taxa \n abundance")+
   theme_bw()+
-  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16), 
-        axis.text.y = element_text(face="italic", color="black"))+
-  labs(tag = "A)")-> A #Change to B when Phenotype
+  theme(text = element_text(size=16))-> B
 
-#png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Severity.png", units = 'in', res = 300, width=20, height=10)
-ggarrange(A, B, ncol=2, nrow=1, common.legend = F, legend="right")
-#dev.off()
+C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = T, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Severity.png", plot = C, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Severity.pdf", plot = C, width = 8, height = 8)
+
+rm(A, B, C)
 
 ###Analysis by time points
 ###Make Phloseq subsets to run the analysis
