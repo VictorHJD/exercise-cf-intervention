@@ -746,7 +746,7 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Sev
 
 rm(A, B, C)
 
-###Analysis by time points
+###Analysis by time points (to do)
 ###Make Phloseq subsets to run the analysis
 ##V1V2
 PS2.stool12<- subset_samples(PS2.stool, Visit%in%c("V1", "V2"))
