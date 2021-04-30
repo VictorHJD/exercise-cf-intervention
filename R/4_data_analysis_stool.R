@@ -12,6 +12,7 @@ library(data.table)
 library(knitr)
 library(grid)
 library(gridExtra)
+library(RColorBrewer)
 ##For analysis with linear models
 library("lme4")
 library("lmtest")
@@ -28,6 +29,13 @@ if(!exists("PS4.stool")){
   } 
 }
 
+##Color palette for patients ##
+pal.CF<- c((brewer.pal(n = 8, name = "Dark2")), (brewer.pal(n = 11, name = "Paired")) )
+
+pal.CF<- c("P1"="#1B9E77","P2"= "#D95F02","P3"= "#7570B3","P4"= "#E7298A","P5"= "#66A61E",
+           "P6"="#E6AB02","P7"= "#A6761D","P8"= "#666666","P9"= "#A6CEE3","P10"= "#1F78B4",
+           "P11"= "#B2DF8A","P12"= "#33A02C","P13"= "#FB9A99","P14"="#E31A1C","P15"= "#FDBF6F",
+           "P16"= "#FF7F00","P17"= "#CAB2D6","P18"= "#6A3D9A","P19"= "#FFFF99")
 ##Stool#####################
 sdt%>%
   dplyr::filter(material=="Stool")%>%
@@ -51,8 +59,9 @@ sdt%>%
   xlab("Visit")+
   ylab("Richness (Chao1 Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
-  labs(tag= "A)")+
-  theme_bw()+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "A)", fill= "Patient number")+
+  theme_classic()+
   theme(text = element_text(size=16))-> A
 
 sdt%>%
@@ -69,8 +78,9 @@ sdt%>%
   xlab("Visit")+
   ylab("Richness (Chao1 Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
-  labs(tag= "C)")+
-  theme_bw()+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "C)", fill= "Patient number")+
+  theme_classic()+
   theme(text = element_text(size=16))-> C
 
 ##Shannon diversity 
@@ -88,8 +98,9 @@ sdt%>%
   xlab("Visit")+
   ylab("Diversity (Shannon Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
-  labs(tag= "B)")+
-  theme_bw()+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "B)", fill= "Patient number")+
+  theme_classic()+
   theme(text = element_text(size=16))-> B
 
 sdt%>%
@@ -106,8 +117,9 @@ sdt%>%
   xlab("Visit")+
   ylab("Diversity (Shannon Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
-  labs(tag= "D)")+
-  theme_bw()+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "D)", fill= "Patient number")+
+  theme_classic()+
   theme(text = element_text(size=16))-> D
 
 E<- ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
@@ -142,14 +154,15 @@ ordination<- ordinate(PS4.stool,
 plot_ordination(PS4.stool, ordination, shape= "Visit")+ 
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(color= Patient_number))+
+  scale_color_manual(values = pal.CF)+
   #geom_point(color= "black", size= 1.5)+
   labs(title = "Bray-Curtis dissimilariy",tag= "A)")+
   theme_bw()+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
   labs(shape = "Visit")+
-  xlab(paste0("PCo1 ", round(ordination$values[1,2]*100, digits = 2)))+
-  ylab(paste0("PCo2 ", round(ordination$values[2,2]*100, digits = 2)))-> D
+  xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
+  ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> D
 
 ##Stratified for Patient number 
 BC.test.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + sex + age +  Visit + BMI,
