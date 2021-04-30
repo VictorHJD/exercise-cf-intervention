@@ -151,15 +151,17 @@ BC_dist<- phyloseq::distance(PS4.stool,
 ordination<- ordinate(PS4.stool,
                       method="PCoA", distance= BC_dist)
 
-plot_ordination(PS4.stool, ordination, shape= "Visit")+ 
+plot_ordination(PS4.stool, ordination)+ 
   theme(aspect.ratio=1)+
-  geom_point(size=3, aes(color= Patient_number))+
-  scale_color_manual(values = pal.CF)+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = pal.CF)+
   #geom_point(color= "black", size= 1.5)+
   labs(title = "Bray-Curtis dissimilariy",tag= "A)")+
   theme_bw()+
   theme(text = element_text(size=16))+
-  labs(colour = "Patient")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
   labs(shape = "Visit")+
   xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> D
@@ -369,8 +371,9 @@ BC_dist.stool%>%
   xlab("Visit")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "B)", caption = get_pwc_label(stats.test))+
-  theme_bw()+
-  theme(text = element_text(size=16))+
+  scale_fill_manual(values = pal.CF)+
+  theme_classic()+
+  theme(text = element_text(size=16), legend.position = "none")+
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->E
 
 f<-ggarrange(D, E, ncol=1, nrow=2, common.legend = TRUE, legend="right")
