@@ -576,56 +576,29 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Tra
 
 rm(A, B, C)
 
+##Test predictive value of BC differences within patient to lung function measurments Delta ppFEV1 between visits
+tr0<- glm(ppFEV1 ~ 1, data = BC_dist.stool, na.action = na.exclude) ##Null model
+tr1<- glm(ppFEV1 ~ Trainingfrequency, data =BC_dist.stool, na.action = na.exclude)
+tr2<- glm(ppFEV1 ~ Trainingtime, data = BC_dist.stool, na.action = na.exclude)
+tr3<- glm(ppFEV1 ~ BC_dist, data = BC_dist.stool, na.action = na.exclude)
+tr4<- glm(ppFEV1 ~ ppFVC, data = BC_dist.stool, na.action = na.exclude)
+tr5<- glm(ppFEV1 ~ Trainingfrequency + Trainingtime + BC_dist + ppFVC, data = BC_dist.stool, na.action = na.exclude)
+tr6<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist*ppFVC , data =BC_dist.stool, na.action = na.exclude) ##Full model
+##Mixed effect models
+##with patient as random effect
+tr7<-glmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number), data = BC_dist.stool)
+summary(tr7)
 ##with Months as random effect
-tr8<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Months), data = BC_dist.stool)
-
+tr8<-lmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC*BC_dist + (1 | Patient_number), data = BC_dist.stool)
 summary(tr8)
-confint(tr7) ##Confidence interval for each fixed effect
-ranef(tr7)$Patient_number ##Estimates for random effect
-predictInterval(tr7)  ## for various model predictions, possibly with new data
-REsim(tr7) ## mean, median and sd of the random effect estimates
 
-lrtest(tr6, tr7)
+lrtest(tr7, tr8)
 
-##Nutritional, pFVC, FFM response with patient random effect
-##Adjust to binary 1 responders = Improvement, 0 No responders= Stable, decreased or not detected
-BC_dist.stool%>%
-  dplyr::mutate(Nutrition_Response = case_when(Nutrition_Response == 1  ~ 1,
-                                               Nutrition_Response %in% c(0, 2,3) ~ 0))%>%
-  dplyr::mutate(FFM_Response = case_when(FFM_Response == 1  ~ 1,
-                                         FFM_Response %in% c(0, 2,3) ~ 0))%>%
-  dplyr::mutate(pFVC_Response = case_when(pFVC_Response == 1  ~ 1,
-                                          pFVC_Response %in% c(0, 2,3) ~ 0))-> BC_dist.stool
-
-##Does the nutrition response is linked to changes in microbial composition?
-p1<- glm(Nutrition_Response ~ BC_dist, data = BC_dist.stool, na.action = na.exclude, 
-         family = binomial()) ## NS
-
-##Does improvement on fat free mass response is linked to changes in microbial composition?
-p2<- glm(FFM_Response ~ BC_dist, data = BC_dist.stool, na.action = na.exclude,
-         family = binomial()) ## NS
-
-##Does improvement in predicted forced vital capacity linked to changes in microbiota or training?
-p3<- glm(pFVC_Response ~ BC_dist, data = BC_dist.stool, na.action = na.exclude,
-         family = binomial())
-p4<- glm(pFVC_Response ~ Trainingfrequency, data = BC_dist.stool, na.action = na.exclude,
-         family = binomial())
-p5<- glm(pFVC_Response ~ Trainingtime, data = BC_dist.stool, na.action = na.exclude,
-         family = binomial())
-p6<- glm(pFVC_Response ~ BC_dist + Trainingfrequency, data = BC_dist.stool, na.action = na.exclude,
-         family = binomial())
-p7<- glm(pFVC_Response ~ BC_dist + Trainingtime, data = BC_dist.stool, na.action = na.exclude,
-         family = binomial())
-p8<- glm(pFVC_Response ~ Trainingfrequency + Trainingtime, data = BC_dist.stool, na.action = na.exclude,
-         family = binomial())
-p9<- glm(pFVC_Response ~ BC_dist + Trainingfrequency + Trainingtime, data = BC_dist.stool, na.action = na.exclude,
-         family = binomial())
-p10<- glm(pFVC_Response ~ BC_dist*Trainingfrequency*Trainingtime, data = BC_dist.stool, na.action = na.exclude,
-          family = binomial())
+plot_model(tr8)
 
 ###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
-PS.stool.Gen<-  tax_glom(PS4.stool, "Genus", NArm = T)
+PS.stool.Gen<- tax_glom(PS4.stool, "Genus", NArm = T)
 
 ##Adjust ASV table for merging with taxa information
 otu<- PS.stool.Gen@otu_table
@@ -636,26 +609,24 @@ otu<- rownames_to_column(otu, var = "ASV")
 tax<- PS.stool.Gen@tax_table
 tax<-as.data.frame(tax)
 tax%>%
-  dplyr::select(Genus)-> tax
+  dplyr::select(Genus, Phylum)-> tax
 tax$Genus<-gsub(" ", "_", basename(tax$Genus))
 tax<- rownames_to_column(tax, var = "ASV")
 
 ##Use genus as rownames
 stool.microbiome<- plyr::join(otu, tax, by= "ASV")
 stool.microbiome$ASV<- NULL
-rownames(stool.microbiome)<- stool.microbiome$Genus
+rownames(stool.microbiome)<- paste0(stool.microbiome$Phylum, "-", stool.microbiome$Genus)
 stool.microbiome$Genus<- NULL
+stool.microbiome$Phylum<- NULL
 
 ##Transpose dataframe so samples are rows 
 stool.microbiome<- t(stool.microbiome)
 #saveRDS(stool.microbiome, "~/CF_project/exercise-cf-intervention/data/Stool_rare_ASV.rds")#--> For MetadeconfoundR
-
-x <- log10(stool.microbiome+1) # ASV Log10 (39 samples x 205 genera)
-
 ##Select useful metrics
 y<-sdt.stool
 
-y<- y[,c(26:27,29:98)] ##Eliminate non-numeric variables
+y<- y[,c(31:95)] ##Eliminate non-numeric variables
 
 ##Make an adjustment to make visit and patient numeric
 y$Visit<- as.numeric(gsub("V", "\\1", y$Visit))
@@ -663,31 +634,16 @@ y$Patient_number<- as.numeric(gsub("P", "\\1", y$Patient_number))
 
 ##Transform severity to binary 
 y%>%
-  mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+  dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
                                         Phenotype_severity == 1 ~ 0))%>%
-  mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+  dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
                                        Mutation_severity == 1 ~ 0))-> y
 
 
-y <- as.matrix(y) # Metadata (39 samples x 68 technical, respiratory and nutritional variables)
+y <- as.matrix(y) # Metadata (39 samples x 65 respiratory and nutritional variables)
 #saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Stool_rare_Metadata.rds")#--> For MetadeconfoundR
 
 # Cross correlate data sets, output is also available in a handy table format
-correlation.table <- associate(y, x, method = "spearman", mode = "table", p.adj.threshold = 0.05, n.signif = 1)
-kable(head(correlation.table))
-
-heat((correlation.table), "X1", "X2", fill = "Correlation", star = "p.adj")
-
-ggplot(correlation.table, aes(X1, X2, group=X1)) + 
-  geom_tile(aes(fill = Correlation)) +
-  #geom_text(aes(fill = correlation.table$Correlation, label = round(correlation.table$Correlation, 1)), size = 5) +
-  scale_fill_gradientn("Spearman's \n Correlation", 
-                       breaks = seq(from = -1, to = 1,  by = 0.25), 
-                       colours = c("blue", "white", "red"), 
-                       limits = c(-1, 1)) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  labs(x = "", y = "", tag = "A)")
-
 ###Let's run this with metadeconfoundR (other script for that)
 
 ###Deseq2 analysis
