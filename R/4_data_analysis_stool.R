@@ -348,6 +348,12 @@ metadata%>%
 BC_dist.stool%>%
   left_join(tmp2, by="ID")-> BC_dist.stool
 
+##Add a time between visits (Overall for know but ask values per patient per period)
+BC_dist.stool%>%
+  dplyr::mutate(Months= case_when(Group == "V1_V3" ~ 12,
+                                  Group == "V1_V2" ~ 3,
+                                  Group == "V2_V3" ~ 19))-> BC_dist.stool
+
 ##Is visit impacting differences in composition by patient? 
 BC_dist.stool%>% 
   wilcox_test(BC_dist ~ Group)%>%
@@ -390,13 +396,17 @@ BC_dist.stool%>%
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Trainingfrequency, y= BC_dist))+
-  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  xlab("Training frequency")+
+  xlab("Mean training frequency per period")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "A)")+
-  theme_bw()+
+  theme_classic()+
   theme(text = element_text(size=16))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
   geom_smooth(method = lm, se=FALSE)-> A
 
 ##Time
@@ -405,28 +415,18 @@ BC_dist.stool%>%
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Trainingtime, y= BC_dist))+
-  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  xlab("Training time")+
+  xlab("Mean training time per period")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "B)")+
-  theme_bw()+
+  theme_classic()+
   theme(text = element_text(size=16))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
   geom_smooth(method = lm, se=FALSE)-> B
-
-##Weeks
-BC_dist.stool%>%
-  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
-                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Trainingsweeks, y= BC_dist))+
-  geom_point(shape= 22, position=position_jitter(0.2), size=2.5, aes(fill= Patient_number), color= "black")+
-  xlab("Training weeks")+
-  ylab("Bray-Curtis dissimilarity")+
-  labs(tag= "C)")+
-  theme_bw()+
-  theme(text = element_text(size=16))+
-  geom_smooth(method = lm, se=FALSE) -> C
 
 ##ppFEV1
 BC_dist.stool%>%
@@ -438,10 +438,14 @@ BC_dist.stool%>%
   scale_shape_manual(values = c(21, 22, 24))+ 
   xlab("Difference in ppFEV1 between visits")+
   ylab("Bray-Curtis dissimilarity")+
-  labs(tag= "D)")+
-  theme_bw()+
+  labs(tag= "C)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
   theme(text = element_text(size=16))+
-  geom_smooth(method = lm, se=FALSE)-> D
+  geom_smooth(method = lm, se=FALSE)-> C
 
 ##ppFEV1
 BC_dist.stool%>%
@@ -453,17 +457,21 @@ BC_dist.stool%>%
   scale_shape_manual(values = c(21, 22, 24))+ 
   xlab("Difference in ppFVC between visits")+
   ylab("Bray-Curtis dissimilarity")+
-  labs(tag= "E)")+
-  theme_bw()+
+  labs(tag= "D)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
   theme(text = element_text(size=16))+
-  geom_smooth(method = lm, se=FALSE)-> E
+  geom_smooth(method = lm, se=FALSE)-> D
 
-plot<-ggarrange(A, B, C, D, E, ncol=2, nrow=3, common.legend = TRUE, legend="right")
+plot<-ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.pdf", plot = plot, width = 10, height = 12)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.png", plot = plot, width = 10, height = 12)
 
-rm(A,B,C,D, E, plot)
+rm(A,B,C,D, plot)
 
 ###Mixed effect models 
 ##Check for complete cases
