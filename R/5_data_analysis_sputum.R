@@ -628,11 +628,13 @@ sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
 #Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
 #plot adding up all layers we have seen so far
 sigtab%>%
+  dplyr::mutate(Genus=  case_when(Genus == "TM7x" ~ "Nanosynbacter lyticus TM7x",
+                                  TRUE ~ Genus))%>%
   ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
   geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
   ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
-  scale_fill_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
-  scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  scale_fill_manual(values=c("#767676FF")) +
+  scale_color_manual(values=c("#767676FF")) +
   geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
   labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
@@ -686,8 +688,8 @@ sigtab%>%
   ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
   geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
   ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
-  scale_fill_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
-  scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  scale_fill_manual(values=c("#767676FF")) +
+  scale_color_manual(values=c("#767676FF")) +
   geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
   labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus abundance")+
@@ -695,17 +697,6 @@ sigtab%>%
   theme(text = element_text(size=16), legend.position = "top")+
   guides(color= F)-> A
 
-##Extract the legend from A to use it later as a common legend 
-get_legend<-function(myggplot){
-  tmp <- ggplot_gtable(ggplot_build(myggplot))
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-  return(legend)
-}
-
-legend <- get_legend(A)
-
-##Remove legend from A 
 A <- A + theme(legend.position="none")
 
 ##Visit 3 vs 2
@@ -731,19 +722,34 @@ sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
 sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
 
 #Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
-#plot adding up all layers we have seen so far
+#plot adding up all layers we have seen so far Actinomyces sp. oral taxon 848 str. F0332
 sigtab%>%
+  dplyr::mutate(Genus=  case_when(Genus == "F0332" ~ "Actinomyces F0332",
+                                  TRUE ~ Genus))%>%
   ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
   geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
   ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
-  scale_fill_manual(values=c("#800000FF", "#767676FF")) +
-  scale_color_manual(values=c("#800000FF", "#767676FF")) +
+  scale_fill_manual(values=c("#8A9045FF", "#767676FF")) +
+  scale_color_manual(values=c("#8A9045FF","#767676FF")) +
   geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
-  labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
+  labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus abundance")+
   theme_bw()+
-  theme(text = element_text(size=16), legend.position = "none")+
+  theme(text = element_text(size=16), legend.position = "top")+
   guides(color= F)-> B
+
+##Extract the legend from A to use it later as a common legend 
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+legend <- get_legend(B)
+
+##Remove legend from B
+B <- B + theme(legend.position="none")
 
 ##Visit 3 vs 1
 deseq.visit<- phyloseq_to_deseq2(PS3.sputum13, ~ Visit)
@@ -770,11 +776,13 @@ sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
 #Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
 #plot adding up all layers we have seen so far
 sigtab%>%
+  dplyr::mutate(Genus=  case_when(Genus == "F0332" ~ "Actinomyces F0332",
+                                  TRUE ~ Genus))%>%
   ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
   geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
   ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
-  scale_fill_manual(values=c("#800000FF", "#767676FF")) +
-  scale_color_manual(values=c("#800000FF", "#767676FF")) +
+  scale_fill_manual(values=c("#767676FF")) +
+  scale_color_manual(values=c("#767676FF")) +
   geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
   labs(tag= "C)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
