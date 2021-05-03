@@ -1,5 +1,5 @@
 ##Cystic-Fibrosis Microbiome Project (Mainz)
-##Data analysis: Stool samples (Alpha, Beta diversity and differential abundance)
+##Data analysis: Sputum samples (Beta diversity and differential abundance)
 ##Víctor Hugo Jarquín-Díaz 28.04.2021
 
 ##To phyloseq
@@ -12,12 +12,16 @@ library(data.table)
 library(knitr)
 library(grid)
 library(gridExtra)
+library(RColorBrewer)
 ##For analysis with linear models
 library("lme4")
 library("lmtest")
 library("rcompanion")
 library("car")
 library("merTools")
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
 
 ##Load data 
 ##Run from the root of the repo at  ~/CF_project/exercise-cf-intervention/
@@ -29,6 +33,14 @@ if(!exists("PS4.sputum")){
 }
 
 training<- read_tsv("~/CF_project/Metadata/sample_data_indexed_training.csv")
+
+##Color palette for patients ##
+pal.CF<- c((brewer.pal(n = 8, name = "Dark2")), (brewer.pal(n = 11, name = "Paired")) )
+
+pal.CF<- c("P1"="#1B9E77","P2"= "#D95F02","P3"= "#7570B3","P4"= "#E7298A","P5"= "#66A61E",
+           "P6"="#E6AB02","P7"= "#A6761D","P8"= "#666666","P9"= "#A6CEE3","P10"= "#1F78B4",
+           "P11"= "#B2DF8A","P12"= "#33A02C","P13"= "#FB9A99","P14"="#E31A1C","P15"= "#FDBF6F",
+           "P16"= "#FF7F00","P17"= "#CAB2D6","P18"= "#6A3D9A","P19"= "#FFFF99")
 
 ######Sputum###################
 sdt%>%
@@ -43,17 +55,21 @@ BC_dist<- phyloseq::distance(PS4.sput,
                              method="bray", weighted=F)
 ordination<- ordinate(PS4.sput,
                       method="PCoA", distance= BC_dist)
+
 plot_ordination(PS4.sput, ordination, shape= "Visit")+ 
   theme(aspect.ratio=1)+
-  geom_point(size=3, aes(color= Patient_number))+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = pal.CF)+
   #geom_point(color= "black", size= 1.5)+
   labs(title = "Bray-Curtis dissimilariy",tag= "A)")+
   theme_bw()+
   theme(text = element_text(size=16))+
-  labs(colour = "Patient")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
   labs(shape = "Visit")+
-  xlab(paste0("PCo1 ", round(ordination$values[1,2]*100, digits = 2)))+
-  ylab(paste0("PCo2 ", round(ordination$values[2,2]*100, digits = 2)))-> A
+  xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
+  ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> A
 
 ##Stratified for Patient number 
 BC.test.sputum<- vegan::adonis(BC_dist~ Phenotype_severity+ Mutation_severity + sex + age +  Visit + BMI,
@@ -136,7 +152,7 @@ metadata%>%
   dplyr::filter(Benzoase==1)%>%
   group_by(Patient_number)%>%
   distinct(Patient_number, .keep_all = TRUE)%>%
-  dplyr::select(c(Patient_number, Nutrition_Response, FFM_Response, pFVC_Response, Phenotype_severity, 
+  dplyr::select(c(Patient_number, Phenotype_severity, 
                   Pseudomonas_status, Sport_Response, Mutation_severity))%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
@@ -150,6 +166,15 @@ BC_dist.sputum%>%
 
 ##Add training information
 training%>%
+  dplyr::filter(Benzoase==1)%>%
+  group_by(Patient_number)%>%
+  distinct(Patient_number, .keep_all = TRUE)%>%
+  dplyr::select(c(Patient_number, Mean_MET_V1V2:Percentage_Trainingsweeks_n52))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> training.sputum
+
+training.sputum%>%
   dplyr::select(-c(Mean_Trainingtime_womissingvalues_V1V2, Mean_Trainingfrequency_womissingvalues_V1V2))%>%
   gather(key = "Measurment", value = "Value",
          Mean_MET_V1V2:Percentage_Trainingsweeks_n52)%>%
@@ -175,6 +200,61 @@ BC_dist.sputum%>%
   dplyr::mutate(ID= paste0(Patient_number, Group))%>%
   left_join(tmp3, by="ID")-> BC_dist.sputum
 
+##Extract ppFEV1 and estimate deltas per Visit combination 
+metadata%>%
+  dplyr::select(c(Comed_token, ppFEV1))%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  group_by(Patient_number)%>%
+  dplyr::select(c(Patient_number, Visit, ppFEV1))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::distinct()%>%
+  spread(Visit, ppFEV1)%>%
+  dplyr::mutate(V1_V2= V1 - V2)%>%
+  dplyr::mutate(V1_V3= V1 - V3)%>%
+  dplyr::mutate(V2_V3= V2 - V3)%>%
+  dplyr::select(c(Patient_number, V1_V2, V2_V3, V1_V3))%>%
+  pivot_longer(!Patient_number, names_to = "Group", values_to = "ppFEV1")%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::ungroup()%>%
+  dplyr::select(c(ID, ppFEV1))-> tmp2
+
+BC_dist.sputum%>%
+  left_join(tmp2, by="ID")-> BC_dist.sputum
+
+##Extract ppFVC and estimate deltas per Visit
+metadata%>%
+  dplyr::select(c(Comed_token, ppFVC))%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  group_by(Patient_number)%>%
+  dplyr::select(c(Patient_number, Visit, ppFVC))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::distinct()%>%
+  spread(Visit, ppFVC)%>%
+  dplyr::mutate(V1_V2= V1 - V2)%>%
+  dplyr::mutate(V1_V3= V1 - V3)%>%
+  dplyr::mutate(V2_V3= V2 - V3)%>%
+  dplyr::select(c(Patient_number, V1_V2, V2_V3, V1_V3))%>%
+  pivot_longer(!Patient_number, names_to = "Group", values_to = "ppFVC")%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::ungroup()%>%
+  dplyr::select(c(ID, ppFVC))-> tmp2
+
+BC_dist.sputum%>%
+  left_join(tmp2, by="ID")-> BC_dist.sputum
+
+##Add a time between visits (Overall for know but ask values per patient per period)
+BC_dist.sputum%>%
+  dplyr::mutate(Months= case_when(Group == "V1_V3" ~ 12,
+                                  Group == "V1_V2" ~ 3,
+                                  Group == "V2_V3" ~ 19))-> BC_dist.sputum
 #### By visit
 BC_dist.sputum%>% 
   wilcox_test(BC_dist ~ Group)%>%
@@ -201,8 +281,9 @@ BC_dist.sputum%>%
   xlab("Visit")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "B)", caption = get_pwc_label(stats.test))+
-  theme_bw()+
-  theme(text = element_text(size=16))+
+  scale_fill_manual(values = pal.CF)+
+  theme_classic()+
+  theme(text = element_text(size=16), legend.position = "none")+
   stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->B
 
 C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
@@ -219,13 +300,17 @@ BC_dist.sputum%>%
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Trainingfrequency, y= BC_dist))+
-  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  xlab("Training frequency")+
+  xlab("Mean training frequency per period")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "A)")+
-  theme_bw()+
+  theme_classic()+
   theme(text = element_text(size=16))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
   geom_smooth(method = lm, se=FALSE)-> A
 
 ##Time
@@ -234,33 +319,61 @@ BC_dist.sputum%>%
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Trainingtime, y= BC_dist))+
-  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  xlab("Training time")+
+  xlab("Mean training time per period")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "B)")+
-  theme_bw()+
+  theme_classic()+
   theme(text = element_text(size=16))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
   geom_smooth(method = lm, se=FALSE)-> B
 
-##Weeks
+##ppFEV1
 BC_dist.sputum%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Trainingsweeks, y= BC_dist))+
-  geom_point(shape= 22, position=position_jitter(0.2), size=2.5, aes(fill= Patient_number), color= "black")+
-  xlab("Training weeks")+
+  ggplot(aes(x= ppFEV1, y= BC_dist))+
+  geom_point(position=position_jitter(0.2), size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Difference in ppFEV1 between visits")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "C)")+
-  theme_bw()+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
   theme(text = element_text(size=16))+
-  geom_smooth(method = lm, se=FALSE) -> C
+  geom_smooth(method = lm, se=FALSE)-> C
 
-D<-ggarrange(A, B, C, ncol=1, nrow=3, common.legend = TRUE, legend="right")
+##ppFEV1
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= ppFVC, y= BC_dist))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Difference in ppFVC between visits")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "D)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))+
+  geom_smooth(method = lm, se=FALSE)-> D
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training.pdf", plot = D, width = 10, height = 12)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training.png", plot = D, width = 10, height = 12)
+plot<-ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training.pdf", plot = plot, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training.png", plot = plot, width = 10, height = 12)
 
 rm(A,B,C,D)
 
