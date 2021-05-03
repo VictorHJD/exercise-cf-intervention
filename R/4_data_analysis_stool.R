@@ -603,9 +603,10 @@ tr3<- glm(ppFEV1 ~ BC_dist, data = BC_dist.stool, na.action = na.exclude)
 tr4<- glm(ppFEV1 ~ ppFVC, data = BC_dist.stool, na.action = na.exclude)
 tr5<- glm(ppFEV1 ~ Trainingfrequency + Trainingtime + BC_dist + ppFVC, data = BC_dist.stool, na.action = na.exclude)
 tr6<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist*ppFVC , data =BC_dist.stool, na.action = na.exclude) ##Full model
+
 ##Mixed effect models
 ##with patient as random effect
-tr7<-glmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number), data = BC_dist.stool)
+tr7<-lmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number), data = BC_dist.stool)
 summary(tr7)
 ##with Months as random effect
 tr8<-lmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC*BC_dist + (1 | Patient_number), data = BC_dist.stool)
@@ -622,6 +623,29 @@ BC_dist.stool%>%
   dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
                                               Mutation_severity == 1 ~ 0))-> BC_dist.stool
 
+log.model1 <- lmer(Phenotype_severity ~Trainingfrequency + Trainingtime +
+                     ppFVC + ppFEV1 + BC_dist + (1 | Patient_number), data = BC_dist.stool)##Full model
+summary(log.model1)$coef
+
+log.model2 <- lmer(Phenotype_severity ~Trainingfrequency + Trainingtime +
+                     ppFVC + ppFEV1 + (1 | Patient_number), data = BC_dist.stool)##Without BC dissimilarity model
+summary(log.model2)$coef
+
+lrtest(log.model2, log.model1) ##Bray-Curtis dissimilarity add predictive power for phenotype prediction
+
+BC_dist.stool%>%
+  ggplot(aes(ppFEV1, Phenotype_severity)) +
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  scale_fill_manual(values = pal.CF)+
+  labs(x = "Difference in ppFVC between visits",
+       y = "Probability of severe CF phenotype", tag= "A)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit interval")+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"))
 
 ###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
