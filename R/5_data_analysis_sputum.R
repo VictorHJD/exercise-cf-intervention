@@ -797,3 +797,154 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_sputum_Vi
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_sputum_Visit.pdf", plot = D, width = 8, height = 8)
 
 rm(A,B,C, D)
+
+##Correlations with responders for sputum and stool
+##Lactobacillus 
+tmp1<- as.data.frame(sputum.microbiome[,"Firmicutes-Lactobacillus"])
+colnames(tmp1)<- c("Firmicutes-Lactobacillus")
+sdt.sputum<- cbind(sdt.sputum, tmp1)
+
+tmp1<- as.data.frame(stool.microbiome[,"Firmicutes-Lactobacillus"])
+colnames(tmp1)<- c("Firmicutes-Lactobacillus")
+sdt.stool<- cbind(sdt.stool, tmp1)
+
+##Pseudomonas
+tmp2<- as.data.frame(sputum.microbiome[,"Proteobacteria-Pseudomonas"])
+colnames(tmp2)<- c("Proteobacteria-Pseudomonas")
+sdt.sputum<- cbind(sdt.sputum, tmp2)
+
+tmp2<- as.data.frame(stool.microbiome[,"Proteobacteria-Pseudomonas"])
+colnames(tmp2)<- c("Proteobacteria-Pseudomonas")
+sdt.stool<- cbind(sdt.stool, tmp2)
+
+##Logistic regression 
+###Stool
+sdt.stool%>%
+  dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+                                               Phenotype_severity == 1 ~ 0))%>%
+  dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+                                              Mutation_severity == 1 ~ 0))-> sdt.stool
+
+log.model1 <- glm(Phenotype_severity ~ `Proteobacteria-Pseudomonas`
+                  , data = sdt.stool, family = binomial)
+summary(log.model1)$coef
+
+sdt.stool%>%
+  ggplot(aes(`Proteobacteria-Pseudomonas`/1e6, Phenotype_severity)) +
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = pal.CF)+
+  labs(x = "Psudomonas relative abundance",
+       y = "Probability of having a severe CF phenotype", tag= "A)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"))-> A
+
+sdt.stool%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  ggplot(aes(Visit, `Proteobacteria-Pseudomonas`/1e6)) +
+  geom_line(aes(group = Patient_number), color= "gray")+
+  geom_boxplot(color="black", alpha= 0.5)+
+  scale_y_log10()+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  xlab("Visit")+
+  ylab("Pseudomonas relative abundance")+
+  labs(tag= "B)")+
+  scale_fill_manual(values = pal.CF)+
+  theme_classic()+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  theme(text = element_text(size=16))-> B
+
+sdt.stool%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  ggplot(aes(Visit, `Firmicutes-Lactobacillus`/1e6)) +
+  geom_line(aes(group = Patient_number), color= "gray")+
+  geom_boxplot(color="black", alpha= 0.5)+
+  scale_y_log10()+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  xlab("Visit")+
+  ylab("Lactobacillus relative abundance")+
+  labs(tag= "C)")+
+  scale_fill_manual(values = pal.CF)+
+  theme_classic()+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  theme(text = element_text(size=16))-> C
+
+###Sputum
+sdt.sputum%>%
+  dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+                                               Phenotype_severity == 1 ~ 0))%>%
+  dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+                                              Mutation_severity == 1 ~ 0))-> sdt.sputum
+
+log.model2 <- glm(Phenotype_severity ~ `Proteobacteria-Pseudomonas`
+                    , data = sdt.sputum, family = binomial)
+summary(log.model2)$coef
+
+sdt.sputum%>%
+  ggplot(aes(`Proteobacteria-Pseudomonas`/1e6, Phenotype_severity)) +
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = pal.CF)+
+  labs(x = "Pseudomonas relative abundance",
+       y = "Probability of having a severe CF phenotype", tag= "D)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"))-> D
+
+sdt.sputum%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  ggplot(aes(Visit, `Proteobacteria-Pseudomonas`/1e6)) +
+  geom_line(aes(group = Patient_number), color= "gray")+
+  geom_boxplot(color="black", alpha= 0.5)+
+  scale_y_log10()+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  xlab("Visit")+
+  ylab("Pseudomonas relative abundance")+
+  labs(tag= "E)")+
+  scale_fill_manual(values = pal.CF)+
+  theme_classic()+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  theme(text = element_text(size=16))-> E
+
+sdt.sputum%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  ggplot(aes(Visit, `Firmicutes-Lactobacillus`/1e6)) +
+  geom_line(aes(group = Patient_number), color= "gray")+
+  geom_boxplot(color="black", alpha= 0.5)+
+  scale_y_log10()+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  xlab("Visit")+
+  ylab("Lactobacillus relative abundance")+
+  labs(tag= "F)")+
+  scale_fill_manual(values = pal.CF)+
+  theme_classic()+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  theme(text = element_text(size=16))-> f
+ 
+plot<-ggarrange(A, D, B,  E, C, f, ncol=2, nrow=3, common.legend = T, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputum.png", plot = plot, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputum.pdf", plot = plot, width = 8, height = 8)
+
+rm(A, B, C, D, E, f)
