@@ -476,42 +476,25 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Tr
 
 rm(A, B, C)
 
+##Test predictive value of BC differences within patient to lung function measurments Delta ppFEV1 between visits
+tr0<- glm(ppFEV1 ~ 1, data = BC_dist.sputum, na.action = na.exclude) ##Null model
+tr1<- glm(ppFEV1 ~ Trainingfrequency, data =BC_dist.sputum, na.action = na.exclude)
+tr2<- glm(ppFEV1 ~ Trainingtime, data = BC_dist.sputum, na.action = na.exclude)
+tr3<- glm(ppFEV1 ~ BC_dist, data = BC_dist.sputum, na.action = na.exclude)
+tr4<- glm(ppFEV1 ~ ppFVC, data = BC_dist.sputum, na.action = na.exclude)
+tr5<- glm(ppFEV1 ~ Trainingfrequency + Trainingtime + BC_dist + ppFVC, data = BC_dist.sputum, na.action = na.exclude)
+tr6<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist*ppFVC , data =BC_dist.sputum, na.action = na.exclude) ##Full model
+##Mixed effect models
+##with patient as random effect
+tr7<-glmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number), data = BC_dist.sputum)
+summary(tr7)
+##with Months as random effect
+tr8<-lmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC*BC_dist + (1 | Patient_number), data = BC_dist.sputum)
+summary(tr8)
 
-##Nutritional, pFVC, FFM response with patient random effect
-##Adjust to binary 1 responders = Improvement, 0 No responders= Stable, decreased or not detected
-BC_dist.sputum%>%
-  dplyr::mutate(Nutrition_Response = case_when(Nutrition_Response == 1  ~ 1,
-                                               Nutrition_Response %in% c(0, 2,3) ~ 0))%>%
-  dplyr::mutate(FFM_Response = case_when(FFM_Response == 1  ~ 1,
-                                         FFM_Response %in% c(0, 2,3) ~ 0))%>%
-  dplyr::mutate(pFVC_Response = case_when(pFVC_Response == 1  ~ 1,
-                                          pFVC_Response %in% c(0, 2,3) ~ 0))-> BC_dist.sputum
+lrtest(tr7, tr8)
 
-##Does the nutrition response is linked to changes in microbial composition?
-p1<- glm(Nutrition_Response ~ BC_dist, data = BC_dist.sputum, na.action = na.exclude, 
-         family = binomial()) ## NS
-
-##Does improvement on fat free mass response is linked to changes in microbial composition?
-p2<- glm(FFM_Response ~ BC_dist, data = BC_dist.sputum, na.action = na.exclude,
-         family = binomial()) ## NS
-
-##Does improvement in predicted forced vital capacity linked to changes in microbiota or training?
-p3<- glm(pFVC_Response ~ BC_dist, data = BC_dist.sputum, na.action = na.exclude,
-         family = binomial())
-p4<- glm(pFVC_Response ~ Trainingfrequency, data = BC_dist.sputum, na.action = na.exclude,
-         family = binomial())
-p5<- glm(pFVC_Response ~ Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
-         family = binomial())
-p6<- glm(pFVC_Response ~ BC_dist + Trainingfrequency, data = BC_dist.sputum, na.action = na.exclude,
-         family = binomial())
-p7<- glm(pFVC_Response ~ BC_dist + Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
-         family = binomial())
-p8<- glm(pFVC_Response ~ Trainingfrequency + Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
-         family = binomial())
-p9<- glm(pFVC_Response ~ BC_dist + Trainingfrequency + Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
-         family = binomial())
-p10<- glm(pFVC_Response ~ BC_dist*Trainingfrequency*Trainingtime, data = BC_dist.sputum, na.action = na.exclude,
-          family = binomial())
+plot_model(tr8)
 
 ##Glom by genus
 PS.sputum.Gen<- tax_glom(PS4.sput, "Genus", NArm = T)
@@ -525,15 +508,16 @@ otu<- rownames_to_column(otu, var = "ASV")
 tax<- PS.sputum.Gen@tax_table
 tax<-as.data.frame(tax)
 tax%>%
-  dplyr::select(Genus)-> tax
+  dplyr::select(Genus, Phylum)-> tax
 tax$Genus<-gsub(" ", "_", basename(tax$Genus))
 tax<- rownames_to_column(tax, var = "ASV")
 
 ##Use genus as rownames
 sputum.microbiome<- plyr::join(otu, tax, by= "ASV")
 sputum.microbiome$ASV<- NULL
-rownames(sputum.microbiome)<- sputum.microbiome$Genus
+rownames(sputum.microbiome)<- paste0(sputum.microbiome$Phylum, "-", sputum.microbiome$Genus)
 sputum.microbiome$Genus<- NULL
+sputum.microbiome$Phylum<- NULL
 
 ##Transpose dataframe so samples are rows 
 sputum.microbiome<- t(sputum.microbiome)
