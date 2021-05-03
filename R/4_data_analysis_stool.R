@@ -173,7 +173,7 @@ plot_ordination(PS4.stool, ordination)+
 plot_ordination(PS4.stool, ordination)+ 
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(fill= Patient_number, shape= as.factor(Phenotype_severity)), color= "black")+
-  scale_shape_manual(values = c(25, 24))+
+  scale_shape_manual(values = c(25, 24), labels = c("Low severity", "High severity"))+
   scale_fill_manual(values = pal.CF)+
   labs(title = "Bray-Curtis dissimilariy stool",tag= "A)")+
   stat_ellipse(aes(color = as.factor(Phenotype_severity)))+
