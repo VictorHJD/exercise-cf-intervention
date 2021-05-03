@@ -169,6 +169,25 @@ plot_ordination(PS4.stool, ordination)+
   xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> D
 
+###Phenotype severity
+plot_ordination(PS4.stool, ordination)+ 
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(fill= Patient_number, shape= as.factor(Phenotype_severity)), color= "black")+
+  scale_shape_manual(values = c(25, 24))+
+  scale_fill_manual(values = pal.CF)+
+  labs(title = "Bray-Curtis dissimilariy stool",tag= "A)")+
+  stat_ellipse(aes(color = as.factor(Phenotype_severity)))+
+  scale_color_manual(values=c("#8A9045FF", "#800000FF"))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= F)+
+  labs(fill = "Patient")+
+  labs(shape = "Phenotype severity")+
+  xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
+  ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> PCo.Sev.Stool
+
+saveRDS(PCo.Sev.Stool, "CF_project/exercise-cf-intervention/data/PCo.Sev.Stool.rds")
+
 ##Stratified for Patient number 
 BC.test.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + sex + age +  Visit + BMI,
                               permutations = 999, data = sdt.stool, na.action = F, strata = sdt.stool$Patient_number)
@@ -596,6 +615,14 @@ lrtest(tr7, tr8)
 
 plot_model(tr8)
 
+###Does differences in bacterial composition within patient predict severity status 
+BC_dist.stool%>%
+  dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+                                               Phenotype_severity == 1 ~ 0))%>%
+  dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+                                              Mutation_severity == 1 ~ 0))-> BC_dist.stool
+
+
 ###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
 PS.stool.Gen<- tax_glom(PS4.stool, "Genus", NArm = T)
@@ -893,5 +920,5 @@ D<- grid.arrange(legend, A,B,C, nrow=4, heights=c(0.5, 2.5, 2.5, 2.5))
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Visit.png", plot = D, width = 8, height = 8)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Visit.pdf", plot = D, width = 8, height = 8)
 
-rm(A,B,C, D)
+rm(A,B,C,D)
 

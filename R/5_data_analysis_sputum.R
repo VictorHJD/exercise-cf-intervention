@@ -71,6 +71,32 @@ plot_ordination(PS4.sput, ordination, shape= "Visit")+
   xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> A
 
+###Phenotype severity
+plot_ordination(PS4.sput, ordination)+ 
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(fill= Patient_number, shape= as.factor(Phenotype_severity)), color= "black")+
+  scale_shape_manual(values = c(25, 24))+
+  scale_fill_manual(values = pal.CF)+
+  labs(title = "Bray-Curtis dissimilariy sputum",tag= "B)")+
+  stat_ellipse(aes(color = as.factor(Phenotype_severity)))+
+  scale_color_manual(values=c("#8A9045FF", "#800000FF"))+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= F)+
+  labs(fill = "Patient")+
+  labs(shape = "Phenotype severity")+
+  xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
+  ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> PCo.Sev.Sputum
+
+PCo.Sev.Stool<- readRDS("CF_project/exercise-cf-intervention/data/PCo.Sev.Stool.rds")
+
+plot<-ggarrange(PCo.Sev.Stool, PCo.Sev.Sputum, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Severity.pdf", plot = plot, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Severity.png", plot = plot, width = 10, height = 8)
+
+rm(PCo.Sev.Sputum, PCo.Sev.Stool, plot)
+
 ##Stratified for Patient number 
 BC.test.sputum<- vegan::adonis(BC_dist~ Phenotype_severity+ Mutation_severity + sex + age +  Visit + BMI,
                                permutations = 999, data = sdt.sputum, na.action = F, strata = sdt.sputum$Patient_number)

@@ -32,6 +32,11 @@ y<- as.data.frame(stool.microbiome)
 x$SampleID<- SampleID
 y$SampleID<- SampleID
 
+##Adjust some variables
+x%>%
+  dplyr::mutate(sex = case_when(sex == 1  ~ 0,
+                                sex == 2 ~ 1))-> x
+
 ##Subset V1 vs V2 
 x%>%
   select(SampleID, Visit)%>%
@@ -49,8 +54,6 @@ x[x$Visit %in% c(1,2), ]-> x.V1V2 ## Metadata
 x.V1V2%>%
   mutate(Visit = case_when(Visit == 1  ~ 0,
                            Visit == 2 ~ 1))%>%
-  mutate(sex = case_when(sex == 1  ~ 0,
-                         sex == 2 ~ 1))%>%
   relocate(Visit)%>%
   dplyr::rename(Status= Visit)%>%
   select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V1V2  ###Without technical confunders
@@ -74,8 +77,6 @@ x[x$Visit %in% c(2, 3), ]-> x.V2V3 ## Metadata
 x.V2V3%>%
   mutate(Visit = case_when(Visit == 2  ~ 0,
                            Visit == 3 ~ 1))%>%
-  mutate(sex = case_when(sex == 1  ~ 0,
-                         sex == 2 ~ 1))%>%
   relocate(Visit)%>%
   dplyr::rename(Status= Visit)%>%
   select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V2V3  ###Without technical confunders
@@ -99,8 +100,6 @@ x[x$Visit %in% c(1,3), ]-> x.V1V3 ## Metadata
 x.V1V3%>%
   mutate(Visit = case_when(Visit == 1  ~ 0,
                            Visit == 3 ~ 1))%>%
-  mutate(sex = case_when(sex == 1  ~ 0,
-                         sex == 2 ~ 1))%>%
   relocate(Visit)%>%
   dplyr::rename(Status= Visit)%>%
   select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V1V3  ###Without technical confunders
@@ -109,10 +108,6 @@ x.V1V3$SampleID<- NULL
 
 ##Use severity as case-control variable
 x%>%
-  mutate(sex = case_when(sex == 1  ~ 0,
-                         sex == 2 ~ 1))%>%
-  mutate(Mutation_severity = case_when(Mutation_severity == 1  ~ 0,
-                                       Mutation_severity == 2 ~ 1))%>%
   relocate(Mutation_severity)%>%
   dplyr::rename(Status= Mutation_severity)-> x.all
 
@@ -267,6 +262,10 @@ SampleID<- rownames(sputum.metadata)
 x<- as.data.frame(sputum.metadata)
 y<- as.data.frame(sputum.microbiome)
 
+##Adjust some variables
+x%>%
+  dplyr::mutate(sex = case_when(sex == 1  ~ 0,
+                         sex == 2 ~ 1))-> x
 ##Add IDs as column
 x$SampleID<- SampleID
 y$SampleID<- SampleID
@@ -288,8 +287,6 @@ x[x$Visit %in% c(1,2), ]-> x.V1V2 ## Metadata
 x.V1V2%>%
   mutate(Visit = case_when(Visit == 1  ~ 0,
                            Visit == 2 ~ 1))%>%
-  mutate(sex = case_when(sex == 1  ~ 0,
-                         sex == 2 ~ 1))%>%
   relocate(Visit)%>%
   dplyr::rename(Status= Visit)%>%
   select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V1V2  ###Without technical confunders
@@ -313,8 +310,6 @@ x[x$Visit %in% c(2, 3), ]-> x.V2V3 ## Metadata
 x.V2V3%>%
   mutate(Visit = case_when(Visit == 2  ~ 0,
                            Visit == 3 ~ 1))%>%
-  mutate(sex = case_when(sex == 1  ~ 0,
-                         sex == 2 ~ 1))%>%
   relocate(Visit)%>%
   dplyr::rename(Status= Visit)%>%
   select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V2V3  ###Without technical confunders
@@ -338,8 +333,6 @@ x[x$Visit %in% c(1,3), ]-> x.V1V3 ## Metadata
 x.V1V3%>%
   mutate(Visit = case_when(Visit == 1  ~ 0,
                            Visit == 3 ~ 1))%>%
-  mutate(sex = case_when(sex == 1  ~ 0,
-                         sex == 2 ~ 1))%>%
   relocate(Visit)%>%
   dplyr::rename(Status= Visit)%>%
   select(-c(extract_quant_ng_ul, total_ng_DNA, dna_quant_ng_ul, raw_reads))-> x.V1V3  ###Without technical confunders
@@ -348,8 +341,6 @@ x.V1V3$SampleID<- NULL
 
 ##Use severity as case-control variable
 x%>%
-  mutate(sex = case_when(sex == 1  ~ 0,
-                         sex == 2 ~ 1))%>%
   relocate(Phenotype_severity)%>%
   dplyr::rename(Status= Phenotype_severity)-> x.all
 
