@@ -399,13 +399,17 @@ BC_dist.sputum%>%
 qqPlot(BC_dist.sputum$BC_dist)
 qqPlot(BC_dist.sputum$Trainingfrequency)
 qqPlot(BC_dist.sputum$Trainingtime)
+qqPlot(BC_dist.sputum$ppFEV1)
+qqPlot(BC_dist.sputum$ppFVC)
 
 ##GLM (Training weeks was omited due to a lot of NAs)
 tr0<- glm(BC_dist ~ 1, data = BC_dist.sputum, na.action = na.exclude) ##Null model
 tr1<- glm(BC_dist ~ Trainingfrequency, data =BC_dist.sputum, na.action = na.exclude)
 tr2<- glm(BC_dist ~ Trainingtime, data = BC_dist.sputum, na.action = na.exclude)
-tr3<- glm(BC_dist ~ Trainingfrequency + Trainingtime, data = BC_dist.sputum, na.action = na.exclude)
-tr4<- glm(BC_dist ~ Trainingfrequency*Trainingtime , data =BC_dist.sputum, na.action = na.exclude) ##Full model
+tr3<- glm(BC_dist ~ ppFEV1, data = BC_dist.sputum, na.action = na.exclude)
+tr4<- glm(BC_dist ~ ppFVC, data = BC_dist.sputum, na.action = na.exclude)
+tr5<- glm(BC_dist ~ Trainingfrequency + Trainingtime + ppFEV1 + ppFVC, data = BC_dist.sputum, na.action = na.exclude)
+tr6<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC , data =BC_dist.sputum, na.action = na.exclude) ##Full model
 
 ##Comparisons between models
 lrtest(tr1, tr2) ##Significant difference Training Frequency seems to be a better predictor for microbial differences among visits
@@ -413,35 +417,65 @@ lrtest(tr1, tr3) ##Not significant difference
 lrtest(tr2, tr3) ##Not significant difference 
 lrtest(tr1, tr4) ##No difference between model with training frequency alone and its interaction with time
 lrtest(tr2, tr4) ##No difference between model with training time alone and its interaction with frequency
-lrtest(tr3, tr4) ##No difference between model with training time and frequency and their interaction 
+lrtest(tr0, tr6) ##No difference between model with training time and frequency and their interaction 
 
 ##Mixed effect models
 ##with patient as random effect
-tr5<-lmer(BC_dist ~ Trainingfrequency * Trainingtime + (1 | Patient_number), data = BC_dist.sputum)
-summary(tr5)
-confint(tr5) ##Confidence interval for each fixed effect
-ranef(tr5)$Patient_number ##Estimates for random effect
-predictInterval(tr5)  ## for various model predictions, possibly with new data
-REsim(tr5) ## mean, median and sd of the random effect estimates
+tr7<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = BC_dist.sputum)
+summary(tr7)
+##with Months as random effect
+tr8<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Months), data = BC_dist.sputum)
+summary(tr8)
 
-lrtest(tr4, tr5)
+lrtest(tr7, tr8)
 
-A<- plotREsim(REsim(tr5))  ## plot the interval estimates
+A<- plotREsim(REsim(tr7))  ## plot the interval estimates
 A$data%>%
   dplyr::mutate(groupID = fct_relevel(groupID, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> A$data
 A+
-  geom_point(aes(color= groupID))+
+  geom_point(shape= 21, size=2.5, aes(fill= groupID), color= "black")+
+  scale_fill_manual(values = pal.CF)+
   xlab(label = NULL)+
-  labs(title = NULL, color = "Patiente \n number")+
+  ylab(label = "Estimates")+
+  labs(title = NULL, tag= "A)", fill= "Patient number")+
+  theme_classic()+
   theme(strip.background = element_blank(),
-        strip.text.x = element_blank(), text = element_text(size=16))-> A
+        strip.text.x = element_blank(), 
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        text = element_text(size=16))-> A
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.png", plot = A, width = 8, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.pdf", plot = A, width = 8, height = 8)
+##PLot model  
+B<- plot_model(tr7, p.adjust = "BH", vline.color = "gray",
+               axis.labels = c( "Trainingfrequency"= "Frequency",
+                                "Trainingtime" = "Time", 
+                                "Trainingfrequency:Trainingtime" = "Frequency*Time", 
+                                "Trainingfrequency:ppFEV1" = "Frequency*ppFEV1",
+                                "Trainingtime:ppFEV1" = "Time*ppFEV1", 
+                                "Trainingfrequency:ppFVC"= "Frequency*ppFVC", 
+                                "Trainingtime:ppFVC"= "Time*ppFVC", 
+                                "Trainingfrequency:Trainingtime:ppFEV1"= "Frequency*Time)*ppFEV1",
+                                "Trainingfrequency:Trainingtime:ppFVC"= "(Frequency*Time)*ppFVC",
+                                "ppFEV1:ppFVC"= "ppFEV1*ppFVC",
+                                "Trainingfrequency:ppFEV1:ppFVC"= "(Frequency*ppFEV1)*ppFVC", 
+                                "Trainingtime:ppFEV1:ppFVC"= "(Time*ppFEV1)*ppFVC",
+                                "Trainingfrequency:Trainingtime:ppFEV1:ppFVC"= "(Frequency*Time*ppFEV1)*ppFVC"))+
+  scale_y_continuous(limits = c(-0.4, 0.4))+
+  geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
+  labs(title = NULL, tag= "B)")+
+  theme_classic()+
+  theme(text = element_text(size=16))
 
-rm(A)
+C<-ggarrange(A, B, ncol=1, nrow=2)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.png", plot = C, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.pdf", plot = C, width = 8, height = 8)
+
+rm(A, B, C)
+
 
 ##Nutritional, pFVC, FFM response with patient random effect
 ##Adjust to binary 1 responders = Improvement, 0 No responders= Stable, decreased or not detected
