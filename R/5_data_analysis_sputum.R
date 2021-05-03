@@ -835,7 +835,7 @@ sdt.stool%>%
   scale_shape_manual(values = c(21, 24, 22))+
   scale_fill_manual(values = pal.CF)+
   labs(x = "Psudomonas relative abundance",
-       y = "Probability of having a severe CF phenotype", tag= "A)")+
+       y = "Probability of severe CF phenotype", tag= "A)")+
   theme_bw()+
   theme(text = element_text(size=16))+
   guides(fill = guide_legend(override.aes=list(shape=c(21))))+
@@ -897,7 +897,7 @@ sdt.sputum%>%
   scale_shape_manual(values = c(21, 24, 22))+
   scale_fill_manual(values = pal.CF)+
   labs(x = "Pseudomonas relative abundance",
-       y = "Probability of having a severe CF phenotype", tag= "D)")+
+       y = "Probability of severe CF phenotype", tag= "D)")+
   theme_bw()+
   theme(text = element_text(size=16))+
   guides(fill = guide_legend(override.aes=list(shape=c(21))))+
@@ -944,7 +944,7 @@ sdt.sputum%>%
  
 plot<-ggarrange(A, D, B,  E, C, f, ncol=2, nrow=3, common.legend = T, legend="right")
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputum.png", plot = plot, width = 8, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputum.pdf", plot = plot, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputum.png", plot = plot, width = 10, height = 13)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputum.pdf", plot = plot, width = 10, height = 13)
 
 rm(A, B, C, D, E, f)
