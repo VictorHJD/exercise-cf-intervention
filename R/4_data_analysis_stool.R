@@ -795,10 +795,23 @@ sigtab%>%
   scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
   geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
-  labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
+  labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus abundance")+
   theme_bw()+
-  theme(text = element_text(size=16))+
+  theme(text = element_text(size=16), legend.position = "top")+
   guides(color= F)-> A
+
+##Extract the legend from A to use it later as a common legend 
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+legend <- get_legend(A)
+
+##Remove legend from A 
+A <- A + theme(legend.position="none")
 
 ##Visit 3 vs 2
 deseq.visit<- phyloseq_to_deseq2(PS3.stool23, ~ Visit)
@@ -834,7 +847,7 @@ sigtab%>%
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
   labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
   theme_bw()+
-  theme(text = element_text(size=16))+
+  theme(text = element_text(size=16), legend.position = "none")+
   guides(color= F)-> B
 
 ##Visit 3 vs 1
@@ -871,15 +884,14 @@ sigtab%>%
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
   labs(tag= "C)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
   theme_bw()+
-  theme(text = element_text(size=16))+
+  theme(text = element_text(size=16), legend.position = "none")+
   guides(color= F)-> C
 
-D<- ggarrange(A, B, C, ncol=1, nrow=3, common.legend = F, legend="right")
-
+D<- grid.arrange(legend, A,B,C, nrow=4, heights=c(0.5, 2.5, 2.5, 2.5))
 
 ##Save just when the three objects are in the environment
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Visit.png", plot = D, width = 8, height = 8)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Visit.pdf", plot = D, width = 8, height = 8)
 
-rm(A,B,C)
+rm(A,B,C, D)
 
