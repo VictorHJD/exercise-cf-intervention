@@ -689,6 +689,10 @@ sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
 #Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
 #plot adding up all layers we have seen so far
 sigtab%>%
+  dplyr::mutate(Genus=  case_when(Genus == "CAG-56"  ~ "Firmicutes CAG:56",
+                                  Genus == "[Eubacterium] ruminantium group" ~ "Eubacterium ruminantium group",
+                                  Genus == "UCG-004" ~ "Lachnospiraceae UCG:004",
+                                  TRUE ~ Genus))%>%
   ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
   geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
   ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
@@ -696,9 +700,10 @@ sigtab%>%
   scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
   geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
-  labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Taxa \n abundance")+
+  labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
   theme_bw()+
-  theme(text = element_text(size=16))-> A
+  theme(text = element_text(size=16))+
+  guides(color= F)-> A
 
 ##Save table 
 #write.csv(sigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Stool_Severity.csv") #Genotype
@@ -735,9 +740,10 @@ sigtab%>%
   scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
   geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
   geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
-  labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Taxa \n abundance")+
+  labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
   theme_bw()+
-  theme(text = element_text(size=16))-> B
+  theme(text = element_text(size=16))+
+  guides(color= F)-> B
 
 C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = T, legend="right")
 
