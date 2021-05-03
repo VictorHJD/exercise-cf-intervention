@@ -523,127 +523,269 @@ sputum.microbiome$Phylum<- NULL
 sputum.microbiome<- t(sputum.microbiome)
 #saveRDS(sputum.microbiome, "~/CF_project/exercise-cf-intervention/data/Sput_rare_ASV.rds") #--> For MetadeconfoundR
 
-x <- log10(sputum.microbiome+1) # ASV Log10 (39 samples x 205 genera)
-
 ##Select useful metrics
 y<-sdt.sputum
 
-y<- y[,c(26:27,29:98)] ##Eliminate non-numeric variables
+y<- y[,c(31:95)] ##Eliminate non-numeric variables
 
-##Make an adjustment to visit and patient to make it numeric
+##Make an adjustment to make visit and patient numeric
 y$Visit<- as.numeric(gsub("V", "\\1", y$Visit))
 y$Patient_number<- as.numeric(gsub("P", "\\1", y$Patient_number))
 
 ##Transform severity to binary 
 y%>%
-  mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
-                                        Phenotype_severity == 1 ~ 0))%>%
-  mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
-                                       Mutation_severity == 1 ~ 0))-> y
+  dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+                                               Phenotype_severity == 1 ~ 0))%>%
+  dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+                                              Mutation_severity == 1 ~ 0))-> y
 
 
-y <- as.matrix(y) # Metadata (39 samples x 72 technical, respiratory and nutritional variables)
-#saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Sput_rare_Metadata.rds") #--> For MetadeconfoundR
+y <- as.matrix(y) # Metadata (39 samples x 65 respiratory and nutritional variables)
+#saveRDS(y, "~/CF_project/exercise-cf-intervention/data/Sput_rare_Metadata.rds")#--> For MetadeconfoundR
 
 # Cross correlate data sets, output is also available in a handy table format
-correlation.table <- associate(x, y, method = "spearman", mode = "table", p.adj.threshold = 0.05, n.signif = 1)
-kable(head(correlation.table))
-
-heat(correlation.table, "X1", "X2", fill = "Correlation", star = "p.adj", p.adj.threshold = 0.05) 
-
-ggplot(correlation.table, aes(X1, X2, group=X2)) + 
-  geom_tile(aes(fill = Correlation)) +
-  geom_text(aes(fill = correlation.table$Correlation, label = round(correlation.table$Correlation, 1)), size = 5) +
-  scale_fill_gradientn("Correlation", 
-                       breaks = seq(from = -1, to = 1,  by = 0.25), 
-                       colours = c("blue", "white", "red"), 
-                       limits = c(-1, 1)) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  labs(x = "", y = "", tag = "B)")
+###Let's run this with metadeconfoundR (other script for that)
 
 ###Deseq2 analysis
 ##Get raw data to run this
-PS2.sputum<- subset_samples(PS2, Benzoase%in%c(1))
-PS2.sputum<- tax_glom(PS2.sputum, "Genus")
+PS3.sputum<- subset_samples(PS3, Benzoase%in%c(1))
+PS3.sputum<- tax_glom(PS3.sputum, "Genus")
 
+##Adjustment make phenotype and genotype as factor 
+PS3.sputum@sam_data$Phenotype_severity <- as.factor(PS3.sputum@sam_data$Phenotype_severity)
+PS3.sputum@sam_data$Mutation_severity <- as.factor(PS3.sputum@sam_data$Mutation_severity)
 ##Severity classification based on:
 #genotype
-deseq.severity<- phyloseq_to_deseq2(PS2.sputum, ~ Mutation_severity)
+deseq.severity<- phyloseq_to_deseq2(PS3.sputum, ~ Mutation_severity)
+
+# calculate geometric means prior to estimate size factors
+gm_mean <- function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans<- apply(counts(deseq.severity), 1, gm_mean)
+deseq.severity<- estimateSizeFactors(deseq.severity, geoMeans = geoMeans)
+deseq.severity<- DESeq(deseq.severity, fitType="local")
+
+ac.res <- results(deseq.severity)
+
+##Select cut-off value
+sigtab <- cbind(as(ac.res,"data.frame"), as(tax_table(PS3.sputum)[rownames(ac.res), ], "matrix"))
+sigtab$Species<- NULL
+head(sigtab,20)
+
+##Volcano plot to detect differential taxa in sputum microbiome between severity 
+#The significantly deferentially abundant genes are the ones found upper-left and upper-right corners
+##Add a column to the data specifying if they are highly (positive) or lowly abundant (negative)
+## Considering the comparison D21 vs D0
+
+# add a column of Non-significant
+sigtab$AbundLev <- "NS"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "High" 
+sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
+
+#Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
+#plot adding up all layers we have seen so far
+sigtab%>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
+  geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
+  ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
+  scale_fill_manual(values=c("#8A9045FF", "#767676FF")) +
+  scale_color_manual(values=c("#8A9045FF", "#767676FF")) +
+  geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
+  geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
+  labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  guides(color= F)-> A
+
+##Save table 
+#write.csv(sigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_sputum_Severity.csv") #Genotype
+#write.csv(sigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_sputum_Gen_Severity.csv") #Phenotype
 
 ##Phenotype
-#deseq.severity<- phyloseq_to_deseq2(PS2.sputum, ~ Phenotype_severity)
-
+deseq.severity<- phyloseq_to_deseq2(PS3.sputum, ~ Phenotype_severity)
 # calculate geometric means prior to estimate size factors
 geoMeans<- apply(counts(deseq.severity), 1, gm_mean)
 deseq.severity<- estimateSizeFactors(deseq.severity, geoMeans = geoMeans)
 deseq.severity<- DESeq(deseq.severity, fitType="local")
 
 ac.res <- results(deseq.severity)
-##Remove NA
-ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
 
 ##Select cut-off value
-alpha <- 0.05
-Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
+sigtab <- cbind(as(ac.res,"data.frame"), as(tax_table(PS3.sputum)[rownames(ac.res), ], "matrix"))
+sigtab$Species<- NULL
+head(sigtab,20)
 
-Bac.sigtab <- cbind(as(Bac.sigtab, "data.frame"), as(tax_table(PS2.sputum)[rownames(Bac.sigtab), ], "matrix"))
+# add a column of Non-significant
+sigtab$AbundLev <- "NS"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "High" 
+sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
 
-##Adjust value
-Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > -7, ]
-Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
-
-##Save table 
-#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_Gen_Severity.csv") #Genotype
-#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_Phen_Severity.csv") #Phenotype
-
-###Negative Binomial in Microbiome Differential Abundance Testing (plot)
-ggplot(na.omit(Bac.posigtab), aes(x=reorder(Genus, -log2FoldChange), y=log2FoldChange, color=Phylum)) +
-  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Phylum), color= "black") + 
-  scale_fill_brewer(palette = "Set1")+
-  coord_flip()+
-  geom_hline(aes(yintercept = 0), color = "gray70", size = 0.6)+
-  xlab("ASVs Genus-level")+
-  ylab("Mild <-- Log-2-Fold-Change --> Severe")+
+#Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
+#plot adding up all layers we have seen so far
+sigtab%>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
+  geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
+  ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
+  scale_fill_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
+  geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
+  labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
   theme_bw()+
-  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5), text = element_text(size=16), 
-        axis.text.y = element_text(face="italic", color="black"))+
-  labs(tag = "B)")-> B
+  theme(text = element_text(size=16))+
+  guides(color= F)-> B
 
-#png("CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Sputum_Severity.png", units = 'in', res = 300, width=20, height=10)
-ggarrange(A, B, ncol=2, nrow=1, common.legend = F, legend="right")
-#dev.off()
+C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = T, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_sputum_Severity.png", plot = C, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_sputum_Severity.pdf", plot = C, width = 8, height = 8)
+
+rm(A, B, C)
 
 ###Analysis by time points
 ###Make Phloseq subsets to run the analysis
+##Adjustment make phenotype and genotype as factor 
+PS3.sputum@sam_data$Visit <- as.factor(PS3.sputum@sam_data$Visit)
 ##V1V2
-PS2.sputum12<- subset_samples(PS2.sputum, Visit%in%c("V1", "V2"))
+PS3.sputum12<- subset_samples(PS3.sputum, Visit%in%c("V1", "V2"))
 ##V2V3
-PS2.sputum23<- subset_samples(PS2.sputum, Visit%in%c("V2", "V3"))
+PS3.sputum23<- subset_samples(PS3.sputum, Visit%in%c("V2", "V3"))
 ##V1V3
-PS2.sputum13<- subset_samples(PS2.sputum, Visit%in%c("V1", "V3"))
+PS3.sputum13<- subset_samples(PS3.sputum, Visit%in%c("V1", "V3"))
 
-deseq.visit<- phyloseq_to_deseq2(PS2.sputum13, ~ Visit)
+##Visit 2 vs 1
+deseq.visit<- phyloseq_to_deseq2(PS3.sputum12, ~ Visit)
 
+# calculate geometric means prior to estimate size factors
 geoMeans<- apply(counts(deseq.visit), 1, gm_mean)
 deseq.visit<- estimateSizeFactors(deseq.visit, geoMeans = geoMeans)
 deseq.visit<- DESeq(deseq.visit, fitType="local")
 
 ac.res <- results(deseq.visit)
-##Remove NA
-ac.res <- ac.res[order(ac.res$padj, na.last=NA), ]
 
 ##Select cut-off value
-alpha <- 0.05
-Bac.sigtab <- ac.res[(ac.res$padj < alpha), ]
-##Adjust based on the visit combination
-Bac.sigtab <- cbind(as(ac.res, "data.frame"), as(tax_table(PS2.sputum13)[rownames(ac.res), ], "matrix")) ##Change based on the visit
+sigtab <- cbind(as(ac.res,"data.frame"), as(tax_table(PS3.sputum12)[rownames(ac.res), ], "matrix"))
+sigtab$Species<- NULL
+head(sigtab,20)
 
-##Adjust value
-Bac.posigtab <- Bac.sigtab[Bac.sigtab[, "log2FoldChange"] > -30, ]
-Bac.posigtab <- Bac.posigtab[, c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Family", "Genus")]
+# add a column of Non-significant
+sigtab$AbundLev <- "NS"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "High" 
+sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
 
-#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_V1V2.csv") 
-#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_V2V3.csv") 
-#write.csv(Bac.posigtab, "~/CF_project/exercise-cf-intervention/tables/Q5_DeSeq2_Abund_Sputum_V1V3.csv") 
+#Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
+#plot adding up all layers we have seen so far
+sigtab%>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
+  geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
+  ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
+  scale_fill_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  scale_color_manual(values=c("#8A9045FF", "#800000FF", "#767676FF")) +
+  geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
+  geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
+  labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus abundance")+
+  theme_bw()+
+  theme(text = element_text(size=16), legend.position = "top")+
+  guides(color= F)-> A
 
-### IN sputum nothing was significant between days by DeSeq2
+##Extract the legend from A to use it later as a common legend 
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+legend <- get_legend(A)
+
+##Remove legend from A 
+A <- A + theme(legend.position="none")
+
+##Visit 3 vs 2
+deseq.visit<- phyloseq_to_deseq2(PS3.sputum23, ~ Visit)
+
+# calculate geometric means prior to estimate size factors
+geoMeans<- apply(counts(deseq.visit), 1, gm_mean)
+deseq.visit<- estimateSizeFactors(deseq.visit, geoMeans = geoMeans)
+deseq.visit<- DESeq(deseq.visit, fitType="local")
+
+ac.res <- results(deseq.visit)
+
+##Add taxa information
+sigtab <- cbind(as(ac.res,"data.frame"), as(tax_table(PS3.sputum23)[rownames(ac.res), ], "matrix"))
+sigtab$Species<- NULL
+head(sigtab,20)
+
+# add a column of Non-significant
+sigtab$AbundLev <- "NS"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "High" 
+sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
+
+#Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
+#plot adding up all layers we have seen so far
+sigtab%>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
+  geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
+  ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
+  scale_fill_manual(values=c("#800000FF", "#767676FF")) +
+  scale_color_manual(values=c("#800000FF", "#767676FF")) +
+  geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
+  geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
+  labs(tag= "B)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
+  theme_bw()+
+  theme(text = element_text(size=16), legend.position = "none")+
+  guides(color= F)-> B
+
+##Visit 3 vs 1
+deseq.visit<- phyloseq_to_deseq2(PS3.sputum13, ~ Visit)
+
+# calculate geometric means prior to estimate size factors
+geoMeans<- apply(counts(deseq.visit), 1, gm_mean)
+deseq.visit<- estimateSizeFactors(deseq.visit, geoMeans = geoMeans)
+deseq.visit<- DESeq(deseq.visit, fitType="local")
+
+ac.res <- results(deseq.visit)
+
+##Add taxa information
+sigtab <- cbind(as(ac.res,"data.frame"), as(tax_table(PS3.sputum13)[rownames(ac.res), ], "matrix"))
+sigtab$Species<- NULL
+head(sigtab,20)
+
+# add a column of Non-significant
+sigtab$AbundLev <- "NS"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "High" 
+sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
+
+#Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
+#plot adding up all layers we have seen so far
+sigtab%>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
+  geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
+  ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
+  scale_fill_manual(values=c("#800000FF", "#767676FF")) +
+  scale_color_manual(values=c("#800000FF", "#767676FF")) +
+  geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
+  geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
+  labs(tag= "C)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
+  theme_bw()+
+  theme(text = element_text(size=16), legend.position = "none")+
+  guides(color= F)-> C
+
+D<- grid.arrange(legend, A,B,C, nrow=4, heights=c(0.5, 2.5, 2.5, 2.5))
+
+##Save just when the three objects are in the environment
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_sputum_Visit.png", plot = D, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_sputum_Visit.pdf", plot = D, width = 8, height = 8)
+
+rm(A,B,C, D)
