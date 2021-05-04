@@ -529,22 +529,27 @@ BC_dist.sputum%>%
   dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
                                               Mutation_severity == 1 ~ 0))-> BC_dist.sputum
 
-log.model1 <- lmer(Phenotype_severity ~Trainingfrequency + Trainingtime +
-                     ppFVC + ppFEV1 + BC_dist + (1 | Patient_number), data = BC_dist.sputum)##Full model
+##Logistic regression 
+log.model1 <-glmer(Phenotype_severity ~Trainingfrequency + Trainingtime +
+                     ppFVC + ppFEV1 + BC_dist + (1 | Patient_number), data = BC_dist.sputum, family = binomial, 
+                   control = glmerControl(optimizer = "bobyqa"), nAGQ = 10)##Full model
+
 summary(log.model1)$coef
 
-log.model2 <- lmer(Phenotype_severity ~Trainingfrequency + Trainingtime +
-                     ppFVC + ppFEV1 + (1 | Patient_number), data = BC_dist.sputum)##Without BC dissimilarity model
+log.model2 <- glmer(Phenotype_severity ~Trainingfrequency + Trainingtime +
+                      ppFVC + ppFEV1 + (1 | Patient_number), data = BC_dist.sputum, family = binomial, 
+                    control = glmerControl(optimizer = "bobyqa"), nAGQ = 10)##Without BC dissimilarity model
+
 summary(log.model2)$coef
 
-lrtest(log.model2, log.model1) ##Bray-Curtis dissimilarity add predictive power for phenotype prediction
+lrtest(log.model1, log.model2)  ##Bray-Curtis dissimilarity do not add predictive power for phenotype prediction
 
 BC_dist.sputum%>%
   ggplot(aes(ppFEV1, Phenotype_severity)) +
   geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   scale_fill_manual(values = pal.CF)+
-  labs(x = "Difference in ppFVC between visits",
+  labs(x = "Difference in ppFEV1 between visits",
        y = "Probability of severe CF phenotype", tag= "A)")+
   theme_bw()+
   theme(text = element_text(size=16))+
