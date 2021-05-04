@@ -121,40 +121,38 @@ y.all$SampleID<- NULL
 
 ###Let's run the pipeline!!!
 
-MD.V1V2<- MetaDeconfound(featureMat = y.V1V2, metaMat = x.V1V2, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
-MD.V2V3<- MetaDeconfound(featureMat = y.V2V3, metaMat = x.V2V3, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
-MD.V1V3<- MetaDeconfound(featureMat = y.V1V3, metaMat = x.V1V3, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
+#MD.V1V2<- MetaDeconfound(featureMat = y.V1V2, metaMat = x.V1V2, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
+#MD.V2V3<- MetaDeconfound(featureMat = y.V2V3, metaMat = x.V2V3, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
+#MD.V1V3<- MetaDeconfound(featureMat = y.V1V3, metaMat = x.V1V3, nnodes = 25, randomVar = list("+ (1 | Patient_number)" , c("Patient_number")))
 MD.all<- MetaDeconfound(featureMat = y.all, metaMat = x.all, nnodes = 25, randomVar = list("+ (1 | Patient)" , c("Patient")))
 
 ##Plot the results 
 
-Cun.V1V2<- BuildHeatmap(MD.V1V2, cuneiform = T, coloring = 1)
-Cun.V2V3<- BuildHeatmap(MD.V2V3, cuneiform = T, coloring = 1)
-Cun.V1V3<- BuildHeatmap(MD.V1V3, cuneiform = T, coloring = 1)
-Cun.all<- BuildHeatmap(MD.all, cuneiform = T, coloring = 1)
+#Cun.V1V2<- BuildHeatmap(MD.V1V2, cuneiform = T, coloring = 1)
+#Cun.V2V3<- BuildHeatmap(MD.V2V3, cuneiform = T, coloring = 1)
+#Cun.V1V3<- BuildHeatmap(MD.V1V3, cuneiform = T, coloring = 1)
+Cun.all<- BuildHeatmap(MD.all, cuneiform = F, coloring = 1)
 
-BuildHeatmap(MD.V1V2)
-BuildHeatmap(MD.V2V3)
-BuildHeatmap(MD.V1V3)
-BuildHeatmap(MD.all)
-
+Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable, 
+                                    levels= c("sex","Length","Weight", "FFM_Charatsi", 
+                                              "ppFEV1",  "Peak_power",  "Dist" ,  "DFr", 
+                                              "DNAse_inh","heart_med", "Montelukast",  
+                                              "Nutrition_supplementation", "Polyethylenglykol_Movicol", "Mutation_severity"))
+                                               
 ##Edit cun plots
-
 Cun.all+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
-  #geom_point(aes(color = cyl, size = , shape = gear))+
-  labs(title = "MetaDeconfoundR summarizing coneiform plot (Stool Microbiome)",tag = "A)", 
-       caption = "Using all data", 
+  labs(title = "MetaDeconfoundR summarizing (Stool Microbiome)",tag = "A)",
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
-  theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
-        axis.text.y = element_text(size = 9, face="italic", color="black"))+
-  scale_x_discrete(labels=c( "Mutation_severity"= "Mutation severity", "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
-                             "Peak_power" = "Peak power" , "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
-                             "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", "DFr" = "Fiber",
-                             "Sport_Response" = "Sport Response", "extract_quant_ng_ul"= "DNA concentration (ng/µL)", "total_ng_DNA"= "Total DNA (ng)",
+  theme(axis.text.x = element_text(size = 12, angle = 90, face="bold", color="black"),
+        axis.title.x=element_blank(),
+        axis.text.y = element_text(size = 12, face="italic", color="black"))+
+  scale_x_discrete(labels=c( "Mutation_severity"= "Mutation severity", "Dist"= "Distance", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
+                             "Peak_power" = "Peak power" , "FFM_Charatsi" = "FFM (Charatsi kg)", "sex" = "Sex", "DFr" = "Fiber",
                              "Nutrition_supplementation"="Nutrition supp.", "heart_med"= "Heart medication", "DNAse_inh"= "DNAse inh"))-> A
+A <- A + theme(legend.position="none")
 
 #Cun.V1V2+
 #  xlab("Variables")+
@@ -352,33 +350,34 @@ MD.all<- MetaDeconfound(featureMat = y.all, metaMat = x.all, nnodes = 25, random
 #Cun.V1V2<- BuildHeatmap(MD.V1V2, cuneiform = T, coloring = 1)
 #Cun.V2V3<- BuildHeatmap(MD.V2V3, cuneiform = T, coloring = 1)
 #Cun.V1V3<- BuildHeatmap(MD.V1V3, cuneiform = T, coloring = 1)
-Cun.all<- BuildHeatmap(MD.all, cuneiform = T, coloring = 1)
+Cun.all<- BuildHeatmap(MD.all, cuneiform = F, coloring = 1)
 
-#BuildHeatmap(MD.V1V2)
-#BuildHeatmap(MD.V2V3)
-#BuildHeatmap(MD.V1V3)
-#BuildHeatmap(MD.all)
-
+Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable, 
+                                    levels= c("sex", "Length", "Weight", "FFM_Charatsi",
+                                              "ppFVC","Peak_power", "CHO", "Lipids",
+                                              "Macrolides_po", "Montelukast", "Nutrition_supplementation", 
+                                             "PPI", "Steroids_inh", "Pseudomonas_status"))
 ##Edit cun plots
 
 Cun.all+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
-  #geom_point(aes(color = cyl, size = , shape = gear))+
-  labs(title = "MetaDeconfoundR summarizing coneiform plot (Sputum Microbiome)",tag = "A)", 
-       caption = "Using all data",
+  labs(title = "MetaDeconfoundR summarizing (Sputum Microbiome)",tag = "B)",
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
-  theme(axis.text.x = element_text(size = 10, angle = 90, face="bold", color="black"),
-        axis.text.y = element_text(size = 9, face="italic", color="black"))+
-  scale_x_discrete(labels=c( "Dist"= "Distance","pFVC_Response" = "pFVC Response", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
-                             "Peak_power" = "Peak power" , "FFM_Luk" = "FFM (Lukaski %)", "FFM_Charatsi" = "FFM (Charatsi kg)",
-                             "electrolyte_supp" = "Electrolyte Supp", "FFM_Response" = "FFM Response", "sex" = "Sex", "Pseudomonas_status"= "Pseudomonas culture",
-                             "Sport_Response" = "Sport Response", "extract_quant_ng_ul"= "DNA concentration (ng/µL)", "total_ng_DNA"= "Total DNA (ng)",
-                             "Nutrition_supplementation"="Nutrition supp.", "heart_med"= "Heart medication", "DNAse_inh"= "DNAse inh", "Steroids_inh"= "Steroids (inh)",
-                             "antibiotics_inh"= "Antibiotics (inh)", "anticholinergic_inh"= "Anticholinergic (inh)", "Nutrition_Response"="Nutrition Response",
-                             "Macrolides_po" = "Macrolides (oral)", "Steroids_nasal" = "Steroids (nasal)", "Steroids_po"= "Steroids (oral)", "V02_A"= "Volume Oxygen (A)"))-> A.sputum
- 
+  theme(axis.text.x = element_text(size = 12, angle = 90, face="bold", color="black"),
+        axis.title.x=element_blank(),
+        axis.text.y = element_text(size = 12, face="italic", color="black"))+
+  scale_x_discrete(labels=c("Peak_power" = "Peak power" , "FFM_Charatsi" = "FFM (Charatsi kg)",
+                              "sex" = "Sex", "Pseudomonas_status"= "Pseudomonas culture",
+                             "Nutrition_supplementation"="Nutrition supp.", "Steroids_inh"= "Steroids (inh)",
+                             "Macrolides_po" = "Macrolides (oral)"))-> B
+
+plot<-ggarrange(A,  B,  ncol=1, nrow=2, common.legend = T, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.png", plot = plot, width = 15, height = 25)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.pdf", plot = plot, width = 15, height = 25)
+
 #Cun.V1V2+
 #  xlab("Variables")+
 #  ylab("ASVs Genus-level")+
