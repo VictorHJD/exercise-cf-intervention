@@ -952,3 +952,16 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Vis
 
 rm(A,B,C,D)
 
+##Create biom format object for PICRUSt2
+require("biomformat")
+asvmat.rare<- as.matrix(PS3.stool@otu_table)
+biom.tmp<- make_biom(asvmat.rare, matrix_element_type = "int")
+write_biom(biom.tmp,"CF_project/exercise-cf-intervention/data/biom_stool.biom") ##Good biom for test
+
+##Select sequences from the ASV in PS3.stool
+library(Biostrings)
+dna<- readDNAStringSet( "~/CF_project/output/ASV.fasta", format = "fasta")
+keep <- data.frame(name = rownames(asvmat.rare))
+names(dna)
+dna.stool<- dna[keep$name]
+writeXStringSet(dna.stool, "CF_project/exercise-cf-intervention/data/Stool_ASV.fasta") #-> For Picrust2

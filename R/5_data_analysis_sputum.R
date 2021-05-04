@@ -1010,3 +1010,17 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputu
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputum.pdf", plot = plot, width = 10, height = 13)
 
 rm(A, B, C, D, E, f)
+
+##Create biom format object for PICRUSt2
+require("biomformat")
+asvmat.rare<- as.matrix(PS3.sputum@otu_table)
+biom.tmp<- make_biom(asvmat.rare, matrix_element_type = "int")
+write_biom(biom.tmp,"CF_project/exercise-cf-intervention/data/biom_sputum.biom") ##Good biom for test
+
+##Select sequences from the ASV in PS3.stool
+library(Biostrings)
+dna<- readDNAStringSet( "~/CF_project/output/ASV.fasta", format = "fasta")
+keep <- data.frame(name = rownames(asvmat.rare))
+names(dna)
+dna.sputum<- dna[keep$name]
+writeXStringSet(dna.sputum, "CF_project/exercise-cf-intervention/data/Sputum_ASV.fasta") #-> For Picrust2
