@@ -606,15 +606,35 @@ tr6<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist*ppFVC , data =BC_dist.
 
 ##Mixed effect models
 ##with patient as random effect
-tr7<-lmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number), data = BC_dist.stool)
+tr7<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1 + (1 | Patient_number), data = BC_dist.stool)
 summary(tr7)
 ##with Months as random effect
-tr8<-lmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC*BC_dist + (1 | Patient_number), data = BC_dist.stool)
+tr8<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1*BC_dist + (1 | Patient_number), data = BC_dist.stool)
 summary(tr8)
 
 lrtest(tr7, tr8)
 
-plot_model(tr8)
+Model.Stool<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
+               axis.labels = c( "Trainingfrequency"= "Frequency",
+                                "Trainingtime" = "Time", 
+                                "BC_dist"="Bray-Curtis",
+                                "Trainingfrequency:Trainingtime" = "Frequency*Time", 
+                                "Trainingfrequency:ppFEV1" = "Frequency*ppFEV1",
+                                "Trainingtime:ppFEV1" = "Time*ppFEV1", 
+                                "Trainingfrequency:BC_dist"= "Frequency*Bray-Curtis", 
+                                "Trainingtime:BC_dist"= "Time*Bray-Curtis", 
+                                "Trainingfrequency:Trainingtime:ppFEV1"= "Frequency*Time)*ppFEV1",
+                                "Trainingfrequency:Trainingtime:BC_dist"= "(Frequency*Time)*Bray-Curtis",
+                                "ppFEV1:BC_dist"= "ppFEV1*Bray-Curtis",
+                                "Trainingfrequency:ppFEV1:BC_dist"= "(Frequency*ppFEV1)*Bray-Curtis", 
+                                "Trainingtime:ppFEV1:BC_dist"= "(Time*ppFEV1)*Bray-Curtis",
+                                "Trainingfrequency:Trainingtime:ppFEV1:BC_dist"= "(Frequency*Time*ppFEV1)*Bray-Curtis"))+
+  scale_y_continuous(limits = c(-800, 800))+
+  geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
+  labs(title = NULL, tag= "A)")+
+  theme_classic()+
+  theme(text = element_text(size=16))
+
 
 ###Does differences in bacterial composition within patient predict severity status 
 BC_dist.stool%>%
@@ -652,7 +672,21 @@ BC_dist.stool%>%
   labs(shape = "Visit interval")+
   geom_smooth(method = "glm", method.args = list(family = "binomial"))
 
+log.model3 <-glmer(Sport_Response ~Trainingfrequency + Trainingtime +
+                     ppFVC + ppFEV1 + BC_dist + (1 | Patient_number), data = BC_dist.stool, family = binomial, 
+                   control = glmerControl(optimizer = "bobyqa"), nAGQ = 10)##Full model
 
+summary(log.model3)$coef
+
+log.model4 <- glmer(Sport_Response ~Trainingfrequency + Trainingtime +
+                      ppFVC + ppFEV1 + (1 | Patient_number), data = BC_dist.stool, family = binomial, 
+                    control = glmerControl(optimizer = "bobyqa"), nAGQ = 10)##Without BC dissimilarity model
+
+summary(log.model4)$coef
+
+lrtest(log.model3, log.model4) 
+
+##Microbial composition do not add predictive power response to sports intervention
 ###Naive correlation with nutritional and respiratory activity
 ##Glom by genus
 PS.stool.Gen<- tax_glom(PS4.stool, "Genus", NArm = T)
@@ -951,6 +985,58 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Vis
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Visit.pdf", plot = D, width = 8, height = 8)
 
 rm(A,B,C,D)
+
+##Response to sports classification:
+#sports
+PS3.stool@sam_data$Sport_Response <- as.factor(PS3.stool@sam_data$Sport_Response)
+deseq.sports<- phyloseq_to_deseq2(PS3.stool, ~ Sport_Response)
+
+geoMeans<- apply(counts(deseq.sports), 1, gm_mean)
+deseq.sports<- estimateSizeFactors(deseq.sports, geoMeans = geoMeans)
+deseq.sports<- DESeq(deseq.sports, fitType="local")
+
+ac.res <- results(deseq.sports)
+
+##Select cut-off value
+sigtab <- cbind(as(ac.res,"data.frame"), as(tax_table(PS3.stool)[rownames(ac.res), ], "matrix"))
+sigtab$Species<- NULL
+head(sigtab,20)
+
+##Volcano plot to detect differential taxa in stool microbiome between severity 
+#The significantly deferentially abundant genes are the ones found upper-left and upper-right corners
+##Add a column to the data specifying if they are highly (positive) or lowly abundant (negative)
+## Considering the comparison D21 vs D0
+
+# add a column of Non-significant
+sigtab$AbundLev <- "NS"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "High" 
+sigtab$AbundLev[sigtab$log2FoldChange > 0.6 & sigtab$padj < 0.001] <- "High"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+sigtab$AbundLev[sigtab$log2FoldChange < -0.6 & sigtab$padj < 0.001] <- "Low"
+
+#Organize the labels nicely using the "ggrepel" package and the geom_text_repel() function
+#plot adding up all layers we have seen so far
+sigtab%>%
+  dplyr::mutate(Genus=  case_when(Genus == "CAG-56"  ~ "Firmicutes CAG:56",
+                                  Genus == "[Eubacterium] eligens group" ~ "Eubacterium eligens group",
+                                  Genus == "UCG-004" ~ "Lachnospiraceae UCG:004",
+                                  TRUE ~ Genus))%>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) + 
+  geom_point(shape=21, size=3, alpha= 0.5, aes(fill= AbundLev), color= "black")+
+  ggrepel::geom_text_repel(aes(col=AbundLev, label=Genus)) +
+  scale_fill_manual(values=c("#800000FF", "#767676FF")) +
+  scale_color_manual(values=c("#800000FF", "#767676FF")) +
+  geom_vline(xintercept=c(-0.6, 0.6), col="black", linetype= "dashed") +
+  geom_hline(yintercept=-log10(0.001), col="black", linetype= "dashed") +
+  labs(tag= "A)", x= "log2 Fold change", y= "-Log10 (p Adjusted)", fill= "Genus\nabundance")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  guides(color= F)-> A
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Sports.png", plot = A, width = 8, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q5_DefAbund_Stool_Sports.pdf", plot = A, width = 8, height = 8)
+
+rm(A)
 
 ##Create biom format object for PICRUSt2
 require("biomformat")
