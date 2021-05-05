@@ -428,34 +428,40 @@ qqPlot(BC_dist.sputum$Trainingtime)
 qqPlot(BC_dist.sputum$ppFEV1)
 qqPlot(BC_dist.sputum$ppFVC)
 
-##GLM (Training weeks was omited due to a lot of NAs)
-tr0<- glm(BC_dist ~ 1, data = BC_dist.sputum, na.action = na.exclude) ##Null model
-tr1<- glm(BC_dist ~ Trainingfrequency, data =BC_dist.sputum, na.action = na.exclude)
-tr2<- glm(BC_dist ~ Trainingtime, data = BC_dist.sputum, na.action = na.exclude)
-tr3<- glm(BC_dist ~ ppFEV1, data = BC_dist.sputum, na.action = na.exclude)
-tr4<- glm(BC_dist ~ ppFVC, data = BC_dist.sputum, na.action = na.exclude)
-tr5<- glm(BC_dist ~ Trainingfrequency + Trainingtime + ppFEV1 + ppFVC, data = BC_dist.sputum, na.action = na.exclude)
-tr6<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC , data =BC_dist.sputum, na.action = na.exclude) ##Full model
+myLRTsignificanceFactors <- function(modnull, mod2, mod3, mod4, mod5, mod6, mod7, mod8, modFull){
+  return(list(signif2 = lrtest(modnull, mod2),
+              signif3 = lrtest(modnull, mod3),
+              signif4 = lrtest(modnull, mod4),
+              signif5 = lrtest(modnull, mod5),
+              signif6 = lrtest(modnull, mod6),
+              signif7 = lrtest(modnull, mod7),
+              signif8 = lrtest(modnull, mod8),
+              signifFull = lrtest(modnull, modFull)))
+}
 
-##Comparisons between models
-lrtest(tr1, tr2) ##Significant difference Training Frequency seems to be a better predictor for microbial differences among visits
-lrtest(tr1, tr3) ##Not significant difference 
-lrtest(tr2, tr3) ##Not significant difference 
-lrtest(tr1, tr4) ##No difference between model with training frequency alone and its interaction with time
-lrtest(tr2, tr4) ##No difference between model with training time alone and its interaction with frequency
-lrtest(tr0, tr6) ##No difference between model with training time and frequency and their interaction 
+##Mixed effect models
+BC_dist.sputum%>%
+  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group)%>%
+  dplyr::filter(complete.cases(.))-> tmp
 
 ##Mixed effect models
 ##with patient as random effect
-tr7<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = BC_dist.sputum)
-summary(tr7)
-##with Months as random effect
-tr8<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Months), data = BC_dist.sputum)
-summary(tr8)
+tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
+tr1<- lmer(BC_dist ~ Trainingfrequency + (1 | Patient_number), data = tmp)
+tr2<- lmer(BC_dist ~ Trainingtime + (1 | Patient_number), data = tmp)
+tr3<- lmer(BC_dist ~ ppFEV1 + (1 | Patient_number), data = tmp)
+tr4<- lmer(BC_dist ~ ppFVC + (1 | Patient_number), data = tmp)
+tr5<- lmer(BC_dist ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = tmp)
+tr6<- lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1 + (1 | Patient_number), data = tmp)
 
-lrtest(tr7, tr8)
+tr8<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
+summary(tr8) ##Full model
 
-A<- plotREsim(REsim(tr7))  ## plot the interval estimates
+myLRTsignificanceFactors(tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
+
+lrtest(tr6, tr8)
+
+A<- plotREsim(REsim(tr8))  ## plot the interval estimates
 A$data%>%
   dplyr::mutate(groupID = fct_relevel(groupID, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
@@ -475,7 +481,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(tr7, p.adjust = "BH", vline.color = "gray",
+B<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 
