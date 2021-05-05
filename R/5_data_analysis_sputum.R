@@ -520,7 +520,7 @@ summary(tr7)
 tr8<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1*BC_dist + (1 | Patient_number), data = tmp)
 summary(tr8) ##Full model
 
-lrtest(tr4, tr7)
+lrtest(tr7, tr8)
 
 Model.Sputum<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
                          axis.labels = c( "Trainingfrequency"= "Frequency",
