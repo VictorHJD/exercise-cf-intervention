@@ -508,33 +508,19 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Tr
 
 rm(A, B, C)
 
-##Test predictive value of BC differences within patient to lung function measurments Delta ppFEV1 between visits
-tr0<- glm(ppFEV1 ~ 1, data = BC_dist.sputum, na.action = na.exclude) ##Null model
-tr1<- glm(ppFEV1 ~ Trainingfrequency, data =BC_dist.sputum, na.action = na.exclude)
-tr2<- glm(ppFEV1 ~ Trainingtime, data = BC_dist.sputum, na.action = na.exclude)
-tr3<- glm(ppFEV1 ~ BC_dist, data = BC_dist.sputum, na.action = na.exclude)
-tr4<- glm(ppFEV1 ~ ppFVC, data = BC_dist.sputum, na.action = na.exclude)
-tr5<- glm(ppFEV1 ~ Trainingfrequency + Trainingtime + BC_dist + ppFVC, data = BC_dist.sputum, na.action = na.exclude)
-tr6<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist*ppFVC , data =BC_dist.sputum, na.action = na.exclude) ##Full model
-##Mixed effect models
-##with patient as random effect
-tr7<-lmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number), data = BC_dist.sputum)
+##Test predictive value of BC differences within patient to lung function measurements Delta ppFEV1 between visits
+tr1<- lmer(ppFVC ~ (1 | Patient_number), data = tmp) ##Null model
+tr2<- lmer(ppFVC ~ Trainingfrequency + (1 | Patient_number), data = tmp)
+tr3<- lmer(ppFVC ~ Trainingtime + (1 | Patient_number), data = tmp)
+tr4<- lmer(ppFVC ~ ppFEV1 + (1 | Patient_number), data = tmp)
+tr5<- lmer(ppFVC ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = tmp)
+tr6<- lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1 + (1 | Patient_number), data = tmp)
+tr7<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist + (1 | Patient_number), data = tmp)
 summary(tr7)
-##with Months as random effect
-tr8<-lmer(ppFEV1 ~ Trainingfrequency*Trainingtime*ppFVC*BC_dist + (1 | Patient_number), data = BC_dist.sputum)
-summary(tr8)
+tr8<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1*BC_dist + (1 | Patient_number), data = tmp)
+summary(tr8) ##Full model
 
-lrtest(tr7, tr8)
-
-##Mixed effect models
-##with patient as random effect
-tr7<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1 + (1 | Patient_number), data = BC_dist.sputum)
-summary(tr7)
-##with Months as random effect
-tr8<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1*BC_dist + (1 | Patient_number), data = BC_dist.sputum)
-summary(tr8)
-
-lrtest(tr7, tr8)
+lrtest(tr4, tr7)
 
 Model.Sputum<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
                          axis.labels = c( "Trainingfrequency"= "Frequency",
