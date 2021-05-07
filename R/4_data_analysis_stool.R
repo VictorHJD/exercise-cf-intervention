@@ -23,6 +23,8 @@ library(sjPlot)
 library(sjlabelled)
 library(sjmisc)
 
+reRun<- FALSE 
+
 ##Load data 
 ##Run from the root of the repo at  ~/CF_project/exercise-cf-intervention/
 
@@ -130,23 +132,6 @@ E<- ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.pdf", plot = E, width = 10, height = 8)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png", plot = E, width = 10, height = 8)
 rm(A,B,C,D,E)
-
-##Try linear models 
-p0<- lm(chao1~ 1, data = sdt.stool, na.action = na.exclude)
-p1<- lm(chao1~ Visit + Patient_number, data = sdt.stool, na.action = na.exclude)
-p2<- lm(chao1~ Visit, data = sdt.stool, na.action = na.exclude)
-p3<- lm(chao1~ Patient_number, data = sdt.stool, na.action = na.exclude)
-
-lrtest(p0, p1)
-
-p0<- lm(diversity_shannon~ 1, data = sdt.stool, na.action = na.exclude)
-p1<- lm(diversity_shannon~ Visit + Patient_number, data = sdt.stool, na.action = na.exclude)
-p2<- lm(diversity_shannon~ Visit, data = sdt.stool, na.action = na.exclude)
-p3<- lm(diversity_shannon~ Patient_number, data = sdt.stool, na.action = na.exclude)
-
-lrtest(p0, p1)
-
-rm(p0, p1, p2, p3)
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.stool,
@@ -496,23 +481,14 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Tra
 rm(A,B,C,D, plot)
 
 ###Mixed effect models 
-##Check for complete cases
-#BC_dist.stool%>% 
-#  group_by(Patient_number)%>%
-#  arrange(Group, .by_group = TRUE)%>%
-#  summarise(n(), .groups = "keep")%>%
-#  dplyr::rename(n = "n()")%>%
-#  filter(n == 3)-> Keep
-
-#Keep<- Keep$Patient_number
-
-##Select just patients in Keep
-#BC_dist.stool[BC_dist.stool$Patient_number%in%Keep, ]-> x
-
 BC_dist.stool%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> BC_dist.stool
+##Check for complete cases
+BC_dist.stool%>%
+  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group)%>%
+  dplyr::filter(complete.cases(.))-> tmp
 
 ##qqPlots (Check whther our variables are normaly distributed)
 qqPlot(BC_dist.stool$BC_dist)
@@ -532,32 +508,33 @@ myLRTsignificanceFactors <- function(modnull, mod2, mod3, mod4, mod5, mod6, mod7
               signifFull = lrtest(modnull, modFull)))
 }
 
-##Mixed effect models
-BC_dist.stool%>%
-  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number)%>%
-  dplyr::filter(complete.cases(.))-> tmp
+##Based on the experimental design we should have a nested model with Intervisit as main grouping factor and patient 
+##However, not all the grouping factors are complete so we should treat it as a crossed model 
+##with patient and intervisit group as individual random effects
 
-##Mixed effect models
-##with patient as random effect
-tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
-tr1<- lmer(BC_dist ~ Trainingfrequency + (1 | Patient_number), data = tmp)
-tr2<- lmer(BC_dist ~ Trainingtime + (1 | Patient_number), data = tmp)
-tr3<- lmer(BC_dist ~ ppFEV1 + (1 | Patient_number), data = tmp)
-tr4<- lmer(BC_dist ~ ppFVC + (1 | Patient_number), data = tmp)
-tr5<- lmer(BC_dist ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = tmp)
-tr6<- lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1 + (1 | Patient_number), data = tmp)
+tr0<- lmer(BC_dist ~ (1 | Patient_number) + (1| Group), data = tmp) ##Null model
+tr1<- lmer(BC_dist ~ Trainingfrequency + (1 | Patient_number)+ (1| Group), data = tmp)
+tr2<- lmer(BC_dist ~ Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
+tr3<- lmer(BC_dist ~ ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
+tr4<- lmer(BC_dist ~ ppFVC + (1 | Patient_number)+ (1| Group), data = tmp)
+tr5<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
+tr6<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
+tr7<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFVC + (1 | Patient_number)+ (1| Group), data = tmp)
+tr8<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFVC + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
 
-tr7<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number), data = BC_dist.stool)
-summary(tr7)
+myLRTsignificanceFactors(modnull =tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
 
-tr8<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = BC_dist.stool)
-summary(tr8) ##Full model
+##Each factor ad predictive value to the model 
+##What happen with interactions 
+tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number) + (1| Group), data = BC_dist.stool)
+summary(tr9)
 
-myLRTsignificanceFactors(tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
+tr10<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number) + (1| Group), data = BC_dist.stool)
+summary(tr10) ##Full model
 
-lrtest(tr7, tr8)
+lrtest(tr9, tr10)
 
-A<- plotREsim(REsim(tr8))  ## plot the interval estimates
+A<- plotREsim(REsim(tr10))  ## plot the interval estimates
 A$data%>%
   dplyr::mutate(groupID = fct_relevel(groupID, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
@@ -577,7 +554,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
+B<- plot_model(tr10, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 
@@ -605,26 +582,29 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Tra
 rm(A, B, C)
 
 ##Test predictive value of BC differences within patient to lung function measurements Delta ppFEV1 between visits
-BC_dist.stool%>%
-  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number)%>%
-  dplyr::filter(complete.cases(.))-> tmp
 
 ##Mixed effect models
 ##with patient as random effect
-tr1<- lmer(ppFVC ~ (1 | Patient_number), data = tmp) ##Null model
-tr2<- lmer(ppFVC ~ Trainingfrequency + (1 | Patient_number), data = tmp)
-tr3<- lmer(ppFVC ~ Trainingtime + (1 | Patient_number), data = tmp)
-tr4<- lmer(ppFVC ~ ppFEV1 + (1 | Patient_number), data = tmp)
-tr5<- lmer(ppFVC ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = tmp)
-tr6<- lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1 + (1 | Patient_number), data = tmp)
-tr7<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist + (1 | Patient_number), data = tmp)
-summary(tr7)
-tr8<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1*BC_dist + (1 | Patient_number), data = tmp)
-summary(tr8) ##Full model
+tr0<- lmer(ppFVC ~ (1 | Patient_number)+ (1| Group), data = tmp) ##Null model
+tr1<- lmer(ppFVC ~ Trainingfrequency + (1 | Patient_number) + (1| Group), data = tmp)
+tr2<- lmer(ppFVC ~ Trainingtime + (1 | Patient_number) + (1| Group), data = tmp)
+tr3<- lmer(ppFVC ~ ppFEV1 + (1 | Patient_number) + (1| Group), data = tmp)
+tr4<- lmer(ppFVC ~ BC_dist + (1 | Patient_number) + (1| Group), data = tmp)
+tr5<- lmer(ppFVC ~ Trainingfrequency + Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
+tr6<- lmer(ppFVC ~ Trainingfrequency + Trainingtime + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
+tr7<- lmer(ppFVC ~ Trainingfrequency + Trainingtime + BC_dist + (1 | Patient_number)+ (1| Group), data = tmp)
+tr8<- lmer(ppFVC ~ Trainingfrequency + Trainingtime + BC_dist + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
 
-lrtest(tr4, tr7)
+myLRTsignificanceFactors(modnull =tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
 
-Model.Stool<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
+##The most significant predictors are ppFEV1 (model 3) and BC dissimilarity (model 4) (Check interaction)
+##BC alone is a better predictor
+lrtest(tr3, tr4)
+##What about their interaction?
+tr9<- lmer(ppFVC ~ ppFEV1*BC_dist + (1 | Patient_number) + (1| Group), data = tmp)
+summary(tr9)
+
+Model.Stool<- plot_model(tr9, p.adjust = "BH", vline.color = "gray", show.values = TRUE, value.offset = .3,
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "BC_dist"="Bray-Curtis",
@@ -639,7 +619,7 @@ Model.Stool<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
                                 "Trainingfrequency:ppFEV1:BC_dist"= "(Frequency*ppFEV1)*Bray-Curtis", 
                                 "Trainingtime:ppFEV1:BC_dist"= "(Time*ppFEV1)*Bray-Curtis",
                                 "Trainingfrequency:Trainingtime:ppFEV1:BC_dist"= "(Frequency*Time*ppFEV1)*Bray-Curtis"))+
-  scale_y_continuous(limits = c(-800, 800))+
+  scale_y_continuous(limits = c(-30, 30))+
   geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
   labs(title = NULL, tag= "A)")+
   theme_classic()+

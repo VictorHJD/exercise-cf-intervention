@@ -404,23 +404,14 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Tr
 rm(A,B,C,D)
 
 ###Mixed effect models 
-##Check for complete cases
-#BC_dist.sputum%>% 
-#  group_by(Patient_number)%>%
-#  arrange(Group, .by_group = TRUE)%>%
-#  summarise(n(), .groups = "keep")%>%
-#  dplyr::rename(n = "n()")%>%
-#  filter(n == 3)-> Keep
-
-#Keep<- Keep$Patient_number
-
-##Select just patients in Keep
-#BC_dist.sputum[BC_dist.sputum$Patient_number%in%Keep, ]-> x
-
 BC_dist.sputum%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> BC_dist.sputum
+BC_dist.sputum%>%
+  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group)%>%
+  dplyr::filter(complete.cases(.))-> tmp
+
 ##qqPlots
 qqPlot(BC_dist.sputum$BC_dist)
 qqPlot(BC_dist.sputum$Trainingfrequency)
@@ -440,28 +431,31 @@ myLRTsignificanceFactors <- function(modnull, mod2, mod3, mod4, mod5, mod6, mod7
 }
 
 ##Mixed effect models
-BC_dist.sputum%>%
-  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group)%>%
-  dplyr::filter(complete.cases(.))-> tmp
+##with patient and intervisit group as individual random effects
 
-##Mixed effect models
-##with patient as random effect
-tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
-tr1<- lmer(BC_dist ~ Trainingfrequency + (1 | Patient_number), data = tmp)
-tr2<- lmer(BC_dist ~ Trainingtime + (1 | Patient_number), data = tmp)
-tr3<- lmer(BC_dist ~ ppFEV1 + (1 | Patient_number), data = tmp)
-tr4<- lmer(BC_dist ~ ppFVC + (1 | Patient_number), data = tmp)
-tr5<- lmer(BC_dist ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = tmp)
-tr6<- lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1 + (1 | Patient_number), data = tmp)
+tr0<- lmer(BC_dist ~ (1 | Patient_number) + (1| Group), data = tmp) ##Null model
+tr1<- lmer(BC_dist ~ Trainingfrequency + (1 | Patient_number)+ (1| Group), data = tmp)
+tr2<- lmer(BC_dist ~ Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
+tr3<- lmer(BC_dist ~ ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
+tr4<- lmer(BC_dist ~ ppFVC + (1 | Patient_number)+ (1| Group), data = tmp)
+tr5<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
+tr6<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
+tr7<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFVC + (1 | Patient_number)+ (1| Group), data = tmp)
+tr8<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFVC + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
 
-tr8<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
-summary(tr8) ##Full model
+myLRTsignificanceFactors(modnull =tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
 
-myLRTsignificanceFactors(tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
+##Each factor add predictive value to the model 
+##What happen with interactions 
+tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime + (1 | Patient_number) + (1| Group), data = BC_dist.stool)
+summary(tr9)
 
-lrtest(tr6, tr8)
+tr10<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number) + (1| Group), data = BC_dist.stool)
+summary(tr10) ##Full model
 
-A<- plotREsim(REsim(tr8))  ## plot the interval estimates
+lrtest(tr9, tr10)
+
+A<- plotREsim(REsim(tr10))  ## plot the interval estimates
 A$data%>%
   dplyr::mutate(groupID = fct_relevel(groupID, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
@@ -481,7 +475,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
+B<- plot_model(tr10, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 
