@@ -190,7 +190,7 @@ car::Anova(lf.model.stool2, type=3)
 lrtest(lf.model.stool1, lf.model.stool2)
 
 lf.model.stool.lsm <-
-  lsmeans::lsmeans(lf.model.stool1,
+  lsmeans::lsmeans(lf.model.stool2,
                    pairwise~diversity_shannon:Visit,
                    adjust="fdr")
 

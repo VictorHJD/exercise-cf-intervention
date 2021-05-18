@@ -94,12 +94,14 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.
 
 rm(A,B,C)
 
-lf.model.sputum <- lm(ppFEV1 ~ diversity_shannon * Visit, data= sdt.sputum)
+lf.model.sputum1 <- lm(ppFEV1 ~ diversity_shannon, data= sdt.sputum)
+lf.model.sputum2 <- lm(ppFEV1 ~ diversity_shannon * Visit, data= sdt.sputum)
 
-car::Anova(lf.model.sputum, type=3) 
+car::Anova(lf.model.sputum1, type=3) 
+car::Anova(lf.model.sputum2, type=3) 
 
 lf.model.sputum.lsm <-
-  lsmeans::lsmeans(lf.model.sputum,
+  lsmeans::lsmeans(lf.model.sputum2,
                    pairwise~diversity_shannon:Visit,
                    adjust="fdr")
 
