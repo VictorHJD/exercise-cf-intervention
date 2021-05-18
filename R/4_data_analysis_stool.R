@@ -133,6 +133,70 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.pdf
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png", plot = E, width = 10, height = 8)
 rm(A,B,C,D,E)
 
+###Diversity and lung function 
+
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= diversity_shannon, y= ppFEV1, shape= Visit))+
+  geom_point(position=position_jitter(0.2), size=3, aes(fill= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  geom_smooth(method=lm, se = T, aes(color= Visit))+
+  theme_bw()+
+  labs(tag= "A)")+
+  xlab("Alpha diveristy (Shannon Index)")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
+  theme(text = element_text(size=16), legend.position = "none")+
+  facet_grid(rows = vars(Visit))-> A
+
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= diversity_shannon, y= ppFEV1))+
+  geom_point(position=position_jitter(0.2), size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  scale_fill_manual(values = pal.CF)+
+  geom_smooth(method=lm, se = T, color= "black")+
+  theme_bw()+
+  labs(tag= "B)")+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
+  xlab("Alpha diveristy (Shannon Index)")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
+
+
+C<- grid.arrange(A,B)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.pdf", plot = E, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.png", plot = E, width = 10, height = 8)
+
+rm(A,B,C,D,E)
+
+lf.model.stool1 <- lm(ppFEV1 ~ diversity_shannon, data= sdt.stool) ##Null
+lf.model.stool2 <- lm(ppFEV1 ~ diversity_shannon * Visit, data= sdt.stool) ##Full
+
+car::Anova(lf.model.stool1, type=3) 
+car::Anova(lf.model.stool2, type=3) 
+
+lrtest(lf.model.stool1, lf.model.stool2)
+
+lf.model.stool.lsm <-
+  lsmeans::lsmeans(lf.model.stool1,
+                   pairwise~diversity_shannon:Visit,
+                   adjust="fdr")
+
+lf.model.stool.lsm$contrasts
+
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.stool,
                              method="bray", weighted=F)

@@ -50,6 +50,35 @@ sdt%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> sdt.sputum
+
+###Diversity and lung function 
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  ggplot(aes(x= diversity_shannon, y= ppFEV1, shape= Visit))+
+  geom_point(position=position_jitter(0.2), size=3, aes(fill= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  geom_smooth(method=lm, se = T,aes(color= Visit))+
+  theme_bw()+
+  labs(tag= "B)")+
+  xlab("Alpha diveristy (Shannon Index)")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 2, label.y = 30)+
+  theme(text = element_text(size=16), legend.position = "none")+
+  facet_grid(rows = vars(Visit))
+
+lf.model.sputum <- lm(ppFEV1 ~ diversity_shannon * Visit, data= sdt.sputum)
+
+car::Anova(lf.model.sputum, type=3) 
+
+lf.model.sputum.lsm <-
+  lsmeans::lsmeans(lf.model.sputum,
+                   pairwise~diversity_shannon:Visit,
+                   adjust="fdr")
+
+lf.model.sputum.lsm$contrasts
+
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.sput,
                              method="bray", weighted=F)
