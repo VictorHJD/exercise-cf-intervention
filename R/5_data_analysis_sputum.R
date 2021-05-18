@@ -61,12 +61,38 @@ sdt%>%
   scale_shape_manual(values = c(21, 22, 24))+ 
   geom_smooth(method=lm, se = T,aes(color= Visit))+
   theme_bw()+
-  labs(tag= "B)")+
+  labs(tag= "A)")+
   xlab("Alpha diveristy (Shannon Index)")+
   ylab("Lung function (ppFEV1)")+
   stat_cor(method = "spearman", label.x = 2, label.y = 30)+
   theme(text = element_text(size=16), legend.position = "none")+
-  facet_grid(rows = vars(Visit))
+  facet_grid(rows = vars(Visit))-> A
+
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  ggplot(aes(x= diversity_shannon, y= ppFEV1))+
+  geom_point(position=position_jitter(0.2), size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  scale_fill_manual(values = pal.CF)+
+  geom_smooth(method=lm, se = T, color= "black")+
+  theme_bw()+
+  labs(tag= "B)")+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
+  xlab("Alpha diveristy (Shannon Index)")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
+
+C<- grid.arrange(A,B)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.pdf", plot = C, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.png", plot = C, width = 10, height = 8)
+
+rm(A,B,C)
 
 lf.model.sputum <- lm(ppFEV1 ~ diversity_shannon * Visit, data= sdt.sputum)
 

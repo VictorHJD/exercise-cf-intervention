@@ -174,13 +174,12 @@ sdt%>%
   stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
 
-
 C<- grid.arrange(A,B)
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.pdf", plot = E, width = 10, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.png", plot = E, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.pdf", plot = C, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.png", plot = C, width = 10, height = 8)
 
-rm(A,B,C,D,E)
+rm(A,B,C)
 
 lf.model.stool1 <- lm(ppFEV1 ~ diversity_shannon, data= sdt.stool) ##Null
 lf.model.stool2 <- lm(ppFEV1 ~ diversity_shannon * Visit, data= sdt.stool) ##Full
