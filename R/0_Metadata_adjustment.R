@@ -20,6 +20,7 @@ clinic<- read.csv("~/CF_project/Metadata/sample_data_indexed_medication.csv", se
 genetics<- read_excel("~/CF_project/Metadata/KlinDaten080221.xlsx")
 resp<- read_excel("~/CF_project/Metadata/Responder_nonResponder.xlsx") ##Response to interventions data (ask how were assigned the categories)
 classifier<- read.csv("~/CF_project/Metadata/sample_data_indexed_classifier.csv") ##Classification phenotic, genotipic, severity, Pseudomonas, Sport
+self.train<-  read.csv("CF_project/Metadata/IPAQ_self_reported_training.csv")
 
 ##Select useful data and uniform columns
 ##1) Tech data
@@ -335,3 +336,28 @@ write.csv(metadata.ps, "~/CF_project/exercise-cf-intervention/data/metadata_PS.c
 saveRDS(metadata.ps, "CF_project/exercise-cf-intervention/data/metadata_PS.rds")
 
 rm(clinic, data.mainz, lung, nutri, severity, resp, genetics)
+
+##Adjust self train data and save it. 
+
+self.train%>%
+  dplyr::select(Patient_number, V1_Train_Week, V2_Train_Week, V3_Train_Week)%>%
+  gather(Train_Week_Visit, Train_Week, V1_Train_Week:V3_Train_Week)%>%
+  dplyr::mutate(Visit = case_when(Train_Week_Visit == "V1_Train_Week"  ~ "V1",
+                                  Train_Week_Visit == "V2_Train_Week" ~ "V2",
+                                  Train_Week_Visit == "V3_Train_Week" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Train_Week)-> tmp2
+
+self.train%>%
+  dplyr::select(Patient_number, V1_Sessions_Week, V2_Sessions_Week, V3_Sessions_Week)%>%
+  gather(Sessions_Week_Visit, Sessions_Week, V1_Sessions_Week:V3_Sessions_Week)%>%
+  dplyr::mutate(Visit = case_when(Sessions_Week_Visit == "V1_Sessions_Week"  ~ "V1",
+                                  Sessions_Week_Visit == "V2_Sessions_Week" ~ "V2",
+                                  Sessions_Week_Visit == "V3_Sessions_Week" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Sessions_Week)-> tmp3
+
+left_join(tmp2, tmp3, by="Comed_token")%>%
+  separate(Comed_token, c("Patient_number", "Visit"))-> self.train
+
+saveRDS(self.train, "CF_project/exercise-cf-intervention/data/self.train.rds")
