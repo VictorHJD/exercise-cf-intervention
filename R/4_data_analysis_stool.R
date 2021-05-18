@@ -134,7 +134,6 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png
 rm(A,B,C,D,E)
 
 ###Diversity and lung function 
-
 sdt%>%
   dplyr::filter(material=="Stool")%>%
   mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
@@ -142,7 +141,7 @@ sdt%>%
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= diversity_shannon, y= ppFEV1, shape= Visit))+
-  geom_point(position=position_jitter(0.2), size=3, aes(fill= Visit), color= "black")+
+  geom_point(size=3, aes(fill= Visit), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   geom_smooth(method=lm, se = T, aes(color= Visit))+
   theme_bw()+
@@ -160,7 +159,7 @@ sdt%>%
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= diversity_shannon, y= ppFEV1))+
-  geom_point(position=position_jitter(0.2), size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   scale_fill_manual(values = pal.CF)+
   geom_smooth(method=lm, se = T, color= "black")+
@@ -174,10 +173,10 @@ sdt%>%
   stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
 
-C<- grid.arrange(A,B)
+C<- grid.arrange(A,B, heights = c(3, 2))
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.pdf", plot = C, width = 10, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.png", plot = C, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.pdf", plot = C, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.png", plot = C, width = 10, height = 10)
 
 rm(A,B,C)
 
@@ -237,8 +236,14 @@ plot_ordination(PS4.stool, ordination)+
 saveRDS(PCo.Sev.Stool, "CF_project/exercise-cf-intervention/data/PCo.Sev.Stool.rds")
 
 ##Stratified for Patient number 
+tmp<- row.names(PS4.stool@sam_data)
+
+tmp<- sdt[rownames(sdt)%in%tmp, ]
+
 BC.test.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + sex + age +  Visit + BMI,
-                              permutations = 999, data = sdt.stool, na.action = F, strata = sdt.stool$Patient_number)
+                              permutations = 999, data = tmp, na.action = F, strata = tmp$Patient_number)
+
+kable(BC.test.stool$aov.tab)
 
 ## Differences are not linked to severity phenotype or genotype. 
 ##Extract pairwise distances per patient

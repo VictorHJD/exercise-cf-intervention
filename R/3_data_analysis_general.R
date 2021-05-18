@@ -209,7 +209,7 @@ sdt%>%
   labs(tag= "B)", caption = get_pwc_label(stats.test))+
   theme_bw()+
   theme(text = element_text(size=16))+
-  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")-> B
+  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj} {p.adj.signif}")-> B
 
 C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
@@ -230,9 +230,11 @@ plot_ordination(PS4, ordination, shape= "material")+
   theme_bw()+
   theme(text = element_text(size=16))+
   labs(colour = "Patient")+
-  labs(shape = "Sample type")+
-  xlab("PCo1 (24.8%)")+
-  ylab("PCo2 (14.0%)")
+  xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
+  ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))
+
+vegan::adonis(BC_dist~ material + Phenotype_severity + Mutation_severity + sex + age +  Visit + BMI,
+              permutations = 999, data = sdt, na.action = F, strata = sdt$Patient_number)
 
 ##Q2: Analysis by sample type
 PS4.stool<- subset_samples(PS4, material%in%c("Stool"))
@@ -257,6 +259,6 @@ C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_General.pdf", plot = C, width = 10, height = 8)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_General.png", plot = C, width = 10, height = 8)
 rm(A,B,C)
-
+  
 ##Remove what is not need it in the next script to clean the global environment
 rm(PS, PS1, PS2, Prevdf, wh0, asv.sample)

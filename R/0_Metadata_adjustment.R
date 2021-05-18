@@ -279,6 +279,9 @@ lung%>%
   dplyr::select(-c(Patient_number,Visit))%>%
   left_join(nutri, lung, by= "Comed_token")-> tmp1
 
+write.csv(tmp1, "~/CF_project/exercise-cf-intervention/data/metadata_body_lung.csv", row.names = F) #--> #--> For body composition
+saveRDS(tmp1, "CF_project/exercise-cf-intervention/data/metadata_body_lung.rds") #--> For body composition
+
 tmp1%>%
   dplyr::select(-c(Patient_number,Visit))-> tmp1
 
