@@ -107,6 +107,78 @@ lf.model.sputum.lsm <-
 
 lf.model.sputum.lsm$contrasts
 
+###Dominance and lung function 
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= dominance_dbp, y= ppFEV1, shape= Visit))+
+  geom_point(size=3, aes(fill= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  geom_smooth(method=lm, se = T, aes(color= Visit))+
+  theme_bw()+
+  labs(tag= "A)")+
+  xlab("Dominance (Berger-Parker Index)")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 0, label.y = 30)+ # Add sperman`s correlation coefficient
+  theme(text = element_text(size=16), legend.position = "none")+
+  facet_grid(rows = vars(Visit))-> A
+
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= dominance_dbp, y= ppFEV1))+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  scale_fill_manual(values = pal.CF)+
+  geom_smooth(method=lm, se = T, color= "black")+
+  theme_bw()+
+  labs(tag= "B)")+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
+  xlab("Dominance (Berger-Parker Index)")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 0, label.y = 30)+ # Add sperman`s correlation coefficient
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
+
+C<- grid.arrange(A,B, heights = c(3, 2))
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominance_Lung_Sputuml.pdf", plot = C, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominance_Lung_Sputum.png", plot = C, width = 10, height = 10)
+
+rm(A,B,C)
+
+##Comparison V1 vs V3 (Individual look)
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::filter(Visit!="V2")%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= dominance_dbp, y= ppFEV1))+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24))+ 
+  scale_fill_manual(values = pal.CF)+
+  geom_smooth(method=lm, se = F, aes(color= Patient_number))+
+  scale_color_manual(values = pal.CF)+
+  theme_bw()+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3), color= "none")+
+  xlab("Dominance (Berger-Parker Index)")+
+  ylab("Lung function (ppFEV1)")+
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")
+
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.sput,
                              method="bray", weighted=F)

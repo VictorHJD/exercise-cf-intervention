@@ -133,6 +133,89 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.pdf
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png", plot = E, width = 10, height = 8)
 rm(A,B,C,D,E)
 
+##Dominance 
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Visit, y= dominance_dbp))+
+  geom_violin(color= "black", outlier.colour = "white", trim = F)+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black", alpha= 0.5)+
+  xlab("Visit")+
+  ylab("Dominance (Berger-Parker Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "A)", fill= "Patient number")+
+  theme_classic()+
+  theme(text = element_text(size=16))-> A
+
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Visit, y= dominance_dbp))+
+  geom_violin(color= "black", outlier.colour = "white", trim = F)+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black", alpha= 0.5)+
+  xlab("Visit")+
+  ylab("Dominance (Berger-Parker Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "B)", fill= "Patient number")+
+  theme_classic()+
+  theme(text = element_text(size=16))-> B
+
+##Evenness
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Visit, y= evenness_pielou))+
+  geom_violin(color= "black", outlier.colour = "white", trim = F)+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black", alpha= 0.5)+
+  xlab("Visit")+
+  ylab("Evenness (Pielou Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "C)", fill= "Patient number")+
+  theme_classic()+
+  theme(text = element_text(size=16))-> C
+
+sdt%>%
+  dplyr::filter(material=="Sputum")%>%
+  dplyr::filter(Benzoase==1)%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Visit, y= evenness_pielou))+
+  geom_violin(color= "black", outlier.colour = "white", trim = F)+
+  geom_point(shape=21, size=3, aes(fill= Patient_number), color= "black", alpha= 0.5)+
+  xlab("Visit")+
+  ylab("Evenness (Pielou Index)")+
+  geom_line(aes(group = Patient_number), color= "gray")+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "D)", fill= "Patient number")+
+  theme_classic()+
+  theme(text = element_text(size=16))-> D
+
+E<- ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_2_Material.pdf", plot = E, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_2_Material.png", plot = E, width = 10, height = 8)
+
+rm(A,B,C,D,E)
+
 ###Diversity and lung function 
 sdt%>%
   dplyr::filter(material=="Stool")%>%
@@ -194,6 +277,109 @@ lf.model.stool.lsm <-
                    adjust="fdr")
 
 lf.model.stool.lsm$contrasts
+
+###Dominance and lung function 
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= dominance_dbp, y= ppFEV1, shape= Visit))+
+  geom_point(size=3, aes(fill= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  geom_smooth(method=lm, se = T, aes(color= Visit))+
+  theme_bw()+
+  labs(tag= "A)")+
+  xlab("Dominance (Berger-Parker Index)")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 0, label.y = 30)+ # Add sperman`s correlation coefficient
+  theme(text = element_text(size=16), legend.position = "none")+
+  facet_grid(rows = vars(Visit))-> A
+
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= dominance_dbp, y= ppFEV1))+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  scale_fill_manual(values = pal.CF)+
+  geom_smooth(method=lm, se = T, color= "black")+
+  theme_bw()+
+  labs(tag= "B)")+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
+  xlab("Dominance (Berger-Parker Index)")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 0, label.y = 30)+ # Add sperman`s correlation coefficient
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
+
+C<- grid.arrange(A,B, heights = c(3, 2))
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominance_Lung_Stool.pdf", plot = C, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominance_Lung_Stool.png", plot = C, width = 10, height = 10)
+
+rm(A,B,C)
+
+##Comparison V1 vs V3 (Individual look)
+sdt%>%
+  dplyr::filter(material=="Stool")%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::filter(Visit!="V2")%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= dominance_dbp, y= ppFEV1))+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24))+ 
+  scale_fill_manual(values = pal.CF)+
+  geom_smooth(method=lm, se = F, aes(color= Patient_number))+
+  scale_color_manual(values = pal.CF)+
+  theme_bw()+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3), color= "none")+
+  xlab("Dominance (Berger-Parker Index)")+
+  ylab("Lung function (ppFEV1)")+
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")
+
+##Extract dominant taxa 
+dom.stool.V1<- dominant(subset_samples(PS4.stool, Visit%in%c("V1")))
+dom.stool.V2<- dominant(subset_samples(PS4.stool, Visit%in%c("V2")))
+dom.stool.V3<- dominant(subset_samples(PS4.stool, Visit%in%c("V3")))
+
+find.top.asv <- function(x,num){
+  require(phyloseq)
+  require(magrittr)
+  
+  otu <- as(otu_table(PS4.stool), "matrix")
+  # transpose if necessary
+  if(taxa_are_rows(PS4.stool)){otu <- t(otu)}
+  # Coerce to data.frame
+  #OTUdf <- as.data.frame(otu)
+  otu <- otu_table(otu, taxa_are_rows = F)
+  tax <- tax_table(PS4.stool)
+  j1 <- apply(otu,1,sort,index.return=T, decreasing=T) # modifying which.max to return a list of sorted index
+  j2 <- lapply(j1,'[[',"ix") # select for index
+  
+  l <- data.frame(unique(tax@.Data[unlist(j2),]))
+  m <- data.frame(otu@.Data[,unique(unlist(j2))])
+  n <- apply(m,1,sort,index.return=T, decreasing=T) %>%
+    lapply('[[',"ix") %>%  # Extract index
+    lapply(head,n=num) # This to returns the top x tax
+  
+  p <- list()
+  for(i in 1:length(n)){
+    p[[i]]<- colnames(m)[n[[i]]]
+  }
+  m$taxa <- p
+  return(m)
+}
+top.stool<- find.top.taxa(PS4.stool, "Genus")
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.stool,
