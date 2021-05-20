@@ -34,6 +34,41 @@ if(!exists("PS4.stool")){
   } 
 }
 
+##Functions 
+find.top.asv <- function(x, taxa, num){
+  require(phyloseq)
+  require(magrittr)
+  
+  top.taxa <- tax_glom(x,taxa)
+  otu <- as(otu_table(top.taxa), "matrix")
+  # transpose if necessary
+  if(taxa_are_rows(top.taxa)){otu <- t(otu)}
+  otu <- otu_table(otu, taxa_are_rows = F)
+  tax <- tax_table(top.taxa)
+  # Coerce to data.frame
+  n <- as.data.frame(tax)
+  n%>%
+    rownames_to_column()%>%
+    dplyr::rename(ASV = rowname)-> n
+  
+  j1 <- apply(otu,1,sort,index.return=T, decreasing=T) # modifying which.max to return a list of sorted index
+  j2 <- lapply(j1,'[[',"x") # select for Names
+  
+  m <- data.frame(unlist(j2))
+  m%>%
+    rownames_to_column()%>%
+    dplyr::filter(unlist.j2.!=0)%>%
+    separate(rowname, c("SampleID", "ASV"))%>%
+    dplyr::group_by(SampleID)%>%
+    slice_max(order_by = unlist.j2., n = num)%>%
+    dplyr::rename(Abundance = unlist.j2.)%>%
+    dplyr::mutate(Abundance = (Abundance/1E6)*100)%>%
+    left_join(n, by="ASV")->m
+  
+  rm(top.taxa, otu, tax, j1, j2, n)
+  return(m)
+}
+
 ##Color palette for patients ##
 pal.CF<- c((brewer.pal(n = 8, name = "Dark2")), (brewer.pal(n = 11, name = "Paired")) )
 
@@ -347,39 +382,42 @@ sdt%>%
   ylab("Lung function (ppFEV1)")+
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")
 
-##Extract dominant taxa 
-dom.stool.V1<- dominant(subset_samples(PS4.stool, Visit%in%c("V1")))
-dom.stool.V2<- dominant(subset_samples(PS4.stool, Visit%in%c("V2")))
-dom.stool.V3<- dominant(subset_samples(PS4.stool, Visit%in%c("V3")))
+###Extract dominant taxa per sample
+top.stool<- find.top.asv(PS4.stool, "Genus", 1)
+top.stool$Species<- NULL
 
-find.top.asv <- function(x,num){
-  require(phyloseq)
-  require(magrittr)
-  
-  otu <- as(otu_table(PS4.stool), "matrix")
-  # transpose if necessary
-  if(taxa_are_rows(PS4.stool)){otu <- t(otu)}
-  # Coerce to data.frame
-  #OTUdf <- as.data.frame(otu)
-  otu <- otu_table(otu, taxa_are_rows = F)
-  tax <- tax_table(PS4.stool)
-  j1 <- apply(otu,1,sort,index.return=T, decreasing=T) # modifying which.max to return a list of sorted index
-  j2 <- lapply(j1,'[[',"ix") # select for index
-  
-  l <- data.frame(unique(tax@.Data[unlist(j2),]))
-  m <- data.frame(otu@.Data[,unique(unlist(j2))])
-  n <- apply(m,1,sort,index.return=T, decreasing=T) %>%
-    lapply('[[',"ix") %>%  # Extract index
-    lapply(head,n=num) # This to returns the top x tax
-  
-  p <- list()
-  for(i in 1:length(n)){
-    p[[i]]<- colnames(m)[n[[i]]]
-  }
-  m$taxa <- p
-  return(m)
-}
-top.stool<- find.top.taxa(PS4.stool, "Genus")
+##Add sample data
+sdt.stool%>%
+  rownames_to_column()%>%
+  dplyr::select(c(1, 32:95))%>%
+  dplyr::rename(SampleID = rowname)%>%
+  left_join(top.stool, by="SampleID")-> top.stool
+
+top.stool %>% 
+  count(Genus)-> tmp
+
+top.stool%>%
+  left_join(tmp, by="Genus")-> top.stool
+
+##Plot Lung function and dominant bugs
+top.stool%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(y= reorder(Genus, n), x= ppFEV1))+
+  geom_point(shape= 21, aes(fill= Patient_number, size = Abundance), color= "black", alpha= 0.75)+
+  scale_fill_manual(values = pal.CF)+
+  scale_size(range = c(.1, 10))+
+  theme_bw()+
+  labs(fill = "Patient", size = "Rel. abund (%)", tag = "A)")+
+  labs()+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6, size= 10), size= guide_legend(nrow = 2), color= "none")+
+  facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  ylab("Dominant bacterial genus")+
+  xlab("Lung function (ppFEV1)")+
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal",
+        axis.text.y = element_text(size = 9, face="italic", color="black")) -> dom.stool
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.stool,

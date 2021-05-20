@@ -179,6 +179,42 @@ sdt%>%
   ylab("Lung function (ppFEV1)")+
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")
 
+##Get top taxa per patient
+top.sputum<- find.top.asv(PS4.sput, "Genus", 1)
+top.sputum$Species<- NULL
+##Add sample data
+sdt.sputum%>%
+  rownames_to_column()%>%
+  dplyr::select(c(1, 32:95))%>%
+  dplyr::rename(SampleID = rowname)%>%
+  left_join(top.sputum, by="SampleID")-> top.sputum
+
+top.sputum %>% 
+  count(Genus)-> tmp
+
+top.sputum%>%
+  left_join(tmp, by="Genus")-> top.sputum
+
+##Plot Lung function and dominant bugs
+top.sputum%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(y= reorder(Genus, n), x= ppFEV1))+
+  geom_point(shape= 21, aes(fill= Patient_number, size = Abundance), color= "black", alpha= 0.75)+
+  scale_fill_manual(values = pal.CF)+
+  scale_size(range = c(.1, 10))+
+  theme_bw()+
+  labs(fill = "Patient", size = "Rel. abund (%)", tag = "B)")+
+  labs()+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6, size= 10), size= guide_legend(nrow = 2), color= "none")+
+  facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  ylab("Dominant bacterial genus")+
+  xlab("Lung function (ppFEV1)")+
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal",
+        axis.text.y = element_text(size = 9, face="italic", color="black")) -> dom.sputum
+
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.sput,
                              method="bray", weighted=F)
