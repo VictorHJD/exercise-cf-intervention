@@ -35,6 +35,7 @@ if(!exists("PS4.stool")){
 }
 
 ##Functions 
+##Find dominant taxa per samples
 find.top.asv <- function(x, taxa, num){
   require(phyloseq)
   require(magrittr)
@@ -67,6 +68,15 @@ find.top.asv <- function(x, taxa, num){
   
   rm(top.taxa, otu, tax, j1, j2, n)
   return(m)
+}
+
+##Transform abundance into relative abundance
+Rel.abund_fun <- function(df){
+  df2 <- sapply(df, function(x) (x/1E6)*100)  
+  colnames(df2) <- colnames(df)
+  rownames(df2) <- rownames(df)
+  df2<- as.data.frame(df2)
+  return(df2)
 }
 
 ##Color palette for patients ##
@@ -389,7 +399,7 @@ top.stool$Species<- NULL
 ##Add sample data
 sdt.stool%>%
   rownames_to_column()%>%
-  dplyr::select(c(1, 32:95))%>%
+  dplyr::select(c(1, 3, 6, 10, 14, 32:95))%>%
   dplyr::rename(SampleID = rowname)%>%
   left_join(top.stool, by="SampleID")-> top.stool
 
@@ -417,7 +427,64 @@ top.stool%>%
   ylab("Dominant bacterial genus")+
   xlab("Lung function (ppFEV1)")+
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal",
-        axis.text.y = element_text(size = 9, face="italic", color="black")) -> dom.stool
+        axis.text.y = element_text(size = 9, face="italic", color="black"))-> A
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct.pdf", plot = A, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct.png", plot = A, width = 10, height = 8)
+
+##Make a heatmap
+tmp<- as.data.frame(otu_table(tax_glom(PS4.stool, "Genus")))
+
+top.stool%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::select(c(Genus, ASV))%>%
+  unique()-> tmp1
+
+tmp<- tmp[rownames(tmp) %in% tmp1$ASV, ] ##Subset just dominant genus for all samples
+
+tmp<- Rel.abund_fun(tmp) ##Transform into relative abundance 
+
+tmp%>%
+  rownames_to_column()%>%
+  dplyr::rename(ASV = rowname)%>%
+  left_join(tmp1, by="ASV")%>%
+  column_to_rownames(var = "Genus")%>%
+  dplyr::select(!c(ASV))->tmp
+
+library("pheatmap")
+library(dendextend)
+###In order to add the annotations in good order, 
+#it is necessary to have the same order in the intersection matrix and in the annotation table
+P.clust <- hclust(dist(t(tmp)), method = "complete") ##Dendogram
+
+as.dendrogram(P.clust) %>%
+  plot(horiz = T)
+
+P.col <- cutree(tree = P.clust, k = 2)
+P.col  <- data.frame(cluster = ifelse(test = P.col  == 1, yes = "cluster 1", no = "cluster 2"))
+P.col$SampleID <- rownames(P.col)
+
+P.col<- cbind(P.col, sdt.stool)
+
+col_groups <- P.col %>%
+  dplyr::select(c(SampleID, Patient_number, Visit, Phenotype_severity)) ##Here It is possible to add the other characteristics
+
+row.names(col_groups)<- col_groups$SampleID
+
+col_groups$SampleID<- NULL
+
+colour_groups <- list(Patient_number= pal.CF)
+
+stool.heatmap <- pheatmap(tmp, 
+                        color = colorRampPalette(c("white","#B2182B"))(50),
+                        border_color = NA,
+                        annotation_col = col_groups, 
+                        annotation_colors = colour_groups,
+                        show_rownames = T,
+                        show_colnames = F)
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.stool,

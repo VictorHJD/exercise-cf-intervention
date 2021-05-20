@@ -206,14 +206,17 @@ top.sputum%>%
   scale_fill_manual(values = pal.CF)+
   scale_size(range = c(.1, 10))+
   theme_bw()+
-  labs(fill = "Patient", size = "Rel. abund (%)", tag = "B)")+
+  labs(fill = "Patient", size = "Rel. abund (%)", tag = "A)")+
   labs()+
   guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6, size= 10), size= guide_legend(nrow = 2), color= "none")+
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   ylab("Dominant bacterial genus")+
   xlab("Lung function (ppFEV1)")+
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal",
-        axis.text.y = element_text(size = 9, face="italic", color="black")) -> dom.sputum
+        axis.text.y = element_text(size = 9, face="italic", color="black")) -> A
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.pdf", plot = A, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.png", plot = A, width = 10, height = 8)
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.sput,
