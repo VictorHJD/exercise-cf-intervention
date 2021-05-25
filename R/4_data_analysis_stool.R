@@ -426,6 +426,7 @@ top.stool%>%
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   ylab("Dominant bacterial genus")+
   xlab("Lung function (ppFEV1)")+
+  geom_vline(xintercept=70, linetype="dashed", color = "red")+
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal",
         axis.text.y = element_text(size = 9, face="italic", color="black"))-> A
 

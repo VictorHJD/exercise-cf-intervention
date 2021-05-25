@@ -212,11 +212,13 @@ top.sputum%>%
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   ylab("Dominant bacterial genus")+
   xlab("Lung function (ppFEV1)")+
+  geom_vline(xintercept=70, linetype="dashed", color = "red")+
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal",
         axis.text.y = element_text(size = 9, face="italic", color="black")) -> A
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.pdf", plot = A, width = 10, height = 8)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.png", plot = A, width = 10, height = 8)
+
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.sput,
@@ -1266,6 +1268,69 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_LogReg_Stool_Sputu
 
 rm(A, B, C, D, E, f)
 
+###Pseudomonas and lung function 
+sdt.sputum%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  dplyr::mutate(Pseudomonas_RA= (`Proteobacteria-Pseudomonas`/1E6)*100)%>%
+  ggplot(aes(x=Pseudomonas_RA, y= ppFEV1, shape= Visit))+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  geom_smooth(method=lm, se = T,aes(color= Visit))+
+  theme_bw()+
+  scale_fill_manual(values = pal.CF)+
+  labs(tag= "A)")+
+  xlab("Pseudomonas relative abundance")+
+  ylab("Lung function (ppFEV1)")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
+  stat_cor(method = "spearman", label.x = 60, label.y = 80)+
+  theme(text = element_text(size=16), legend.position = "none")+
+  facet_grid(rows = vars(Visit))-> A
+
+sdt.sputum%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  dplyr::mutate(Pseudomonas_RA= (`Proteobacteria-Pseudomonas`/1E6)*100)%>%
+  ggplot(aes(x= Pseudomonas_RA, y= ppFEV1))+
+  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  scale_fill_manual(values = pal.CF)+
+  geom_smooth(method=lm, se = T, color= "black")+
+  theme_bw()+
+  labs(tag= "B)")+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
+  xlab("Pseudomonas relative abundance")+
+  ylab("Lung function (ppFEV1)")+
+  stat_cor(method = "spearman", label.x = 60, label.y = 80)+ # Add sperman`s correlation coefficient
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
+
+C<- grid.arrange(A,B, heights = c(3, 2))
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Lung_Pseudomonas_Sputum.pdf", plot = C, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Lung_Pseudomonas_Sputum.png", plot = C, width = 10, height = 10)
+
+rm(A,B,C)
+
+sdt.sputum%>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::group_by(Visit)%>%
+  dplyr::mutate(Pseudomonas_RA= (`Proteobacteria-Pseudomonas`/1E6)*100) -> tmp
+
+model.Pseu.sputum1 <- lm(ppFEV1 ~ Pseudomonas_RA, data= tmp)
+model.Pseu.sputum2 <- lm(ppFEV1 ~ Pseudomonas_RA * Visit, data= tmp)
+
+car::Anova(model.Pseu.sputum1, type=3) 
+car::Anova(model.Pseu.sputum2, type=3) 
+
+model.Pseu.sputum.lsm <-
+  lsmeans::lsmeans(model.Pseu.sputum2,
+                   pairwise~Pseudomonas_RA:Visit,
+                   adjust="fdr")
+
+lf.model.sputum.lsm$contrasts
 ##Create biom format object for PICRUSt2
 require("biomformat")
 asvmat.rare<- as.matrix(PS3.sputum@otu_table)
