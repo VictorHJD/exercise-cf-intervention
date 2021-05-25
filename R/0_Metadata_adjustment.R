@@ -21,6 +21,7 @@ genetics<- read_excel("~/CF_project/Metadata/KlinDaten080221.xlsx")
 resp<- read_excel("~/CF_project/Metadata/Responder_nonResponder.xlsx") ##Response to interventions data (ask how were assigned the categories)
 classifier<- read.csv("~/CF_project/Metadata/sample_data_indexed_classifier.csv") ##Classification phenotic, genotipic, severity, Pseudomonas, Sport
 self.train<-  read.csv("CF_project/Metadata/IPAQ_self_reported_training.csv")
+bacteria.cult<- read_excel("CF_project/Metadata/ClinicalColonization.xlsx")
 
 ##Select useful data and uniform columns
 ##1) Tech data
@@ -361,3 +362,20 @@ left_join(tmp2, tmp3, by="Comed_token")%>%
   separate(Comed_token, c("Patient_number", "Visit"))-> self.train
 
 saveRDS(self.train, "CF_project/exercise-cf-intervention/data/self.train.rds")
+
+##Adjust Bacterial culture data 
+##Remove spaces in colnames 
+colnames(bacteria.cult)<- gsub(" ", "_", colnames(bacteria.cult))
+  
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID, V1_Pseudomonas_aeruginosa_MDR= `V1_Pseudomonas_aeruginosa_3/4MRGN`,
+                V2_Pseudomonas_aeruginosa_MDR = `V2_Pseudomonas_aeruginosa_3/4MRGN`,
+                V3_Pseudomonas_aeruginosa_MDR = `V3_Pseudomonas_aeruginosa_3/4MRGN`)%>%
+  dplyr::select(Patient_number, V1_Pseudomonas_aeruginosa:V1_Pseudomonas_aeruginosa_MDR, 
+                V2_Pseudomonas_aeruginosa:V2_Pseudomonas_aeruginosa_MDR,
+                V3_Pseudomonas_aeruginosa:V3_Pseudomonas_aeruginosa_MDR)-> tmp
+
+tmp[,2:10]<- lapply(tmp[,2:10], function(x) as.numeric(as.character(x)))
+
+tmp%>%
+  gather(Pseudomonas_Visit, Pseudomonas_culture, V1_Pseudomonas_aeruginosa:V3_Pseudomonas_aeruginosa_MDR)

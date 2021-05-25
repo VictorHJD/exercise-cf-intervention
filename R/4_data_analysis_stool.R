@@ -496,7 +496,7 @@ colour_groups <- list(Patient_number= pal.CF)
 
 #tmp<- tmp[,col.order]
 
-stool.heatmap <- pheatmap(tmp, cluster_rows = F, cluster_cols = F,
+stool.heatmap <- pheatmap(tmp, cluster_rows = F, cluster_cols = T,
                         color = colorRampPalette(c("white","#832424FF"))(100), #"#3A3A98FF",
                         border_color = NA,
                         annotation_col = col_groups, 
