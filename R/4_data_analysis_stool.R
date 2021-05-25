@@ -430,8 +430,8 @@ top.stool%>%
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal",
         axis.text.y = element_text(size = 9, face="italic", color="black"))-> A
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct.pdf", plot = A, width = 10, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct.png", plot = A, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Stool.pdf", plot = A, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Stool.png", plot = A, width = 10, height = 8)
 
 ##Make a heatmap
 tmp<- as.data.frame(otu_table(tax_glom(PS4.stool, "Genus")))
