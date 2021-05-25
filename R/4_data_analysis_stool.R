@@ -472,7 +472,11 @@ P.col$SampleID <- rownames(P.col)
 P.col<- cbind(P.col, sdt.stool)
 
 col_groups <- P.col %>%
-  dplyr::select(c(SampleID, Patient_number, Visit, Phenotype_severity)) ##Here It is possible to add the other characteristics
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::select(c(SampleID, Patient_number, Visit, ppFEV1)) ##Here It is possible to add the other characteristics
 
 row.names(col_groups)<- col_groups$SampleID
 
@@ -480,8 +484,20 @@ col_groups$SampleID<- NULL
 
 colour_groups <- list(Patient_number= pal.CF)
 
-stool.heatmap <- pheatmap(tmp, 
-                        color = colorRampPalette(c("white","#B2182B"))(50),
+##Order columns
+##By Lung function
+#P.col%>%arrange(ppFEV1)%>%rownames()-> col.order
+##By Visit
+#col.order <- c("10P17V1","10P18V1A","10P1V1","10P3V1A","10P4V1A","10P6V1A","10P7V1A","10P8V1A","10P9V1B", 
+#               "10P11V1A","10P12V1A","10P13V1","10P14V1A","10P15V1A","10P16V1", 
+#               "10P1V2","10P2V2B","10P3V2A","10P4V2A","10P5V2","10P6V2A", 
+#               "10P7V2","10P8V2A","10P9V2A","10P10V2A","10P13V2","10P14V2A","10P15V2A","10P16V2", 
+#               "10P2V3B","10P3V3A","10P4V3A","10P6V3A","10P7V3A","10P9V3A","10P14V3A","10P15V3A","10P17V3A","10P18V3A")
+
+#tmp<- tmp[,col.order]
+
+stool.heatmap <- pheatmap(tmp, cluster_rows = F, cluster_cols = F,
+                        color = colorRampPalette(c("white","#832424FF"))(100), #"#3A3A98FF",
                         border_color = NA,
                         annotation_col = col_groups, 
                         annotation_colors = colour_groups,
