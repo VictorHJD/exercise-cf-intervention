@@ -210,6 +210,7 @@ top.sputum%>%
   labs()+
   guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6, size= 10), size= guide_legend(nrow = 2), color= "none")+
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  scale_x_continuous(breaks = c(20, 40, 60, 80, 100),limits = c(20, 100))+
   ylab("Dominant bacterial genus")+
   xlab("Lung function (ppFEV1)")+
   geom_vline(xintercept=70, linetype="dashed", color = "red")+
