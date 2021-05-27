@@ -120,6 +120,10 @@ summarize_phyloseq(PS.Phy)
 
 plot_bar(PS.Phy, fill="Phylum") + facet_wrap(~material, scales= "free_x", nrow=1)
 
+plot_bar(PS.Gen, fill="Genus") + 
+  facet_wrap(material~Visit, scales= "free_x", nrow=1)+
+  theme(legend.position = "none")
+
 ##Alpha diversity (not-rarefied)
 ##Estimate global indicators
 alphaDiv <-microbiome::alpha(PS3, index = "all")
@@ -239,26 +243,39 @@ vegan::adonis(BC_dist~ material + Phenotype_severity + Mutation_severity + sex +
 ##Q2: Analysis by sample type
 PS4.stool<- subset_samples(PS4, material%in%c("Stool"))
 PS4.stool.Phy<-  tax_glom(PS4.stool, "Phylum", NArm = F)
-
+PS4.stool.Gen<-  tax_glom(PS4.stool, "Genus", NArm = F)
 ##Subset those samples with Benzose treatment (Correct Sputum samples)
 PS4.sput<-  subset_samples(PS4, Benzoase==1)
 PS4.sput.Phy<-  tax_glom(PS4.sput, "Phylum", NArm = F)
+PS4.sput.Gen<-  tax_glom(PS4.sput, "Genus", NArm = F)
 
 plot_bar(PS4.stool.Phy, x = "Patient_number", fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   xlab("Patient number")+
   labs(tag= "A)")-> A
 
+plot_bar(PS4.stool.Gen, x = "Patient_number", fill="Genus")+ 
+  facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  theme(legend.position = "none")+
+  xlab("Patient number")+
+  labs(tag= "A)")
+
 plot_bar(PS4.sput.Phy, x = "Patient_number",fill="Phylum")+ 
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   xlab("Patient number")+
   labs(tag= "B)")-> B
+
+plot_bar(PS4.sput.Gen, x = "Patient_number", fill="Genus")+ 
+  facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  theme(legend.position = "none")+
+  xlab("Patient number")+
+  labs(tag= "B)")
 
 C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_General.pdf", plot = C, width = 10, height = 8)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_General.png", plot = C, width = 10, height = 8)
 rm(A,B,C)
-  
+
 ##Remove what is not need it in the next script to clean the global environment
 rm(PS, PS1, PS2, Prevdf, wh0, asv.sample)

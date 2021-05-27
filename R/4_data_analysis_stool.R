@@ -70,6 +70,46 @@ find.top.asv <- function(x, taxa, num){
   return(m)
 }
 
+##Get data frame for bar plot at genus level 
+count.high.genus <- function(x, num){
+  require(phyloseq)
+  require(magrittr)
+  #x is a phyloseq object glomed to Genus
+  #num is the threshold of Relative abundance desired 
+  otu <- as(otu_table(x), "matrix")
+  # transpose if necessary
+  if(taxa_are_rows(x)){otu <- t(otu)}
+  otu <- otu_table(otu, taxa_are_rows = F)
+  tax <- tax_table(x)
+  # Coerce to data.frame
+  n <- as.data.frame(tax)
+  n%>%
+    rownames_to_column()%>%
+    dplyr::rename(ASV = rowname)-> n
+  
+  j1 <- apply(otu,1,sort,index.return=T, decreasing=T) # modifying which.max to return a list of sorted index
+  j2 <- lapply(j1,'[[',"x") # select for Names
+  
+  m <- data.frame(unlist(j2))
+  
+  m%>%
+    rownames_to_column()%>%
+    dplyr::filter(unlist.j2.!=0)%>%
+    separate(rowname, c("SampleID", "ASV"))%>%
+    dplyr::group_by(SampleID)%>%
+    dplyr::rename(Abundance = unlist.j2.)%>%
+    dplyr::mutate(Abundance = (Abundance/1E6)*100)%>%
+    left_join(n, by="ASV")%>%
+    mutate(Main_taxa= Abundance>= num)%>%
+    dplyr::mutate(Genus= case_when(Main_taxa== FALSE ~ "Taxa less represented", TRUE ~ as.character(Genus)))%>%
+    arrange(SampleID, desc(Genus))->m
+  
+  m$Genus[is.na(m$Genus)]<- "Unassigned" ##Change NA's into Unassigned 
+  m$Species<- NULL
+  
+  rm(otu, tax, j1, j2, n)
+  return(m)
+}
 ##Transform abundance into relative abundance
 Rel.abund_fun <- function(df){
   df2 <- sapply(df, function(x) (x/1E6)*100)  
@@ -86,6 +126,21 @@ pal.CF<- c("P1"="#1B9E77","P2"= "#D95F02","P3"= "#7570B3","P4"= "#E7298A","P5"= 
            "P6"="#E6AB02","P7"= "#A6761D","P8"= "#666666","P9"= "#A6CEE3","P10"= "#1F78B4",
            "P11"= "#B2DF8A","P12"= "#33A02C","P13"= "#FB9A99","P14"="#E31A1C","P15"= "#FDBF6F",
            "P16"= "#FF7F00","P17"= "#CAB2D6","P18"= "#6A3D9A","P19"= "#FFFF99")
+
+##For taxa 
+tax.palette<- c("Taxa less represented" = "#767676FF",  "Unassigned"="lightgray", "Prevotella"= "#3C5488FF", "Blautia" = "#AD002AFF",
+                "Bacteroides" = "#00A087FF",  "Bifidobacterium" = "#E64B35FF", "Subdoligranulum"= "#F39B7FFF", "Faecalibacterium"= "#8491B4FF",   
+                "Collinsella"= "#CD534CFF", "Alistipes" = "#FAFD7CFF", "Holdemanella"= "#7E6148FF","Lactobacillus"=  "#631879FF",
+                "Ruminococcus"= "#BC3C29FF","Escherichia-Shigella" = "#0072B5FF", "Enterococcus" = "#E18727FF", "Roseburia"= "#E762D7FF",                  
+                "Acidaminococcus"= "#7876B1FF", "Intestinibacter"="#6F99ADFF", "Butyricicoccus" = "#FFDC91FF", 
+                "[Ruminococcus] gnavus group" = "#EE4C97FF","Clostridium sensu stricto 1"= "#00468BFF", "Agathobacter" = "#0099B4FF" , 
+                "Lachnoclostridium"= "#42B540FF", "Pediococcus"= "#925E9FFF", "Streptococcus"= "#925E9FFF", "Staphylococcus"= "#008B45FF", 
+                "Rothia" ="#FDAF91FF","Alloprevotella"= "#4DBBD5FF", "Veillonella"= "#3B4992FF", "Stenotrophomonas"= "#B09C85FF", 
+                "Porphyromonas"= "#BB0021FF", "Granulicatella"= "#A20056FF","Gemella" = "#0073C2FF", 
+                "Achromobacter"= "#EFC000FF" , "Pseudomonas" = "#ED0000FF", "Actinomyces" = "#91D1C2FF", 
+                "Haemophilus" ="#7AA6DCFF"  ,  "Lachnoanaerobaculum"= "#003C67FF",   "Fusobacterium"= "#8F7700FF", 
+                "Campylobacter"= "#A73030FF",  "Neisseria"= "#3B3B3BFF")
+
 ##Stool#####################
 sdt%>%
   dplyr::filter(material=="Stool")%>%
@@ -260,6 +315,31 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_2_Material.p
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_2_Material.png", plot = E, width = 10, height = 8)
 
 rm(A,B,C,D,E)
+
+##Barplot by sample 
+gen.stool<- count.high.genus(x = PS4.stool.Gen, num = 10)
+
+sdt.stool%>%
+  rownames_to_column()%>%
+  dplyr::select(c(1, 32:33))%>%
+  dplyr::rename(SampleID = rowname)%>%
+  left_join(gen.stool, by="SampleID")-> gen.stool
+
+#plot
+gen.stool%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x=Patient_number, y=Abundance, fill=Genus))+ 
+  geom_bar(aes(), stat="identity", position="stack") + 
+  facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  scale_fill_manual(values=tax.palette) + 
+  guides(fill=guide_legend(nrow=5))+
+  theme_bw()+
+  labs(tag= "A)")+
+  ylab("Relative abundance (%)")+
+  xlab("Patient number")+
+  theme(legend.position="bottom")#-> A
 
 ###Diversity and lung function 
 sdt%>%

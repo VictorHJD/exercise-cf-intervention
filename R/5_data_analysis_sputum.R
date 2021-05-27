@@ -156,6 +156,40 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominance_Lung_Spu
 
 rm(A,B,C)
 
+##Barplot by sample 
+gen.sputum<- count.high.genus(x = PS4.sput.Gen, num = 10)
+
+sdt.sputum%>%
+  rownames_to_column()%>%
+  dplyr::select(c(1, 32:33))%>%
+  dplyr::rename(SampleID = rowname)%>%
+  left_join(gen.sputum, by="SampleID")-> gen.sputum
+
+#set color palette to accommodate the number of genera
+length(unique(gen.sputum$Genus))
+
+#plot
+gen.sputum%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x=Patient_number, y=Abundance, fill=Genus))+ 
+  geom_bar(aes(), stat="identity", position="stack") + 
+  facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  scale_fill_manual(values=tax.palette) + 
+  guides(fill=guide_legend(nrow=4))+
+  theme_bw()+
+  labs(tag= "B)")+
+  ylab("Relative abundance (%)")+
+  xlab("Patient number")+
+  theme(legend.position="bottom")# -> B
+
+#C<- grid.arrange(A,B, heights = c(3, 3))
+
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_Genus.pdf", plot = C, width = 10, height = 12)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_Genus.png", plot = C, width = 10, height = 12)
+
+#rm(A,B,C)
 ##Comparison V1 vs V3 (Individual look)
 sdt%>%
   dplyr::filter(material=="Sputum")%>%
