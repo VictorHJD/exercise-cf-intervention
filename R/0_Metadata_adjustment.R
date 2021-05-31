@@ -366,7 +366,8 @@ saveRDS(self.train, "CF_project/exercise-cf-intervention/data/self.train.rds")
 ##Adjust Bacterial culture data 
 ##Remove spaces in colnames 
 colnames(bacteria.cult)<- gsub(" ", "_", colnames(bacteria.cult))
-  
+
+##Pseudomonas  
 bacteria.cult%>%
   dplyr::rename(Patient_number= ID, V1_Pseudomonas_aeruginosa_MDR= `V1_Pseudomonas_aeruginosa_3/4MRGN`,
                 V2_Pseudomonas_aeruginosa_MDR = `V2_Pseudomonas_aeruginosa_3/4MRGN`,
@@ -378,4 +379,90 @@ bacteria.cult%>%
 tmp[,2:10]<- lapply(tmp[,2:10], function(x) as.numeric(as.character(x)))
 
 tmp%>%
-  gather(Pseudomonas_Visit, Pseudomonas_culture, V1_Pseudomonas_aeruginosa:V3_Pseudomonas_aeruginosa_MDR)
+  dplyr::mutate(V1_Pseudomonas_aeruginosa_HV = case_when(V1_Pseudomonas_aeruginosa_mucoid == 0 & V1_Pseudomonas_aeruginosa_MDR == 0  ~ 0,
+                                                         V1_Pseudomonas_aeruginosa_mucoid == 1 & V1_Pseudomonas_aeruginosa_MDR == 0 ~ 1,
+                                                         V1_Pseudomonas_aeruginosa_mucoid == 0 & V1_Pseudomonas_aeruginosa_MDR == 1 ~ 1,
+                                                         V1_Pseudomonas_aeruginosa_mucoid == 1 & V1_Pseudomonas_aeruginosa_MDR == 1 ~ 1))%>%
+  dplyr::mutate(V2_Pseudomonas_aeruginosa_HV = case_when(V2_Pseudomonas_aeruginosa_mucoid == 0 & V2_Pseudomonas_aeruginosa_MDR == 0  ~ 0,
+                                                         V2_Pseudomonas_aeruginosa_mucoid == 1 & V2_Pseudomonas_aeruginosa_MDR == 0 ~ 1,
+                                                         V2_Pseudomonas_aeruginosa_mucoid == 0 & V2_Pseudomonas_aeruginosa_MDR == 1 ~ 1,
+                                                         V2_Pseudomonas_aeruginosa_mucoid == 1 & V2_Pseudomonas_aeruginosa_MDR == 1 ~ 1))%>%
+  dplyr::mutate(V3_Pseudomonas_aeruginosa_HV = case_when(V3_Pseudomonas_aeruginosa_mucoid == 0 & V3_Pseudomonas_aeruginosa_MDR == 0  ~ 0,
+                                                         V3_Pseudomonas_aeruginosa_mucoid == 1 & V3_Pseudomonas_aeruginosa_MDR == 0 ~ 1,
+                                                         V3_Pseudomonas_aeruginosa_mucoid == 0 & V3_Pseudomonas_aeruginosa_MDR == 1 ~ 1,
+                                                         V3_Pseudomonas_aeruginosa_mucoid == 1 & V3_Pseudomonas_aeruginosa_MDR == 1 ~ 1))%>%
+  dplyr::select(Patient_number, V1_Pseudomonas_aeruginosa, V1_Pseudomonas_aeruginosa_HV, 
+                V2_Pseudomonas_aeruginosa,V2_Pseudomonas_aeruginosa_HV,
+                V3_Pseudomonas_aeruginosa, V3_Pseudomonas_aeruginosa_HV)%>%
+  dplyr::mutate(V1_Pseudomonas_aeruginosa = case_when(V1_Pseudomonas_aeruginosa == 0 & V1_Pseudomonas_aeruginosa_HV == 0  ~ 0,
+                                                      V1_Pseudomonas_aeruginosa == 1 & V1_Pseudomonas_aeruginosa_HV == 0 ~ 1,
+                                                      V1_Pseudomonas_aeruginosa == 0 & V1_Pseudomonas_aeruginosa_HV == 1 ~ 1,
+                                                      V1_Pseudomonas_aeruginosa == 1 & V1_Pseudomonas_aeruginosa_HV == 1 ~ 1))%>%
+  dplyr::mutate(V2_Pseudomonas_aeruginosa = case_when(V2_Pseudomonas_aeruginosa == 0 & V2_Pseudomonas_aeruginosa_HV == 0  ~ 0,
+                                                      V2_Pseudomonas_aeruginosa == 1 & V2_Pseudomonas_aeruginosa_HV == 0 ~ 1,
+                                                      V2_Pseudomonas_aeruginosa == 0 & V2_Pseudomonas_aeruginosa_HV == 1 ~ 1,
+                                                      V2_Pseudomonas_aeruginosa == 1 & V2_Pseudomonas_aeruginosa_HV == 1 ~ 1))%>%
+  dplyr::mutate(V3_Pseudomonas_aeruginosa = case_when(V3_Pseudomonas_aeruginosa == 0 & V3_Pseudomonas_aeruginosa_HV == 0  ~ 0,
+                                                      V3_Pseudomonas_aeruginosa == 1 & V3_Pseudomonas_aeruginosa_HV == 0 ~ 1,
+                                                      V3_Pseudomonas_aeruginosa == 0 & V3_Pseudomonas_aeruginosa_HV == 1 ~ 1,
+                                                      V3_Pseudomonas_aeruginosa == 1 & V3_Pseudomonas_aeruginosa_HV == 1 ~ 1))-> tmp
+tmp%>%
+  dplyr::select(Patient_number, V1_Pseudomonas_aeruginosa, 
+                V2_Pseudomonas_aeruginosa,
+                V3_Pseudomonas_aeruginosa)%>%
+  gather(Pseudomonas_Visit, Pseudomonas_culture, c(V1_Pseudomonas_aeruginosa, V2_Pseudomonas_aeruginosa, V3_Pseudomonas_aeruginosa))%>%
+  dplyr::mutate(Visit = case_when(Pseudomonas_Visit == "V1_Pseudomonas_aeruginosa"  ~ "V1",
+                                  Pseudomonas_Visit == "V2_Pseudomonas_aeruginosa" ~ "V2",
+                                  Pseudomonas_Visit == "V3_Pseudomonas_aeruginosa" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Pseudomonas_culture)%>%
+  distinct()-> tmp1
+
+tmp%>%
+  dplyr::select(Patient_number, V1_Pseudomonas_aeruginosa_HV, 
+                V2_Pseudomonas_aeruginosa_HV,
+                V3_Pseudomonas_aeruginosa_HV)%>%
+  gather(Pseudomonas_Visit, Pseudomonas_HV, c(V1_Pseudomonas_aeruginosa_HV, V2_Pseudomonas_aeruginosa_HV, V3_Pseudomonas_aeruginosa_HV))%>%
+  dplyr::mutate(Visit = case_when(Pseudomonas_Visit == "V1_Pseudomonas_aeruginosa_HV"  ~ "V1",
+                                  Pseudomonas_Visit == "V2_Pseudomonas_aeruginosa_HV" ~ "V2",
+                                  Pseudomonas_Visit == "V3_Pseudomonas_aeruginosa_HV" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Pseudomonas_HV)%>%
+  distinct()%>%
+  left_join(tmp1, by= "Comed_token")-> tmp
+
+##Staphylococcus
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, V1_Staphylococcus_aureus, V2_Staphylococcus_aureus,
+               V3_Staphylococcus_aureus)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Staphylococcus_Visit, Staphylococcus_aureus, c(V1_Staphylococcus_aureus, V2_Staphylococcus_aureus, V3_Staphylococcus_aureus))%>%
+  dplyr::mutate(Visit = case_when(Staphylococcus_Visit == "V1_Staphylococcus_aureus"  ~ "V1",
+                                  Staphylococcus_Visit == "V2_Staphylococcus_aureus" ~ "V2",
+                                  Staphylococcus_Visit == "V3_Staphylococcus_aureus" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Staphylococcus_aureus)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
+
+##Stenotrophomonas_maltophilia
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, V1_Stenotrophomonas_maltophilia, V2_Stenotrophomonas_maltophilia,
+                V3_Stenotrophomonas_maltophilia)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Stenotrophomonas_maltophilia_Visit, Stenotrophomonas_maltophilia, c(V1_Stenotrophomonas_maltophilia, 
+                                                                             V2_Stenotrophomonas_maltophilia, 
+                                                                             V3_Stenotrophomonas_maltophilia))%>%
+  dplyr::mutate(Visit = case_when(Stenotrophomonas_maltophilia_Visit == "V1_Stenotrophomonas_maltophilia"  ~ "V1",
+                                  Stenotrophomonas_maltophilia_Visit == "V2_Stenotrophomonas_maltophilia" ~ "V2",
+                                  Stenotrophomonas_maltophilia_Visit == "V3_Stenotrophomonas_maltophilia" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Stenotrophomonas_maltophilia)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
