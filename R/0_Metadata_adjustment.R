@@ -466,3 +466,167 @@ tmp1%>%
   dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
   dplyr::select(Comed_token, Stenotrophomonas_maltophilia)%>%
   left_join(tmp, by= "Comed_token")-> tmp
+
+##Candida
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, V1_Candida_spp, V2_Candida_spp,
+                V3_Candida_spp)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Candida_Visit, Candida_spp, c(V1_Candida_spp, 
+                                       V2_Candida_spp, 
+                                       V3_Candida_spp))%>%
+  dplyr::mutate(Visit = case_when(Candida_Visit == "V1_Candida_spp"  ~ "V1",
+                                  Candida_Visit == "V2_Candida_spp" ~ "V2",
+                                  Candida_Visit == "V3_Candida_spp" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Candida_spp)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
+
+##Aspergillus ---> Ask how they discarded potential environmental contaminants?
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, V1_Aspergillus, V2_Aspergillus,
+                V3_Aspergillus)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Aspergillus_Visit, Aspergillus_spp, c(V1_Aspergillus, 
+                                       V2_Aspergillus, 
+                                       V3_Aspergillus))%>%
+  dplyr::mutate(Visit = case_when(Aspergillus_Visit == "V1_Aspergillus"  ~ "V1",
+                                  Aspergillus_Visit == "V2_Aspergillus" ~ "V2",
+                                  Aspergillus_Visit == "V3_Aspergillus" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Aspergillus_spp)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
+
+
+##Burkholderia_spp
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, V1_Burkholderia_spp, V2_Burkholderia_spp,
+                V3_Burkholderia_spp)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Burkholderia_spp_Visit, Burkholderia_spp, c(V1_Burkholderia_spp, 
+                                               V2_Burkholderia_spp, 
+                                               V3_Burkholderia_spp))%>%
+  dplyr::mutate(Visit = case_when(Burkholderia_spp_Visit == "V1_Burkholderia_spp"  ~ "V1",
+                                  Burkholderia_spp_Visit == "V2_Burkholderia_spp" ~ "V2",
+                                  Burkholderia_spp_Visit == "V3_Burkholderia_spp" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Burkholderia_spp)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
+
+##Haemophilus influenzae
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID, V1_Haemophilus_influenzae = `V1_Haemophilus influenzae`,
+              V2_Haemophilus_influenzae = `V2_Haemophilus influenzae`,
+              V3_Haemophilus_influenzae = `V3_Haemophilus influenzae`)%>%
+  dplyr::select(Patient_number, V1_Haemophilus_influenzae, 
+                V2_Haemophilus_influenzae,
+                V3_Haemophilus_influenzae)-> tmp1
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Haemophilus_influenzae_Visit, Haemophilus_influenzae, c(V1_Haemophilus_influenzae, 
+                                               V2_Haemophilus_influenzae, 
+                                               V3_Haemophilus_influenzae))%>%
+  dplyr::mutate(Visit = case_when(Haemophilus_influenzae_Visit == "V1_Haemophilus_influenzae"  ~ "V1",
+                                  Haemophilus_influenzae_Visit == "V2_Haemophilus_influenzae" ~ "V2",
+                                  Haemophilus_influenzae_Visit == "V3_Haemophilus_influenzae" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Haemophilus_influenzae)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
+
+##Achromobacter_xylosoxidans
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, V1_Achromobacter_xylosoxidans, 
+                V2_Achromobacter_xylosoxidans,
+                V3_Achromobacter_xylosoxidans)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Achromobacter_xylosoxidans_Visit, Achromobacter_xylosoxidans, c(V1_Achromobacter_xylosoxidans, 
+                                               V2_Achromobacter_xylosoxidans, 
+                                               V3_Achromobacter_xylosoxidans))%>%
+  dplyr::mutate(Visit = case_when(Achromobacter_xylosoxidans_Visit == "V1_Achromobacter_xylosoxidans"  ~ "V1",
+                                  Achromobacter_xylosoxidans_Visit == "V2_Achromobacter_xylosoxidans" ~ "V2",
+                                  Achromobacter_xylosoxidans_Visit == "V3_Achromobacter_xylosoxidans" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Achromobacter_xylosoxidans)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
+
+##Trichosporon inkin
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, V1_Trichosporon_inkin, 
+                V2_Trichosporon_inkin,
+                V3_Trichosporon_inkin)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Trichosporon_inkin_Visit, Trichosporon_inkin, c(V1_Trichosporon_inkin, 
+                                               V2_Trichosporon_inkin, 
+                                               V3_Trichosporon_inkin))%>%
+  dplyr::mutate(Visit = case_when(Trichosporon_inkin_Visit == "V1_Trichosporon_inkin"  ~ "V1",
+                                  Trichosporon_inkin_Visit == "V2_Trichosporon_inkin" ~ "V2",
+                                  Trichosporon_inkin_Visit == "V3_Trichosporon_inkin" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Trichosporon_inkin)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
+
+
+##Mycobacterium
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID, V1_Mycobacterium_abcessus = `V1_Mycobacterium abcessus abcessus`,
+                V2_Mycobacterium_abcessus = `V2_Mycobacterium abcessus abcessus`,
+                V3_Mycobacterium_abcessus = `V3_Mycobacterium abcessus abcessus`)%>%
+  dplyr::select(Patient_number, V1_Mycobacterium_abcessus, 
+                V2_Mycobacterium_abcessus,
+                V3_Mycobacterium_abcessus)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Mycobacterium_abcessus_Visit, Mycobacterium_abcessus, c(V1_Mycobacterium_abcessus, 
+                                               V2_Mycobacterium_abcessus, 
+                                               V3_Mycobacterium_abcessus))%>%
+  dplyr::mutate(Visit = case_when(Mycobacterium_abcessus_Visit == "V1_Mycobacterium_abcessus"  ~ "V1",
+                                  Mycobacterium_abcessus_Visit == "V2_Mycobacterium_abcessus" ~ "V2",
+                                  Mycobacterium_abcessus_Visit == "V3_Mycobacterium_abcessus" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Mycobacterium_abcessus)%>%
+  left_join(tmp, by= "Comed_token")-> tmp
+
+##Enterobacteriaceae not included because screened just on V1 and V2 
+##Fungi
+bacteria.cult%>%
+  dplyr::rename(Patient_number= ID)%>%
+  dplyr::select(Patient_number, V1_fungi, 
+                V2_fungi,
+                V3_fungi)-> tmp1
+
+tmp1[,2:4]<- lapply(tmp1[,2:4], function(x) as.numeric(as.character(x)))
+
+tmp1%>%
+  gather(Fungi_Visit, Other_Fungi, c(V1_fungi, V2_fungi, V3_fungi))%>%
+  dplyr::mutate(Visit = case_when(Fungi_Visit == "V1_fungi"  ~ "V1",
+                                  Fungi_Visit == "V2_fungi" ~ "V2",
+                                  Fungi_Visit == "V3_fungi" ~ "V3"))%>%
+  dplyr::mutate(Comed_token= paste0(Patient_number, "_", Visit))%>%
+  dplyr::select(Comed_token, Other_Fungi)%>%
+  left_join(tmp, by= "Comed_token")-> bacteria.cult
+
+saveRDS(bacteria.cult, "CF_project/exercise-cf-intervention/data/bacteria.culture.data.rds")
+rm(tmp, tmp1)
