@@ -57,14 +57,17 @@ sdt%>%
   dplyr::filter(Benzoase==1)%>%
   mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
   ggplot(aes(x= diversity_shannon, y= ppFEV1, shape= Visit))+
-  geom_point(size=3, aes(fill= Visit), color= "black")+
+  geom_point(size=3, aes(fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  geom_smooth(method=lm, se = T,aes(color= Visit))+
+  geom_smooth(method=lm, se = F, color= "black")+
+  scale_fill_manual(values = pal.CF)+
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=70),alpha=0.05,fill="grey")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
   theme_bw()+
   labs(tag= "A)")+
   xlab("Alpha diveristy (Shannon Index)")+
   ylab("Lung function (ppFEV1)")+
-  stat_cor(method = "spearman", label.x = 2, label.y = 30)+
+  stat_cor(method = "spearman", label.x = 0, label.y = 85)+
   theme(text = element_text(size=16), legend.position = "none")+
   facet_grid(rows = vars(Visit))-> A
 
@@ -75,8 +78,10 @@ sdt%>%
   ggplot(aes(x= diversity_shannon, y= ppFEV1))+
   geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
+  geom_smooth(method=lm, se = F, color= "black")+
   scale_fill_manual(values = pal.CF)+
-  geom_smooth(method=lm, se = T, color= "black")+
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=70),alpha=0.01,fill="grey")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
   theme_bw()+
   labs(tag= "B)")+
   labs(fill = "Patient")+
@@ -84,13 +89,13 @@ sdt%>%
   guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
   xlab("Alpha diveristy (Shannon Index)")+
   ylab("Lung function (ppFEV1)")+
-  stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
+  stat_cor(method = "spearman", label.x = 3, label.y = 30)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
 
 C<- grid.arrange(A,B, heights = c(3, 2))
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.pdf", plot = C, width = 10, height = 10)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.png", plot = C, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.pdf", plot = C, width = 8, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.png", plot = C, width = 8, height = 10)
 
 rm(A,B,C)
 
@@ -116,14 +121,17 @@ sdt%>%
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= dominance_dbp, y= ppFEV1, shape= Visit))+
-  geom_point(size=3, aes(fill= Visit), color= "black")+
+  geom_point(size=3, aes(fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  geom_smooth(method=lm, se = T, aes(color= Visit))+
+  geom_smooth(method=lm, se = F, color= "black")+
+  scale_fill_manual(values = pal.CF)+
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=70),alpha=0.05,fill="grey")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
   theme_bw()+
   labs(tag= "A)")+
   xlab("Dominance (Berger-Parker Index)")+
   ylab("Lung function (ppFEV1)")+
-  stat_cor(method = "spearman", label.x = 0, label.y = 30)+ # Add sperman`s correlation coefficient
+  stat_cor(method = "spearman", label.x = 0, label.y = 85)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position = "none")+
   facet_grid(rows = vars(Visit))-> A
 
@@ -137,8 +145,10 @@ sdt%>%
   ggplot(aes(x= dominance_dbp, y= ppFEV1))+
   geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
+  geom_smooth(method=lm, se = F, color= "black")+
   scale_fill_manual(values = pal.CF)+
-  geom_smooth(method=lm, se = T, color= "black")+
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=70),alpha=0.01,fill="grey")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
   theme_bw()+
   labs(tag= "B)")+
   labs(fill = "Patient")+

@@ -349,14 +349,17 @@ sdt%>%
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= diversity_shannon, y= ppFEV1, shape= Visit))+
-  geom_point(size=3, aes(fill= Visit), color= "black")+
+  geom_point(size=3, aes(fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  geom_smooth(method=lm, se = T, aes(color= Visit))+
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=70),alpha=0.05,fill="grey")+
+  geom_smooth(method=lm, se = F, color= "black")+
+  scale_fill_manual(values = pal.CF)+
   theme_bw()+
   labs(tag= "A)")+
   xlab("Alpha diveristy (Shannon Index)")+
   ylab("Lung function (ppFEV1)")+
-  stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
+  stat_cor(method = "spearman", label.x = 2, label.y = 85)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position = "none")+
   facet_grid(rows = vars(Visit))-> A
 
@@ -370,7 +373,8 @@ sdt%>%
   geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   scale_fill_manual(values = pal.CF)+
-  geom_smooth(method=lm, se = T, color= "black")+
+  geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=70),alpha=0.01,fill="grey")+
+  geom_smooth(method=lm, se = F, color= "black")+
   theme_bw()+
   labs(tag= "B)")+
   labs(fill = "Patient")+
@@ -378,13 +382,14 @@ sdt%>%
   guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
   xlab("Alpha diveristy (Shannon Index)")+
   ylab("Lung function (ppFEV1)")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
   stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
 
 C<- grid.arrange(A,B, heights = c(3, 2))
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.pdf", plot = C, width = 10, height = 10)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.png", plot = C, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.pdf", plot = C, width = 8, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Stool.png", plot = C, width = 8, height = 10)
 
 rm(A,B,C)
 
@@ -418,6 +423,7 @@ sdt%>%
   labs(tag= "A)")+
   xlab("Dominance (Berger-Parker Index)")+
   ylab("Lung function (ppFEV1)")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
   stat_cor(method = "spearman", label.x = 0, label.y = 30)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position = "none")+
   facet_grid(rows = vars(Visit))-> A
@@ -440,6 +446,7 @@ sdt%>%
   guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
   xlab("Dominance (Berger-Parker Index)")+
   ylab("Lung function (ppFEV1)")+
+  geom_hline(yintercept=70, linetype="dashed", color = "red")+
   stat_cor(method = "spearman", label.x = 0, label.y = 30)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
 
@@ -449,28 +456,6 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominance_Lung_Sto
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominance_Lung_Stool.png", plot = C, width = 10, height = 10)
 
 rm(A,B,C)
-
-##Comparison V1 vs V3 (Individual look)
-sdt%>%
-  dplyr::filter(material=="Stool")%>%
-  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
-  dplyr::filter(Visit!="V2")%>%
-  mutate(Patient_number = fct_relevel(Patient_number, 
-                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= dominance_dbp, y= ppFEV1))+
-  geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
-  scale_shape_manual(values = c(21, 24))+ 
-  scale_fill_manual(values = pal.CF)+
-  geom_smooth(method=lm, se = F, aes(color= Patient_number))+
-  scale_color_manual(values = pal.CF)+
-  theme_bw()+
-  labs(fill = "Patient")+
-  labs(shape = "Visit")+
-  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3), color= "none")+
-  xlab("Dominance (Berger-Parker Index)")+
-  ylab("Lung function (ppFEV1)")+
-  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")
 
 ###Extract dominant taxa per sample
 top.stool<- find.top.asv(PS4.stool, "Genus", 1)
@@ -635,6 +620,16 @@ BC.test.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + 
 kable(BC.test.stool$aov.tab)
 
 ## Differences are not linked to severity phenotype or genotype. 
+##Check for complete cases
+sdt.stool%>% 
+  group_by(Patient_number)%>%
+  arrange(Visit, .by_group = TRUE)%>%
+  summarise(n(), .groups = "keep")%>%
+  dplyr::rename(n = "n()")%>%
+  filter(n == 3)-> Keep
+
+Keep<- Keep$Patient_number
+
 ##Extract pairwise distances per patient
 BC_dist.stool<- as.matrix(BC_dist)
 tmp1<- cbind(sdt.stool, BC_dist.stool)
@@ -821,14 +816,14 @@ BC_dist.stool%>%
 ##Is visit impacting differences in composition by patient? 
 BC_dist.stool%>% 
   wilcox_test(BC_dist ~ Group)%>%
-  adjust_pvalue(method = "bonferroni") %>%
+  adjust_pvalue(method = "BH") %>%
   add_significance()%>%
   add_xy_position(x = "Group")-> stats.test
 
 ##Save statistical analysis
-x <- stats.test
-x$groups<- NULL
-write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q3_Sample_Visit_BC.csv")
+#x <- stats.test
+#x$groups<- NULL
+#write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q3_Sample_Visit_BC.csv")
 
 BC_dist.stool%>%
   wilcox_effsize(BC_dist ~ Group)
@@ -838,13 +833,17 @@ BC_dist.stool%>%
   ggplot(aes(x= Group, y= BC_dist))+
   geom_boxplot(color="black", alpha= 0.5)+
   geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
-  xlab("Visit")+
+  xlab("Visit period")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "B)", caption = get_pwc_label(stats.test))+
   scale_fill_manual(values = pal.CF)+
   theme_classic()+
   theme(text = element_text(size=16), legend.position = "none")+
-  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->E
+  scale_x_discrete(labels=c("V1_V2" =  "V1 to V2", 
+                            "V2_V3" = "V2 to V3",
+                            "V1_V3" = "V1 to V3"))+
+  stat_pvalue_manual(stats.test, hide.ns = F, step.increase = 0.05,
+                     tip.length = 0, label = "{p.adj} {p.adj.signif}")->E
 
 f<-ggarrange(D, E, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
@@ -969,25 +968,22 @@ myLRTsignificanceFactors <- function(modnull, mod2, mod3, mod4, mod5, mod6, mod7
 ##However, not all the grouping factors are complete so we should treat it as a crossed model 
 ##with patient and intervisit group as individual random effects
 
-tr0<- lmer(BC_dist ~ (1 | Patient_number) + (1| Group), data = tmp) ##Null model
-tr1<- lmer(BC_dist ~ Trainingfrequency + (1 | Patient_number)+ (1| Group), data = tmp)
-tr2<- lmer(BC_dist ~ Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
-tr3<- lmer(BC_dist ~ ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
-tr4<- lmer(BC_dist ~ ppFVC + (1 | Patient_number)+ (1| Group), data = tmp)
-tr5<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
-tr6<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
-tr7<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFVC + (1 | Patient_number)+ (1| Group), data = tmp)
-tr8<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFVC + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
+##Model selection do it with glm
+full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFVC*ppFEV1, data = tmp) ##Full model
+# Stepwise regression model
+step.model <- MASS::stepAIC(full.model, direction = "both", 
+                            trace = FALSE)
+summary(step.model)
 
-myLRTsignificanceFactors(modnull =tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
-
+## From model selection step ppFVC:ppFEV1 interaction are the best explinatory variables for BC dissimilarities
+tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
 ##Each factor ad predictive value to the model 
 ##What happen with interactions 
-tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFVC + (1 | Patient_number) + (1| Group), data = BC_dist.stool)
-summary(tr9)
+tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFVC*ppFEV1 + (1 | Patient_number), data = tmp)
+summary(tr9) ##Full model
 
-tr10<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number) + (1| Group), data = BC_dist.stool)
-summary(tr10) ##Full model
+tr10<-lmer(BC_dist ~ ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
+summary(tr10) ##Best model
 
 lrtest(tr9, tr10)
 
@@ -1025,7 +1021,7 @@ B<- plot_model(tr10, p.adjust = "BH", vline.color = "gray",
                                 "Trainingfrequency:ppFEV1:ppFVC"= "(Frequency*ppFEV1)*ppFVC", 
                                 "Trainingtime:ppFEV1:ppFVC"= "(Time*ppFEV1)*ppFVC",
                                 "Trainingfrequency:Trainingtime:ppFEV1:ppFVC"= "(Frequency*Time*ppFEV1)*ppFVC"))+
-  scale_y_continuous(limits = c(-0.4, 0.4))+
+  scale_y_continuous(limits = c(-0.01, 0.01))+
   geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
   labs(title = NULL, tag= "B)")+
   theme_classic()+
