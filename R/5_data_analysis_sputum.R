@@ -526,7 +526,11 @@ BC_dist.sputum%>%
   scale_fill_manual(values = pal.CF)+
   theme_classic()+
   theme(text = element_text(size=16), legend.position = "none")+
-  stat_pvalue_manual(stats.test, hide.ns = F,label = "{p.adj}{p.adj.signif}")->B
+  scale_x_discrete(labels=c("V1_V2" =  "V1 to V2", 
+                            "V2_V3" = "V2 to V3",
+                            "V1_V3" = "V1 to V3"))+
+  stat_pvalue_manual(stats.test, hide.ns = F, step.increase = 0.05,
+                     tip.length = 0, label = "{p.adj} {p.adj.signif}")->B
 
 C<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
@@ -635,38 +639,25 @@ qqPlot(BC_dist.sputum$Trainingtime)
 qqPlot(BC_dist.sputum$ppFEV1)
 qqPlot(BC_dist.sputum$ppFVC)
 
-myLRTsignificanceFactors <- function(modnull, mod2, mod3, mod4, mod5, mod6, mod7, mod8, modFull){
-  return(list(signif2 = lrtest(modnull, mod2),
-              signif3 = lrtest(modnull, mod3),
-              signif4 = lrtest(modnull, mod4),
-              signif5 = lrtest(modnull, mod5),
-              signif6 = lrtest(modnull, mod6),
-              signif7 = lrtest(modnull, mod7),
-              signif8 = lrtest(modnull, mod8),
-              signifFull = lrtest(modnull, modFull)))
-}
+##Model selection do it with glm
+full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC, data = tmp) ##Full model
+# Stepwise regression model
+step.model <- MASS::stepAIC(full.model, direction = "both", 
+                            trace = FALSE)
+summary(step.model)
 
 ##Mixed effect models
 ##with patient and intervisit group as individual random effects
 
-tr0<- lmer(BC_dist ~ (1 | Patient_number) + (1| Group), data = tmp) ##Null model
-tr1<- lmer(BC_dist ~ Trainingfrequency + (1 | Patient_number)+ (1| Group), data = tmp)
-tr2<- lmer(BC_dist ~ Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
-tr3<- lmer(BC_dist ~ ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
-tr4<- lmer(BC_dist ~ ppFVC + (1 | Patient_number)+ (1| Group), data = tmp)
-tr5<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
-tr6<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
-tr7<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFVC + (1 | Patient_number)+ (1| Group), data = tmp)
-tr8<- lmer(BC_dist ~ Trainingfrequency + Trainingtime + ppFVC + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
-
-myLRTsignificanceFactors(modnull =tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
+tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
+tr6<- lmer(BC_dist ~ Trainingtime + ppFEV1 + (1 | Patient_number), data = tmp)
 
 ##Each factor add predictive value to the model 
 ##What happen with interactions 
-tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime + (1 | Patient_number) + (1| Group), data = BC_dist.stool)
+tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = BC_dist.sputum)
 summary(tr9)
 
-tr10<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number) + (1| Group), data = BC_dist.stool)
+tr10<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = BC_dist.sputum)
 summary(tr10) ##Full model
 
 lrtest(tr9, tr10)
@@ -681,7 +672,7 @@ A+
   scale_fill_manual(values = pal.CF)+
   xlab(label = NULL)+
   ylab(label = "Estimates")+
-  labs(title = NULL, tag= "A)", fill= "Patient number")+
+  labs(title = NULL, tag= "B)", fill= "Patient number")+
   theme_classic()+
   theme(strip.background = element_blank(),
         strip.text.x = element_blank(), 
@@ -707,58 +698,34 @@ B<- plot_model(tr10, p.adjust = "BH", vline.color = "gray",
                                 "Trainingfrequency:Trainingtime:ppFEV1:ppFVC"= "(Frequency*Time*ppFEV1)*ppFVC"))+
   scale_y_continuous(limits = c(-0.4, 0.4))+
   geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
-  labs(title = NULL, tag= "B)")+
+  labs(title = NULL, tag= "A)")+
   theme_classic()+
   theme(text = element_text(size=16))
 
-C<-ggarrange(A, B, ncol=1, nrow=2)
+C<-ggarrange(B, A, ncol=1, nrow=2)
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.png", plot = C, width = 8, height = 8)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.pdf", plot = C, width = 8, height = 8)
 
 rm(A, B, C)
 
-##Test predictive value of BC differences within patient to lung function measurements Delta ppFEV1 between visits
+##Test predictive value of BC differences within patient to lung function measurements Delta ppFEV1/ppFVC between visits
+##Model selection do it with glm
+full.model<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist, data = tmp) ##Full model
+full.model<- glm(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist, data = tmp) ##Full model
+# Stepwise regression model
+step.model <- MASS::stepAIC(full.model, direction = "both", 
+                            trace = FALSE)
+summary(step.model)
+
+###
 tr1<- lmer(ppFVC ~ (1 | Patient_number), data = tmp) ##Null model
-tr2<- lmer(ppFVC ~ Trainingfrequency + (1 | Patient_number), data = tmp)
-tr3<- lmer(ppFVC ~ Trainingtime + (1 | Patient_number), data = tmp)
-tr4<- lmer(ppFVC ~ ppFEV1 + (1 | Patient_number), data = tmp)
-tr5<- lmer(ppFVC ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = tmp)
-tr6<- lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1 + (1 | Patient_number), data = tmp)
-tr7<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist + (1 | Patient_number), data = tmp)
+tr7<-lmer(ppFVC ~ Trainingfrequency*BC_dist + (1 | Patient_number), data = tmp)## Best model
 summary(tr7)
-tr8<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*ppFEV1*BC_dist + (1 | Patient_number), data = tmp)
+tr8<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist + (1 | Patient_number), data = tmp)
 summary(tr8) ##Full model
 
 lrtest(tr7, tr8)
-
-Model.Sputum<- plot_model(tr8, p.adjust = "BH", vline.color = "gray",
-                         axis.labels = c( "Trainingfrequency"= "Frequency",
-                                          "Trainingtime" = "Time", 
-                                          "BC_dist"="Bray-Curtis",
-                                          "Trainingfrequency:Trainingtime" = "Frequency*Time", 
-                                          "Trainingfrequency:ppFEV1" = "Frequency*ppFEV1",
-                                          "Trainingtime:ppFEV1" = "Time*ppFEV1", 
-                                          "Trainingfrequency:BC_dist"= "Frequency*Bray-Curtis", 
-                                          "Trainingtime:BC_dist"= "Time*Bray-Curtis", 
-                                          "Trainingfrequency:Trainingtime:ppFEV1"= "Frequency*Time)*ppFEV1",
-                                          "Trainingfrequency:Trainingtime:BC_dist"= "(Frequency*Time)*Bray-Curtis",
-                                          "ppFEV1:BC_dist"= "ppFEV1*Bray-Curtis",
-                                          "Trainingfrequency:ppFEV1:BC_dist"= "(Frequency*ppFEV1)*Bray-Curtis", 
-                                          "Trainingtime:ppFEV1:BC_dist"= "(Time*ppFEV1)*Bray-Curtis",
-                                          "Trainingfrequency:Trainingtime:ppFEV1:BC_dist"= "(Frequency*Time*ppFEV1)*Bray-Curtis"))+
-  scale_y_continuous(limits = c(-800, 800))+
-  geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
-  labs(title = NULL, tag= "B)")+
-  theme_classic()+
-  theme(text = element_text(size=16))
-
-plot<-ggarrange(Model.Stool, Model.Sputum, ncol=1, nrow=2)
-
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Sputum_Lung_function.png", plot = plot, width = 8, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Sputum_Lung_function.pdf", plot = plot, width = 8, height = 8)
-
-rm(Model.Stool, Model.Sputum)
 ###Does differences in bacterial composition within patient predict severity status 
 BC_dist.sputum%>%
   dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,

@@ -953,39 +953,29 @@ qqPlot(BC_dist.stool$Trainingtime)
 qqPlot(BC_dist.stool$ppFEV1)
 qqPlot(BC_dist.stool$ppFVC)
 
-myLRTsignificanceFactors <- function(modnull, mod2, mod3, mod4, mod5, mod6, mod7, mod8, modFull){
-  return(list(signif2 = lrtest(modnull, mod2),
-              signif3 = lrtest(modnull, mod3),
-              signif4 = lrtest(modnull, mod4),
-              signif5 = lrtest(modnull, mod5),
-              signif6 = lrtest(modnull, mod6),
-              signif7 = lrtest(modnull, mod7),
-              signif8 = lrtest(modnull, mod8),
-              signifFull = lrtest(modnull, modFull)))
-}
-
 ##Based on the experimental design we should have a nested model with Intervisit as main grouping factor and patient 
 ##However, not all the grouping factors are complete so we should treat it as a crossed model 
 ##with patient and intervisit group as individual random effects
 
 ##Model selection do it with glm
-full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFVC*ppFEV1, data = tmp) ##Full model
+full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC, data = tmp) ##Full model
 # Stepwise regression model
 step.model <- MASS::stepAIC(full.model, direction = "both", 
                             trace = FALSE)
 summary(step.model)
 
-## From model selection step ppFVC:ppFEV1 interaction are the best explinatory variables for BC dissimilarities
+## From model selection step ppFVC:ppFEV1 interaction are the best explanatory variables for BC dissimilarities
 tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
+tr1<- lmer(BC_dist ~ ppFEV1+ppFVC + (1 | Patient_number), data = tmp) ##
 ##Each factor ad predictive value to the model 
 ##What happen with interactions 
-tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFVC*ppFEV1 + (1 | Patient_number), data = tmp)
+tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
 summary(tr9) ##Full model
 
 tr10<-lmer(BC_dist ~ ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
 summary(tr10) ##Best model
 
-lrtest(tr9, tr10)
+lrtest(tr1, tr10)
 
 A<- plotREsim(REsim(tr10))  ## plot the interval estimates
 A$data%>%
@@ -1007,7 +997,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(tr10, p.adjust = "BH", vline.color = "gray",
+B<- plot_model(tr9, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 
@@ -1017,11 +1007,11 @@ B<- plot_model(tr10, p.adjust = "BH", vline.color = "gray",
                                 "Trainingtime:ppFVC"= "Time*ppFVC", 
                                 "Trainingfrequency:Trainingtime:ppFEV1"= "Frequency*Time)*ppFEV1",
                                 "Trainingfrequency:Trainingtime:ppFVC"= "(Frequency*Time)*ppFVC",
-                                "ppFEV1:ppFVC"= "ppFEV1*ppFVC",
+                                "ppFVC:ppFEV1"= "ppFEV1*ppFVC",
                                 "Trainingfrequency:ppFEV1:ppFVC"= "(Frequency*ppFEV1)*ppFVC", 
                                 "Trainingtime:ppFEV1:ppFVC"= "(Time*ppFEV1)*ppFVC",
                                 "Trainingfrequency:Trainingtime:ppFEV1:ppFVC"= "(Frequency*Time*ppFEV1)*ppFVC"))+
-  scale_y_continuous(limits = c(-0.01, 0.01))+
+  scale_y_continuous(limits = c(-0.4, 0.4))+
   geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
   labs(title = NULL, tag= "B)")+
   theme_classic()+
@@ -1035,49 +1025,14 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Tra
 rm(A, B, C)
 
 ##Test predictive value of BC differences within patient to lung function measurements Delta ppFEV1 between visits
-
 ##Mixed effect models
-##with patient as random effect
-tr0<- lmer(ppFVC ~ (1 | Patient_number)+ (1| Group), data = tmp) ##Null model
-tr1<- lmer(ppFVC ~ Trainingfrequency + (1 | Patient_number) + (1| Group), data = tmp)
-tr2<- lmer(ppFVC ~ Trainingtime + (1 | Patient_number) + (1| Group), data = tmp)
-tr3<- lmer(ppFVC ~ ppFEV1 + (1 | Patient_number) + (1| Group), data = tmp)
-tr4<- lmer(ppFVC ~ BC_dist + (1 | Patient_number) + (1| Group), data = tmp)
-tr5<- lmer(ppFVC ~ Trainingfrequency + Trainingtime + (1 | Patient_number)+ (1| Group), data = tmp)
-tr6<- lmer(ppFVC ~ Trainingfrequency + Trainingtime + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
-tr7<- lmer(ppFVC ~ Trainingfrequency + Trainingtime + BC_dist + (1 | Patient_number)+ (1| Group), data = tmp)
-tr8<- lmer(ppFVC ~ Trainingfrequency + Trainingtime + BC_dist + ppFEV1 + (1 | Patient_number)+ (1| Group), data = tmp)
-
-myLRTsignificanceFactors(modnull =tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8)
-
-##The most significant predictors are ppFEV1 (model 3) and BC dissimilarity (model 4) (Check interaction)
-##BC alone is a better predictor
-lrtest(tr3, tr4)
-##What about their interaction?
-tr9<- lmer(ppFVC ~ ppFEV1*BC_dist + (1 | Patient_number) + (1| Group), data = tmp)
-summary(tr9)
-
-Model.Stool<- plot_model(tr9, p.adjust = "BH", vline.color = "gray", show.values = TRUE, value.offset = .3,
-               axis.labels = c( "Trainingfrequency"= "Frequency",
-                                "Trainingtime" = "Time", 
-                                "BC_dist"="Bray-Curtis",
-                                "Trainingfrequency:Trainingtime" = "Frequency*Time", 
-                                "Trainingfrequency:ppFEV1" = "Frequency*ppFEV1",
-                                "Trainingtime:ppFEV1" = "Time*ppFEV1", 
-                                "Trainingfrequency:BC_dist"= "Frequency*Bray-Curtis", 
-                                "Trainingtime:BC_dist"= "Time*Bray-Curtis", 
-                                "Trainingfrequency:Trainingtime:ppFEV1"= "Frequency*Time)*ppFEV1",
-                                "Trainingfrequency:Trainingtime:BC_dist"= "(Frequency*Time)*Bray-Curtis",
-                                "ppFEV1:BC_dist"= "ppFEV1*Bray-Curtis",
-                                "Trainingfrequency:ppFEV1:BC_dist"= "(Frequency*ppFEV1)*Bray-Curtis", 
-                                "Trainingtime:ppFEV1:BC_dist"= "(Time*ppFEV1)*Bray-Curtis",
-                                "Trainingfrequency:Trainingtime:ppFEV1:BC_dist"= "(Frequency*Time*ppFEV1)*Bray-Curtis"))+
-  scale_y_continuous(limits = c(-30, 30))+
-  geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
-  labs(title = NULL, tag= "A)")+
-  theme_classic()+
-  theme(text = element_text(size=16))
-
+##Model selection do it with glm
+full.model<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist, data = tmp) ##Full model
+full.model<- glm(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist, data = tmp) ##Full model
+# Stepwise regression model
+step.model <- MASS::stepAIC(full.model, direction = "both", 
+                            trace = FALSE)
+summary(step.model)
 
 ###Does differences in bacterial composition within patient predict severity status 
 BC_dist.stool%>%
