@@ -962,22 +962,46 @@ full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC, data = t
 # Stepwise regression model
 step.model <- MASS::stepAIC(full.model, direction = "both", 
                             trace = FALSE)
+
 summary(step.model)
+step.model.df<- as.data.frame(coef(summary(step.model))) ##The full model is the best!!!
+
+step.model.df%>%
+  mutate(p.adj = p.adjust(`Pr(>|t|)`, method='BH')) %>%
+  add_significance()%>%
+  rownames_to_column()-> step.model.df
+
+write.csv(step.model.df, "~/CF_project/exercise-cf-intervention/tables/Q2_BC_Sports_Lung_Stool.csv", row.names = F)
 
 ## From model selection step ppFVC:ppFEV1 interaction are the best explanatory variables for BC dissimilarities
 tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
-tr1<- lmer(BC_dist ~ ppFEV1+ppFVC + (1 | Patient_number), data = tmp) ##
+
+tr2<-lmer(BC_dist ~ Trainingfrequency*Trainingtime+ (1 | Patient_number), data = tmp)
+summary(tr2) ##Training
+
+tr3<-lmer(BC_dist ~ ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
+summary(tr3) ##Lung function
+
+lrtest(tr2, tr3)
 ##Each factor ad predictive value to the model 
 ##What happen with interactions 
-tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
-summary(tr9) ##Full model
+summary(glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC, data = tmp))
+tr4<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
+summary(tr4) ##"Best" model
 
-tr10<-lmer(BC_dist ~ ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
-summary(tr10) ##Best model
+step.model.df<- as.data.frame(coef(summary(tr4))) ##T
 
-lrtest(tr1, tr10)
+step.model.df%>%
+  mutate(p.adj = p.adjust(`Pr(>|t|)`, method='BH')) %>%
+  add_significance()%>%
+  rownames_to_column()-> step.model.df
 
-A<- plotREsim(REsim(tr10))  ## plot the interval estimates
+write.csv(step.model.df, "~/CF_project/exercise-cf-intervention/tables/Q2_GLMM_BC_Sports_Lung_Stool.csv", row.names = F)
+
+lrtest(tr4, tr2)
+lrtest(tr4, tr3)
+
+A<- plotREsim(REsim(tr4))  ## plot the interval estimates
 A$data%>%
   dplyr::mutate(groupID = fct_relevel(groupID, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
@@ -997,7 +1021,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(tr9, p.adjust = "BH", vline.color = "gray",
+B<- plot_model(tr4, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 
@@ -1007,7 +1031,7 @@ B<- plot_model(tr9, p.adjust = "BH", vline.color = "gray",
                                 "Trainingtime:ppFVC"= "Time*ppFVC", 
                                 "Trainingfrequency:Trainingtime:ppFEV1"= "Frequency*Time)*ppFEV1",
                                 "Trainingfrequency:Trainingtime:ppFVC"= "(Frequency*Time)*ppFVC",
-                                "ppFVC:ppFEV1"= "ppFEV1*ppFVC",
+                                "ppFEV1:ppFVC"= "ppFEV1*ppFVC",
                                 "Trainingfrequency:ppFEV1:ppFVC"= "(Frequency*ppFEV1)*ppFVC", 
                                 "Trainingtime:ppFEV1:ppFVC"= "(Time*ppFEV1)*ppFVC",
                                 "Trainingfrequency:Trainingtime:ppFEV1:ppFVC"= "(Frequency*Time*ppFEV1)*ppFVC"))+
@@ -1028,11 +1052,19 @@ rm(A, B, C)
 ##Mixed effect models
 ##Model selection do it with glm
 full.model<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist, data = tmp) ##Full model
+# Stepwise regression model
+step.model <- MASS::stepAIC(full.model, direction = "both", 
+                            trace = FALSE)
+summary(step.model)
+
 full.model<- glm(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist, data = tmp) ##Full model
 # Stepwise regression model
 step.model <- MASS::stepAIC(full.model, direction = "both", 
                             trace = FALSE)
 summary(step.model)
+
+best.model<- glm(ppFVC ~ Trainingfrequency+ BC_dist + Trainingfrequency*BC_dist, data = tmp)
+summary(best.model)
 
 ###Does differences in bacterial composition within patient predict severity status 
 BC_dist.stool%>%

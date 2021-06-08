@@ -645,24 +645,32 @@ full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC, data = t
 step.model <- MASS::stepAIC(full.model, direction = "both", 
                             trace = FALSE)
 summary(step.model)
+step.model.df<- as.data.frame(coef(summary(step.model)))
+
+step.model.df%>%
+  mutate(p.adj = p.adjust(`Pr(>|t|)`, method='BH')) %>%
+  add_significance()%>%
+  rownames_to_column()-> step.model.df
+
+write.csv(step.model.df, "~/CF_project/exercise-cf-intervention/tables/Q2_BC_Sports_Lung_Sputum.csv", row.names = F)
 
 ##Mixed effect models
 ##with patient and intervisit group as individual random effects
 
 tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
-tr6<- lmer(BC_dist ~ Trainingtime + ppFEV1 + (1 | Patient_number), data = tmp)
+tr1<-lmer(BC_dist ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = tmp)
+tr2<-lmer(BC_dist ~ ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
 
+lrtest(tr1, tr2)
 ##Each factor add predictive value to the model 
 ##What happen with interactions 
-tr9<-glmer(BC_dist ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = BC_dist.sputum)
-summary(tr9)
+tr3<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = BC_dist.sputum)
+summary(tr3) ##Full model
 
-tr10<-lmer(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC + (1 | Patient_number), data = BC_dist.sputum)
-summary(tr10) ##Full model
+lrtest(tr3, tr1)
+lrtest(tr3, tr2)
 
-lrtest(tr9, tr10)
-
-A<- plotREsim(REsim(tr10))  ## plot the interval estimates
+A<- plotREsim(REsim(tr3))  ## plot the interval estimates
 A$data%>%
   dplyr::mutate(groupID = fct_relevel(groupID, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
@@ -672,7 +680,7 @@ A+
   scale_fill_manual(values = pal.CF)+
   xlab(label = NULL)+
   ylab(label = "Estimates")+
-  labs(title = NULL, tag= "B)", fill= "Patient number")+
+  labs(title = NULL, tag= "A)", fill= "Patient number")+
   theme_classic()+
   theme(strip.background = element_blank(),
         strip.text.x = element_blank(), 
@@ -682,7 +690,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(tr10, p.adjust = "BH", vline.color = "gray",
+B<- plot_model(tr3, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 
@@ -698,7 +706,7 @@ B<- plot_model(tr10, p.adjust = "BH", vline.color = "gray",
                                 "Trainingfrequency:Trainingtime:ppFEV1:ppFVC"= "(Frequency*Time*ppFEV1)*ppFVC"))+
   scale_y_continuous(limits = c(-0.4, 0.4))+
   geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
-  labs(title = NULL, tag= "A)")+
+  labs(title = NULL, tag= "B)")+
   theme_classic()+
   theme(text = element_text(size=16))
 
@@ -712,20 +720,37 @@ rm(A, B, C)
 ##Test predictive value of BC differences within patient to lung function measurements Delta ppFEV1/ppFVC between visits
 ##Model selection do it with glm
 full.model<- glm(ppFEV1 ~ Trainingfrequency*Trainingtime*BC_dist, data = tmp) ##Full model
+# Stepwise regression model
+step.model <- MASS::stepAIC(full.model, direction = "both", 
+                            trace = FALSE)
+summary(step.model)
+
+##Model selection do it with glm
 full.model<- glm(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist, data = tmp) ##Full model
 # Stepwise regression model
 step.model <- MASS::stepAIC(full.model, direction = "both", 
                             trace = FALSE)
 summary(step.model)
 
-###
-tr1<- lmer(ppFVC ~ (1 | Patient_number), data = tmp) ##Null model
-tr7<-lmer(ppFVC ~ Trainingfrequency*BC_dist + (1 | Patient_number), data = tmp)## Best model
-summary(tr7)
-tr8<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist + (1 | Patient_number), data = tmp)
-summary(tr8) ##Full model
+step.model.df<- as.data.frame(coef(summary(step.model))) ##The full model is the best!!!
 
-lrtest(tr7, tr8)
+step.model.df%>%
+  mutate(p.adj = p.adjust(`Pr(>|t|)`, method='BH')) %>%
+  add_significance()%>%
+  rownames_to_column()-> step.model.df
+
+write.csv(step.model.df, "~/CF_project/exercise-cf-intervention/tables/Q2_Lung_BC_Sports_Sputum.csv", row.names = F)
+
+### Likelihood ratio test
+tr1<- lmer(ppFVC ~ Trainingfrequency*Trainingtime + (1 | Patient_number), data = tmp) ##Null model
+tr2<- lmer(ppFEV1 ~ Trainingfrequency + (1 | Patient_number), data = tmp) ##Null model
+tr3<- lmer(ppFEV1 ~ Trainingfrequency + BC_dist + (1 | Patient_number), data = tmp) ##Best model
+tr4<-lmer(ppFVC ~ Trainingfrequency*Trainingtime*BC_dist + (1 | Patient_number), data = tmp)
+summary(tr4) ## Best model
+
+lrtest(tr1, tr4)
+lrtest(tr2, tr3)
+
 ###Does differences in bacterial composition within patient predict severity status 
 BC_dist.sputum%>%
   dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
