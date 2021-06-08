@@ -30,16 +30,13 @@ cal_z_score <- function(x){
   (x - mean(x)) / sd(x)
 }
 
-data.mainz<- read_tsv("~/CF_project/Metadata/Sample_Metadata_combine_rebecca.csv") ##Contains technical data from DNA (Mainz)
-
-##Scaling abundances function
-cal_z_score <- function(x){
-  (x - mean(x)) / sd(x)
-}
-
 ##1) Sample data
-sdt.sputum
-sdt.stool
+##For this analysis we need
+#training
+#sdt.sputum
+#sdt.stool
+#top.sputum
+#top.stool
 
 ##2)Predicted metagenomes
 
@@ -57,419 +54,293 @@ PredKO.Stool<- read.table("CF_project/picrust2_stool_out/KO_metagenome_out/pred_
 PredPath.Sput<- read.table("CF_project/picrust2_sputum_out/pathways_out/path_abun_unstrat.tsv", header = T, sep = "\t")
 PredPath.Stool<- read.table("CF_project/picrust2_stool_out/pathways_out/path_abun_unstrat.tsv", header = T, sep = "\t")
 
-
 ##Adjust tables
-##Adjust col names to match SampleID
+#Make functions/pathways the row names 
 ##Sputum
-colnames(PredPath.Sput[,2:35])<- gsub("X", "\\1", basename(colnames(PredPath.Sput[,2:35])))
+###Pathways
+rownames(PredPath.Sput)<-PredPath.Sput$pathway
+PredPath.Sput$pathway<- NULL
+PredPath.Sput<- as.matrix(PredPath.Sput)
+PredPath.Sput<- otu_table(PredPath.Sput, taxa_are_rows = T)
+sample_names(PredPath.Sput) <- gsub("X", "\\1", sample_names(PredPath.Sput)) ##Adjust col names to match SampleID
+
+###KO functions
+rownames(PredKO.Sput)<-PredKO.Sput$function.
+PredKO.Sput$function.<- NULL
+PredKO.Sput<- as.matrix(PredKO.Sput)
+PredKO.Sput<- otu_table(PredKO.Sput, taxa_are_rows = T)
+sample_names(PredKO.Sput) <- gsub("X", "\\1", sample_names(PredKO.Sput))
+
 ##Stool
-colnames(PredPath.Stool[,2:40])<- gsub("X", "\\1", basename(colnames(PredPath.Stool[,2:40])))
+###Pathway
+rownames(PredPath.Stool)<-PredPath.Stool$pathway
+PredPath.Stool$pathway<- NULL
+PredPath.Stool<- as.matrix(PredPath.Stool)
+PredPath.Stool<- otu_table(PredPath.Stool, taxa_are_rows = T)
+sample_names(PredPath.Stool) <- gsub("X", "\\1", sample_names(PredPath.Stool)) ##Adjust col names to match SampleID
 
-PredDesM<- PredDes
-rownames(PredDesM)<-PredDesM$function.
-PredDesM$function.<- NULL
-PredDesM$description<- NULL
-PredDesM<- as.matrix(PredDesM)
-rownames(sample) <- paste0("Sample", sample$BeGenDiv_Name)
+###KO functions
+rownames(PredKO.Stool)<-PredKO.Stool$function.
+PredKO.Stool$function.<- NULL
+PredKO.Stool<- as.matrix(PredKO.Stool)
+PredKO.Stool<- otu_table(PredKO.Stool, taxa_are_rows = T)
+sample_names(PredKO.Stool) <- gsub("X", "\\1", sample_names(PredKO.Stool))
 
-keep <- data.frame(name = colnames(PredDesM))
-coldata<- sample[keep$name,]
-rownames(coldata) <- paste0("Sample", coldata$BeGenDiv_Name)
-rm(keep)
-##Create DESeq table 
-ddsTable <- DESeqDataSetFromMatrix(
-  countData = round(PredDesM),
-  colData = coldata,
-  design = ~Compartment)
+#Prepare sample data 
+##Sputum
+###Training information
+training%>%
+  dplyr::filter(Benzoase==1)%>%
+  dplyr::select(c(SampleID, Mean_MET_V1V2:Percentage_Trainingsweeks_n52))%>%
+  column_to_rownames(var = "SampleID")-> x
 
-##Select the top 25 more abundant genes 
-PredDes%>%
-  replace(is.na(.), 0)%>%
-  mutate(Total = rowSums(select(., contains("Sample"))))%>%
-  select(function., description, Total)%>%
-  column_to_rownames(var = "function.")-> tmp
+###Sample information
+sdt.sputum%>%
+  dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+                                               Phenotype_severity == 1 ~ 0))%>%
+  dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+                                              Mutation_severity == 1 ~ 0))%>%
+  dplyr::mutate(sex = case_when(sex == 1  ~ 0,
+                                sex == 2 ~ 1))%>%
+  cbind(x)-> y
 
-tmp <- tmp[order(-tmp$Total), ]
-tmp <- rownames(tmp[1:25, ])
-PredDestop25 <- data.frame(PredDesM[tmp, ])
+###Dominant taxa 
+top.sputum%>%
+  dplyr::select(c(SampleID, ASV:n))%>%
+  column_to_rownames(var = "SampleID")%>%
+  cbind(y)-> tmp.sputum
 
-##Modify data frame to canonical format
-mPredDestop25 <- data.frame(Gene = rownames(PredDestop25), PredDestop25)
-mPredDestop25 <- melt(mPredDestop25, id.vars = "Gene")
-colnames(mPredDestop25) <- c("Gene", "Sample_Name", "Counts")
-##Add metadata 
-coldata%>%
-  rownames_to_column(var= "Sample_Name")->coldata
-mPredDestop25 <- plyr::join(mPredDestop25, coldata, by="Sample_Name")
-mPredDestop25[, fac.vars] <- apply(mPredDestop25[, fac.vars], 2, as.factor)
+y<- sample_data(tmp.sputum)
+##Stool
+###Training information
+training%>%
+  dplyr::filter(material=="Stool")%>%
+  dplyr::select(c(SampleID, Mean_MET_V1V2:Percentage_Trainingsweeks_n52))%>%
+  column_to_rownames(var = "SampleID")-> x
 
-##Check genes more samples
-## plot using ggplot2
-mPredDestop25%>%
-  ggplot(aes(x = reorder(Gene, -Counts), y = Counts)) +
-  geom_point() +
-  scale_y_log10(name = "log10 Gene Count", 
-                breaks = scales::trans_breaks("log10", function(x) 10^x),
-                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-  annotation_logticks(sides = "l")+
-  labs(tag= "A)")+
-  xlab("Genes") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+###Sample information
+sdt.stool%>%
+  dplyr::mutate(Phenotype_severity = case_when(Phenotype_severity == 2  ~ 1,
+                                               Phenotype_severity == 1 ~ 0))%>%
+  dplyr::mutate(Mutation_severity = case_when(Mutation_severity == 2  ~ 1,
+                                              Mutation_severity == 1 ~ 0))%>%
+  dplyr::mutate(sex = case_when(sex == 1  ~ 0,
+                                sex == 2 ~ 1))%>%
+  cbind(x)-> y
 
-mPredDestop25%>%
-  filter(Compartment%in%c("Ascaris"))%>%
-  ggplot(aes(y= Counts, x= reorder(Gene, -Counts)))+
-  scale_y_log10("log10 Gene counts", 
-                breaks = scales::trans_breaks("log10", function(x) 10^x),
-                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-  geom_boxplot(aes(color= WormSex))+
-  xlab("Enzyme Classification ID")+
-  labs(tag= "B)")+
-  theme_bw()+
-  theme(text = element_text(size=16), axis.text.x = element_text(angle = 45, hjust = 1))+
-  annotation_logticks(sides = "l")
+###Dominant taxa 
+top.stool%>%
+  dplyr::select(c(SampleID, ASV:n))%>%
+  column_to_rownames(var = "SampleID")%>%
+  cbind(y)-> tmp.stool
 
-mPredDestop25%>%
-  filter(Compartment%in%c("Faeces", "Duodenum","Jejunum", "Colon", "Cecum", "Ileum"))%>%
-  ggplot(aes(y= Counts, x= reorder(Gene, -Counts)))+
-  scale_y_log10("log10 Gene counts", 
-                breaks = scales::trans_breaks("log10", function(x) 10^x),
-                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-  geom_boxplot(aes(color= Compartment))+
-  xlab("Enzyme Classification ID")+
-  scale_color_brewer(palette = "Set3")+
-  labs(tag= "C)")+
-  theme_bw()+
-  theme(text = element_text(size=16), axis.text.x = element_text(angle = 45, hjust = 1))+
-  annotation_logticks(sides = "l")
+z<- sample_data(tmp.stool)
 
-mPredDestop25%>%
-  filter(Compartment%in%c("Faeces"))%>%
-  ggplot(aes(y= Counts, x= reorder(Gene, -Counts)))+
-  scale_y_log10("log10 Gene counts", 
-                breaks = scales::trans_breaks("log10", function(x) 10^x),
-                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-  geom_boxplot(aes(color= DPI))+
-  xlab("Enzyme Classification ID")+
-  labs(tag= "D)")+
-  theme_bw()+
-  theme(text = element_text(size=16), axis.text.x = element_text(angle = 45, hjust = 1))+
-  annotation_logticks(sides = "l")
+#Make Phyloseq objects for pathways and KO
+##Sputum
+###Pathways
+PS.Path.sputum <- merge_phyloseq(PredPath.Sput, y)
+###KO
+PS.KO.sputum <- merge_phyloseq(PredKO.Sput, y)
 
-mPredDestop25%>%
-  filter(Compartment%in%c("Faeces"))%>%
-  filter(Gene%in%c("EC:1.6.5.3"))%>%
-  ggplot(aes(y= Counts, x= as.factor(DPI)))+
-  scale_y_log10("log10 Gene counts", 
-                breaks = scales::trans_breaks("log10", function(x) 10^x),
-                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-  geom_boxplot(color= "black")+
-  geom_jitter(shape=21, position=position_jitter(0.2), size=3, aes(fill= DPI), color= "black")+
-  xlab("DPI")+
-  labs(tag= "D)")+
+##Stool
+###Pathways
+PS.Path.stool <- merge_phyloseq(PredPath.Stool, z)
+###KO
+PS.KO.stool <- merge_phyloseq(PredKO.Stool, z)
+
+rm(PredKO.Sput, PredKO.Stool, PredPath.Sput, PredPath.Stool, x, y, z)
+
+##################Generate PCAs#####################
+#Sputum
+##KO
+##Transform dataset 
+PS.KO.sputum.clr <- microbiome::transform(PS.KO.sputum, "clr") #Centered log ratio transformation
+Ord.KO.sputum.clr <- phyloseq::ordinate(PS.KO.sputum.clr, "RDA") #principal components analysis
+#Examine eigenvalues and % prop. variance explained
+head(Ord.KO.sputum.clr$CA$eig)
+sapply(Ord.KO.sputum.clr$CA$eig[1:6], function(x) x / sum(Ord.KO.sputum.clr$CA$eig))
+
+##KOs contributing into PC1 and PC2
+ind.coord <- data.frame(Ord.KO.sputum.clr$CA$v)
+sdev_ind <- apply(ind.coord, 1, sd)
+ind_cont_PCA1 <- data.frame(PCA = (100*(1 / nrow(ind.coord)*(ind.coord$PC1^2 /sdev_ind))))
+ind_cont_PCA1_top <- ind_cont_PCA1 %>% 
+  rownames_to_column("otu") %>% 
+  filter(PCA >= 0.0015)%>% 
+  column_to_rownames("otu")
+ind_cont_PCA2 <- data.frame(PCA = (100*(1 / nrow(ind.coord)*(ind.coord$PC2^2 /sdev_ind))))
+ind_cont_PCA2_top <- ind_cont_PCA2 %>% 
+  rownames_to_column("otu") %>% 
+  filter(PCA >= 0.0015)%>% 
+  column_to_rownames("otu")
+
+ind_cont_PCA_top.sputum <- rbind(ind_cont_PCA1_top, ind_cont_PCA2_top)
+sum(ind_cont_PCA1_top$PCA) / sum(ind_cont_PCA1$PCA)
+nrow(ind_cont_PCA1_top)
+##303 KO contribute for the 30% of the variation in PC1
+sum(ind_cont_PCA2_top$PCA) / sum(ind_cont_PCA2$PCA)
+nrow(ind_cont_PCA2_top)
+##122 KO contribute for the 18.9% of the variation in PC2
+
+ind_cont_PCA_top.sputum%>%
+  rownames_to_column(var = "KO")%>%
+  arrange(desc(PCA))%>%
+  slice_head(n = 25)-> ind_cont_PCA_top.sputum
+
+###Plot PCA
+plot_ordination(PS.KO.sputum.clr, ordination = Ord.KO.sputum.clr)+ 
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(fill= Genus, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = tax.palette)+
+  labs(title = "PCA (centered-log ratio KO prediction)",tag= "A)")+
   theme_bw()+
   theme(text = element_text(size=16))+
-  annotation_logticks(sides = "l")+
-  stat_compare_means(label= "p.signif", method = "t.test", ref.group = "2", paired = F, na.rm = TRUE)+
-  stat_compare_means(method =  "anova", label.y = 2.5, label.x = 1)
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Dominant taxa")+
+  labs(shape = "Visit")+
+  xlab(paste0("PC 1 [", round(Ord.KO.sputum.clr$CA$eig[1] / sum(Ord.KO.sputum.clr$CA$eig)*100, digits = 2), "%]"))+
+  ylab(paste0("PC 2 [", round(Ord.KO.sputum.clr$CA$eig[2] / sum(Ord.KO.sputum.clr$CA$eig)*100, digits = 2), "%]"))-> A
 
-mPredDestop25%>%
-  filter(AnimalSpecies%in%c("Pig", "Ascaris"))%>%
-  ggplot(aes(y= Counts, x= as.factor(AnimalSpecies)))+
-  scale_y_log10("log10 Gene counts", 
-                breaks = scales::trans_breaks("log10", function(x) 10^x),
-                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-  geom_boxplot(aes(color= AnimalSpecies))+
-  xlab("Animal species")+
-  labs(tag= "D)")+
+## Bray Curtis
+BC_dist<- phyloseq::distance(PS.KO.sputum, method="bray", weighted=F)
+Ord.KO.sputum <- ordinate(PS.KO.sputum, method="PCoA", distance="bray") 
+
+plot_ordination(PS.KO.sputum, ordination = Ord.KO.sputum)+ 
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(fill= Genus, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = tax.palette)+
+  labs(title = "Bray-Curtis dissimilariy (KO prediction)",tag= "B)")+
   theme_bw()+
-  theme(text = element_text(size=16), axis.text.x = element_text(angle = 45, hjust = 1))+
-  annotation_logticks(sides = "l")
+  theme(text = element_text(size=16))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Dominant taxa")+
+  labs(shape = "Visit")+
+  xlab(paste0("PCo 1 [", round(Ord.KO.sputum$values[1,2]*100, digits = 2), "%]"))+
+  ylab(paste0("PCo 2 [", round(Ord.KO.sputum$values[2,2]*100, digits = 2), "%]")) -> B
 
-mPredDestop25%>%
-  filter(AnimalSpecies%in%c("Pig"))%>%
-  ggplot(aes(y= Counts, x= as.factor(System)))+
-  scale_y_log10("log10 Gene counts", 
-                breaks = scales::trans_breaks("log10", function(x) 10^x),
-                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-  geom_boxplot(aes(color= System))+
-  xlab("Pig individual")+
-  labs(tag= "D)")+
+BC.KO.sputum<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + Genus + sex + age +  Visit + BMI,
+                              permutations = 999, data = tmp.sputum, na.action = F, strata = tmp.sputum$Patient_number)
+
+kable(BC.KO.sputum$aov.tab)#-> Report 
+
+C<- ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q7_KO_pred_ord_sputum.pdf", plot = C, width = 8, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q7_KO_pred_ord_sputum.png", plot = C, width = 8, height = 10)
+
+rm(A,B,C)
+
+##Pathways
+PS.Path.sputum.clr <- microbiome::transform(PS.Path.sputum, "clr")  
+Ord.Path.sputum.clr <- phyloseq::ordinate(PS.Path.sputum.clr, "RDA")
+#Examine eigenvalues and % prop. variance explained
+head(Ord.Path.sputum.clr$CA$eig)
+sapply(Ord.Path.sputum.clr$CA$eig[1:6], function(x) x / sum(Ord.Path.sputum.clr$CA$eig))
+
+ind.coord.pw <- data.frame(Ord.Path.sputum.clr$CA$v)
+sdev_ind.pw <- apply(ind.coord.pw, 1, sd)
+ind_cont_PCA1.pw <- data.frame(PCA = (100*(1 / nrow(ind.coord.pw)*(ind.coord.pw$PC1^2 /sdev_ind.pw))))
+ind_cont_PCA1_top.pw <- ind_cont_PCA1.pw %>% 
+  rownames_to_column("otu") %>% 
+  filter(PCA >= 0.008)%>% 
+  column_to_rownames("otu")
+ind_cont_PCA2.pw <- data.frame(PCA = (100*(1 / nrow(ind.coord.pw)*(ind.coord.pw$PC2^2 /sdev_ind.pw))))
+ind_cont_PCA2_top.pw <- ind_cont_PCA2.pw %>% 
+  rownames_to_column("otu") %>% 
+  filter(PCA >= 0.02)%>% 
+  column_to_rownames("otu")
+ind_cont_PCA_top.pw.sputum <- rbind(ind_cont_PCA1_top.pw, ind_cont_PCA2_top.pw)
+
+ind_cont_PCA_top.pw.sputum%>%
+  rownames_to_column(var = "Pathway")%>%
+  arrange(desc(PCA))%>%
+  slice_head(n = 26)-> ind_cont_PCA_top.pw.sputum
+
+##Plot
+plot_ordination(PS.Path.sputum.clr, ordination = Ord.Path.sputum.clr)+
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(fill= Genus, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = tax.palette)+
+  labs(title = "PCA (centered-log ratio pathway prediction)",tag= "A)")+
   theme_bw()+
-  theme(text = element_text(size=16), axis.text.x = element_text(angle = 45, hjust = 1))+
-  annotation_logticks(sides = "l")
+  theme(text = element_text(size=16))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Dominant taxa")+
+  labs(shape = "Visit")+
+  xlab(paste0("PC 1 [", round(Ord.Path.sputum.clr$CA$eig[1] / sum(Ord.Path.sputum.clr$CA$eig)*100, digits = 2), "%]"))+
+  ylab(paste0("PC 2 [", round(Ord.Path.sputum.clr$CA$eig[2] / sum(Ord.Path.sputum.clr$CA$eig)*100, digits = 2), "%]"))-> A
 
-######### Bray-Curtis dissimilarity estimation ########
-pheatmap(as.matrix(PredDestop25))
+## Bray Curtis
+BC_dist<- phyloseq::distance(PS.Path.sputum, method="bray", weighted=F)
+Ord.path.sputum <- ordinate(PS.Path.sputum, method="PCoA", distance="bray") 
 
-PredDestop25.matrix<- as.matrix(PredDestop25)
-PredDestop25.matrix<- t(PredDestop25.matrix)
-PredDestop25.braycurt<- vegdist(PredDestop25.matrix, method = "bray")
-PredDestop25.braycurt<-as.matrix(PredDestop25.braycurt)
+plot_ordination(PS.Path.sputum, ordination = Ord.path.sputum)+ 
+  theme(aspect.ratio=1)+
+  geom_point(size=3, aes(fill= Genus, shape= Visit), color= "black")+
+  scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = tax.palette)+
+  labs(title = "Bray-Curtis dissimilariy (Pathway prediction)",tag= "B)")+
+  theme_bw()+
+  theme(text = element_text(size=16))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Dominant taxa")+
+  labs(shape = "Visit")+
+  xlab(paste0("PCo 1 [", round(Ord.path.sputum$values[1,2]*100, digits = 2), "%]"))+
+  ylab(paste0("PCo 2 [", round(Ord.path.sputum$values[2,2]*100, digits = 2), "%]")) -> B
 
-###Using pheatmap to include annotations 
-PredDestop25.clust <- hclust(dist(PredDestop25.braycurt), method = "complete") ##Dendogram
+BC.path.sputum<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + Genus + sex + age +  Visit + BMI,
+                             permutations = 999, data = tmp.sputum, na.action = F, strata = tmp.sputum$Patient_number)
 
-require(dendextend)
-as.dendrogram(PredDestop25.clust) %>%
-  plot(horiz = TRUE)
+kable(BC.path.sputum$aov.tab)#-> Report 
 
-PredDestop25.col <- cutree(tree = PredDestop25.clust, k = 2)
-PredDestop25.col  <- data.frame(cluster = ifelse(test = PredDestop25.col  == 1, yes = "cluster 1", no = "cluster 2"))
-PredDestop25.col$Sample_Name <- rownames(PredDestop25.col)
+C<- ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
-PredDestop25.col <- merge(PredDestop25.col, coldata, by="Sample_Name", sort= F)
-
-##Add annotation for samples
-col_groups <- coldata %>%
-  select("Sample_Name", "AnimalSpecies", "Compartment", "Barcode_Plate") ##Here It is possible to add the expected size 
-
-row.names(col_groups)<- col_groups$Sample_Name
-
-col_groups$Sample_Name<- NULL
-
-colour_groups <- list(AnimalSpecies= c("Pig"= "pink", "Ascaris"= "#C46210"),
-                      Region= c("Faeces"= "#8DD3C7","Colon"= "#009999" ,"Duodenum"= "#FFFFB3", "Jejunum"= "#BEBADA", 
-                                "Negative"= "#FB8072", "Ascaris"= "#80B1D3"),
-                      Barcode_Plate= c(A1= "red", A2= "blue"))
-
-BCPredDestop25 <- pheatmap(PredDestop25.braycurt, 
-                           color = viridis(100),
-                           border_color = NA,
-                           annotation_col = col_groups, 
-                           #annotation_row = col_groups,
-                           annotation_colors = colour_groups,
-                           #cutree_rows = 2,
-                           #cutree_cols = 2,
-                           show_rownames = F,
-                           show_colnames = F,
-                           main= "Bray-Curtis dissimilarity among samples")
-
-#pdf(file = "/SAN/Victors_playground/Ascaris_Microbiome/output/BC_Predicted_genes.pdf", width = 10, height = 8)
-#BCPredDestop25
-#dev.off()
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q7_path_pred_ord_sputum.pdf", plot = C, width = 8, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q7_path_pred_ord_sputum.png", plot = C, width = 8, height = 10)
 
 ####Heat map pathways#####
 ##Matrix Pathways sample
-PredPathDesM<- PredPathDes
-rownames(PredPathDesM)<-PredPathDesM$pathway
-PredPathDesM$pathway<- NULL
-PredPathDesM$description<- NULL
-PredPathDesM%>%
-  replace(is.na(.), 0)-> PredPathDesM
+PathM<- PS.Path.sputum.clr@otu_table
+top<- ind_cont_PCA_top.pw.sputum$Pathway
 
-PredPathDesM<- as.matrix(PredPathDesM)
-pheatmap(PredPathDesM)
+PathM<- PathM[rownames(PathM) %in% top]
 
-PredPathDesM.norm <- t(apply(PredPathDesM, 1, cal_z_score))
-as.data.frame(PredPathDesM.norm)%>%
-  replace(is.na(.), 0)-> PredPathDesM.norm
-PredPathDesM.norm<- as.matrix(PredPathDesM.norm)
-pheatmap(PredPathDesM.norm)
+P.clust <- hclust(dist(t(PathM)), method = "complete") ##Dendogram
 
-PredPathDesM.clust <- hclust(dist(PredPathDesM), method = "complete") ##Dendogram
+as.dendrogram(P.clust) %>%
+  plot(horiz = T)
 
-require(dendextend)
-as.dendrogram(PredPathDesM.clust) %>%
-  plot(horiz = TRUE)
-##Detect cluster of pathways (apparently 2)
-PredPathDesM.col <- cutree(tree = PredPathDesM.clust, k = 2)
-PredPathDesM.col  <- data.frame(cluster = ifelse(test = PredPathDesM.col  == 1, yes = "cluster 1", no = "cluster 2"))
-PredPathDesM.col%>%
-  filter(cluster== "cluster 1")-> PathC1
+P.col <- cutree(tree = P.clust, k = 2)
+P.col  <- data.frame(cluster = ifelse(test = P.col  == 1, yes = "cluster 1", no = "cluster 2"))
+P.col$SampleID <- rownames(P.col)
 
-PathC1<- rownames(PathC1)
-PathC1<-gsub("-", ".", PathC1)
+P.col<- cbind(P.col, tmp.sputum)
 
-##Select the top 25 more abundant pathways out of cluster 1 pathways 
-PredPathDes%>%
-  replace(is.na(.), 0)%>%
-  mutate(Total = rowSums(select(., contains("Sample"))))%>%
-  select(pathway, description, Total)%>%
-  column_to_rownames(var = "pathway")-> tmp
+col_groups <- P.col %>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::select(c(SampleID, Patient_number, Visit, ppFEV1, Genus)) ##Here It is possible to add the other characteristics
 
-tmp <- tmp[order(-tmp$Total), ]
-tmp <- rownames(tmp[1:25, ])
-PredPathDestop25 <- data.frame(PredPathDesM[tmp, ])
+row.names(col_groups)<- col_groups$SampleID
 
-rownames(PredPathDes)<-PredPathDes$pathway
-Pathdes<- PredPathDes[tmp,]
-Pathdes<- as.data.frame(Pathdes[,1:2])
-#write.csv(Pathdes, "/SAN/Victors_playground/Ascaris_Microbiome/output/Top_predicted_pathways.csv")
+col_groups$SampleID<- NULL
 
-df<- data.frame(PredPathDestop25)
-df<- t(df)
-df<- data.frame(df)
-df%>% 
-  mutate(Total= rowSums(select(., contains("PWY"))))%>%
-  mutate_all(.funs = ~./Total)->df
+colour_groups <- list(Patient_number= pal.CF%in%tmp.sputum$Patient_number, Genus= c("Streptococcus"= "#925E9FFF","Staphylococcus"= "#008B45FF", 
+                                                       "Stenotrophomonas"= "#B09C85FF", "Pseudomonas" = "#ED0000FF"))
 
-rownames(df)<-rownames(t(data.frame(PredPathDestop25)))
-df$Total<- NULL
-df<- t(df)
+sputum.heatmap <- pheatmap(PathM, cluster_rows = F, cluster_cols = T,
+                          color = colorRampPalette(c("white","#832424FF"))(100), #"#3A3A98FF",
+                          border_color = NA,
+                          annotation_col = col_groups, 
+                          annotation_colors = colour_groups,
+                          show_rownames = T,
+                          show_colnames = F)
 
-mPredPathDestop25 <- data.frame(Pathway = rownames(df), df)
-mPredPathDestop25 <- melt(mPredPathDestop25, id.vars = "Pathway")
-colnames(mPredPathDestop25) <- c("Pathway", "Sample_Name", "Relative_abundance")
-
-##Add metadata 
-mPredPathDestop25<- plyr::join(mPredPathDestop25, coldata, by="Sample_Name")
-Path25<- unique(mPredPathDestop25$Pathway)
-#pdf(file = "/SAN/Victors_playground/Ascaris_Microbiome/output/Top_predicted_pathways.pdf", width = 10, height = 8)
-mPredPathDestop25%>%
-  ggplot(aes(x = reorder(Pathway, -Relative_abundance), y = Relative_abundance, color= Pathway)) +
-  scale_color_viridis_d()+
-  geom_jitter(size = 2, alpha = 0.05, width = 0.2) +
-  stat_summary(fun = mean, geom = "point", size = 5)+
-  coord_flip() +
-  scale_y_continuous(name = "Pathway relative abundance", limits = c(0, 0.075))+
-  labs(tag= "A)")+
-  xlab("Pathway") +
-  theme_bw()+
-  theme(legend.position = "none")+
-  geom_segment(
-    aes(x = Pathway, xend = Pathway,
-        y = 0.04, yend = mean(Relative_abundance)),
-    size = 0.8) +
-  geom_hline(aes(yintercept = 0.04), color = "gray70", size = 0.6)
-#dev.off()
-
-mPredPathDestop25%>%
-  filter(Compartment%in%c("Ascaris"))%>%
-  ggplot(aes(y= Relative_abundance, x= reorder(Pathway, -Relative_abundance)))+
-  scale_y_continuous("Pathway relative abundance")+
-  geom_boxplot(aes(color= WormSex))+
-  xlab("Pathway")+
-  labs(tag= "B)")+
-  coord_flip() +
-  theme_bw()+
-  theme(text = element_text(size=16))
-
-###Using pheatmap to include annotations 
-df.matrix<-as.matrix(PredPathDestop25)
-
-##Scaling abundances
-df.matrix.norm <- t(apply(df.matrix, 1, cal_z_score))
-pheatmap(df.matrix.norm)
-
-df.clust <- hclust(dist(df.matrix), method = "complete") ##Dendogram
-
-require(dendextend)
-as.dendrogram(df.clust) %>%
-  plot(horiz = TRUE)
-##Detect cluster of pathways (apparently none :S)
-df.col <- cutree(tree = df.clust, k = 2)
-df.col  <- data.frame(cluster = ifelse(test = df.col  == 1, yes = "cluster 1", no = "cluster 2"))
-
-##Add annotation for samples
-col_groups <- coldata %>%
-  select("Sample_Name", "AnimalSpecies", "Compartment", "Barcode_Plate") ##Here It is possible to add the expected size 
-
-row.names(col_groups)<- col_groups$Sample_Name
-
-col_groups$Sample_Name<- NULL
-
-colour_groups <- list(AnimalSpecies= c("Pig"= "pink", "Ascaris"= "#C46210"),
-                      Region= c("Faeces"= "#8DD3C7","Colon"= "#009999" ,"Duodenum"= "#FFFFB3", "Jejunum"= "#BEBADA", 
-                                "Negative"= "#FB8072", "Ascaris"= "#80B1D3"),
-                      Barcode_Plate= c(A1= "red", A2= "blue"))
-
-HMPredPathDestop25 <- pheatmap(df.matrix.norm, 
-                               #color = viridis(100),
-                               border_color = NA,
-                               annotation_col = col_groups, 
-                               #annotation_row = col_groups,
-                               annotation_colors = colour_groups,
-                               #cutree_rows = 2,
-                               cutree_cols = 2,
-                               show_rownames = ,
-                               show_colnames = F,
-                               main= "Pathway relative abundance among samples")
-
-#pdf(file = "/SAN/Victors_playground/Ascaris_Microbiome/output/Predicted_pathways.pdf", width = 10, height = 8)
-#HMPredPathDestop25
-#dev.off()
-
-##Select jusr Ascaris samples to compare between sexes 
-coldata%>%
-  filter(AnimalSpecies == "Ascaris")-> Asc.df
-keep<- Asc.df$Sample_Name
-
-tmp<- as.data.frame(t(PredPathDestop25))
-tmp$Sample_Name<- rownames(tmp)
-tmp<- tmp[tmp$Sample_Name %in% keep,]
-tmp$Sample_Name<- NULL
-tmp<- t(tmp)
-Asc.matrix<-as.matrix(tmp)
-
-##Scaling abundances
-Asc.matrix.norm <- t(apply(Asc.matrix, 1, cal_z_score))
-##Add annotation for samples
-Asc_groups <- Asc.df %>%
-  select("Sample_Name", "Barcode_Plate", "System", "WormSex") ##Here It is possible to add the expected size 
-
-row.names(Asc_groups)<- Asc_groups$Sample_Name
-
-Asc_groups$Sample_Name<- NULL
-
-colour_Asc_groups <- list(WormSex= c("Male"= "green", "Female"= "#C46210"),
-                          System= c("Pig1"= "#8DD3C7","Pig2"= "#009999" ,"Pig3"= "#FFFFB3", "Pig5"= "#BEBADA", 
-                                    "SH"= "#FB8072"),
-                          Barcode_Plate= c(A1= "red", A2= "blue"))
-
-AscPredPathDestop25 <- pheatmap(Asc.matrix.norm, 
-                                border_color = NA,
-                                annotation_col = Asc_groups,
-                                annotation_colors = colour_Asc_groups,
-                                cutree_cols = 2,
-                                show_rownames = T,
-                                show_colnames = F,
-                                main= "Pathway scaled abundance among Ascaris samples")
-
-#pdf(file = "/SAN/Victors_playground/Ascaris_Microbiome/output/Predicted_pathways_Ascaris.pdf", width = 10, height = 8)
-#AscPredPathDestop25
-#dev.off()
-
-##Select jusr Ascaris samples to compare between sexes 
-coldata%>%
-  filter(AnimalSpecies == "Pig")-> Pig.df
-keep<- Pig.df$Sample_Name
-
-tmp<- as.data.frame(t(PredPathDestop25))
-tmp$Sample_Name<- rownames(tmp)
-tmp<- tmp[tmp$Sample_Name %in% keep,]
-tmp$Sample_Name<- NULL
-tmp<- t(tmp)
-Pig.matrix<-as.matrix(tmp)
-
-##Scaling abundances
-Pig.matrix.norm <- t(apply(Pig.matrix, 1, cal_z_score))
-##Add annotation for samples
-Pig_groups <- Pig.df %>%
-  select("Sample_Name", "Barcode_Plate", "System", "InfectionStatus") ##Here It is possible to add the expected size 
-
-row.names(Pig_groups)<- Pig_groups$Sample_Name
-
-Pig_groups$Sample_Name<- NULL
-
-colour_Pig_groups <- list(InfectionStatus= c("Infected"= "green", "Non_infected"= "#C46210"),
-                          System= c("Pig1"= "#8DD3C7","Pig2"= "#009999" ,"Pig3"= "#FFFFB3", "Pig4"= "#E6AB02","Pig5"= "#BEBADA", 
-                                    "Pig6"= "#80B1D3", "Pig7"= "#FDB462", "Pig8"= "#B3DE69", "Pig9"= "#FC4E07"),
-                          Barcode_Plate= c(A1= "red", A2= "blue"))
-
-PigPredPathDestop25 <- pheatmap(Pig.matrix.norm, 
-                                border_color = NA,
-                                annotation_col = Pig_groups,
-                                annotation_colors = colour_Pig_groups,
-                                cutree_cols = 2,
-                                show_rownames = T,
-                                show_colnames = F,
-                                main= "Pathway scaled abundance among Pig samples")
-
-#pdf(file = "/SAN/Victors_playground/Ascaris_Microbiome/output/Predicted_pathways_Pig.pdf", width = 10, height = 8)
-#PigPredPathDestop25
-#dev.off()
-
-##DESeq analysis
-ddsTable<- DESeq(ddsTable)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q7_path_pred_heatmap_sputum.pdf", plot = sputum.heatmap, width = 8, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q7_path_pred_heatmap_sputum.png", plot = sputum.heatmap, width = 8, height = 10)
