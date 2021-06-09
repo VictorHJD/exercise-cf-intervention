@@ -274,7 +274,7 @@ ordination<- ordinate(PS4.sput,
 plot_ordination(PS4.sput, ordination, shape= "Visit")+ 
   theme(aspect.ratio=1)+
   geom_point(size=3, aes(fill= Patient_number, shape= Visit), color= "black")+
-  scale_shape_manual(values = c(21, 24, 22))+
+  scale_shape_manual(values = c(21, 22, 24))+
   scale_fill_manual(values = pal.CF)+
   #geom_point(color= "black", size= 1.5)+
   labs(title = "Bray-Curtis dissimilariy",tag= "A)")+
@@ -1368,6 +1368,8 @@ model.Pseu.sputum.lsm <-
                    adjust="fdr")
 
 lf.model.sputum.lsm$contrasts
+
+
 ##Create biom format object for PICRUSt2
 require("biomformat")
 asvmat.rare<- as.matrix(PS3.sputum@otu_table)
