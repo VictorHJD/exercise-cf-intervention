@@ -404,20 +404,24 @@ names(seg.data)<-c("Genus","v.PCoA1","v.PCoA2","PCoA1","PCoA2")
 seg.data$Genus<- NULL
 ##Add Line information for each sample 
 tmp.sputum%>%
-  dplyr::select(c(Genus, Visit, Patient_number))%>%
+  dplyr::select(c(Genus, Visit, Patient_number, Phenotype_severity))%>%
+  dplyr::mutate(Phenotype_severity = as.factor(Phenotype_severity))%>%
   rownames_to_column(var = "SampleID")%>%
   dplyr::group_by(Genus)%>%
   unique()%>%
   column_to_rownames(var = "SampleID")%>%
   cbind(seg.data)-> seg.data
 
+
 ##Plot BC
 ggplot() + 
   geom_point(data=centroids[,1:4], aes(x=PCoA1,y=PCoA2, color= grps, group=grps),size=4, shape= 4) + 
   geom_line(data=centroids[,1:4], aes(x=PCoA1,y=PCoA2), linetype = 2, color=" gray")+
   geom_segment(data=centroids[,1:4], aes(x=centroids[1,2], y=centroids[1,3], xend=centroids[2,2], yend=centroids[2,3]), linetype = 2, color=" gray")+ 
-  geom_point(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,shape=Visit, fill= Genus),size=3) +
-  scale_shape_manual(values = c(21, 24, 22))+
+  geom_point(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,shape=Phenotype_severity, fill= Genus),size=3) +
+  #geom_point(size=3, aes(fill= Patient_number, shape= as.factor(Phenotype_severity)), color= "black")+
+  scale_shape_manual(values = c(25, 24), labels = c("Low (ppFEV1 > 70% at V1)", "High (ppFEV1 < 70% at V1)"))+
+  #scale_shape_manual(values = c(21, 24, 22))+
   scale_fill_manual(values = tax.palette)+
   scale_color_manual(values = tax.palette)+
   stat_ellipse(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,color= Genus))+
@@ -426,9 +430,125 @@ ggplot() +
   theme_bw()+
   theme(text = element_text(size=16))+
   labs(fill = "Dominant taxa")+
-  labs(shape = "Visit")+
+  #labs(shape = "Visit")+
+  labs(shape = "Phenotype severity")+
   xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> A
+
+# Horizontal marginal boxplot - to appear at the top of the chart
+seg.data%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  wilcox_test(v.PCoA1 ~ Genus)%>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance()%>%
+  add_xy_position(x = "Genus")-> stats.test
+
+##Save statistical analysis
+x <- stats.test
+x$groups<- NULL
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q2_PCoA1_Dom_tax_Sput.csv")
+
+seg.data%>%
+  ggplot(aes(x=Genus, y= v.PCoA1))+
+  geom_boxplot(aes(fill= Genus), color= "black", alpha= 0.5)+
+  #geom_jitter(position = position_jitter(width = 0.5),size=3, aes(shape=Visit, fill= Genus)) +
+  #scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = tax.palette)+
+  scale_color_manual(values = tax.palette)+
+  theme_bw()+
+  stat_pvalue_manual(stats.test, hide.ns = T,
+                     tip.length = 0, label = "{p.adj.signif}", coord.flip = T)+
+  coord_flip()+ 
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank(), 
+        axis.ticks = element_blank(), 
+        legend.position = "none",
+        plot.margin = unit(c(1, 0.2, -0.5, 0.5), "lines"))-> xplot
+
+# Vertical marginal boxplot - to appear at the right of the chart
+seg.data%>%
+  mutate(Visit = fct_relevel(Visit, 
+                             "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  wilcox_test(v.PCoA2 ~ Genus)%>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance()%>%
+  add_xy_position(x = "Genus")-> stats.test
+
+##Save statistical analysis
+x <- stats.test
+x$groups<- NULL
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q2_PCoA2_Dom_tax_Sput.csv")
+
+seg.data%>%
+  ggplot(aes(x=Genus, y= v.PCoA2))+
+  geom_boxplot(aes(fill= Genus), color= "black", alpha= 0.5)+
+  #geom_jitter(position = position_jitter(width = 0.5),size=3, aes(shape=Visit, fill= Genus)) +
+  #scale_shape_manual(values = c(21, 24, 22))+
+  scale_fill_manual(values = tax.palette)+
+  scale_color_manual(values = tax.palette)+
+  theme_bw()+
+  stat_pvalue_manual(stats.test, hide.ns = T,
+                     tip.length = 0, label = "{p.adj.signif}")+
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank(), 
+        axis.ticks = element_blank(), 
+        legend.position = "none",
+        plot.margin = unit(c(0.2, 1, 0.5, -0.5), "lines"))->  yplot 
+
+require(cowplot)
+p1<- insert_xaxis_grob(A, xplot, grid::unit(.25, "null"), position = "top")
+p2<- insert_yaxis_grob(p1, yplot, grid::unit(.25, "null"), position = "right")
+A2<- ggdraw(p2)
+
+#### By visit
+BC_dist.sputum%>% 
+  wilcox_test(BC_dist ~ Group)%>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance()%>%
+  add_xy_position(x = "Group")-> stats.test
+
+##Save statistical analysis
+x <- stats.test
+x$groups<- NULL
+write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q3_Sample_Visit_BC_Sputum.csv")
+
+##Plot 
+BC_dist.sputum%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Group, y= BC_dist))+
+  geom_boxplot(color="black", alpha= 0.5)+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
+  xlab("Visit")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "B)", caption = get_pwc_label(stats.test), fill = "Patient")+
+  scale_fill_manual(values = pal.CF)+
+  theme_classic()+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6, size= 10), color= "none")+
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")+
+  scale_x_discrete(labels=c("V1_V2" =  "V1 to V2", 
+                            "V2_V3" = "V2 to V3",
+                            "V1_V3" = "V1 to V3"))+
+  stat_pvalue_manual(stats.test, hide.ns = F, step.increase = 0.05,
+                     tip.length = 0, label = "{p.adj} {p.adj.signif}")->B
+
+C<- ggarrange(A, B, ncol=1, nrow=2, common.legend = F)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3_Sput.pdf", plot = C, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3_Sput.png", plot = C, width = 10, height = 12)
+
+C<- ggarrange(A2, B, ncol=1, nrow=2, common.legend = F)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3.2_Sput.pdf", plot = C, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3.2_Sput.png", plot = C, width = 10, height = 12)
 
 ##Extract distance to the centroid for each samples 
 centroid.dist<- data.frame(mvd$distances)
@@ -474,12 +594,17 @@ seg.data%>%
   stat_pvalue_manual(stats.test, hide.ns = T, step.increase = 0.05,
                      tip.length = 0, label = "{p.adj} {p.adj.signif}")-> B
 
-C<- ggarrange(A, B, ncol=1, nrow=2, common.legend = F)
+#C<- ggarrange(A, B, ncol=1, nrow=2, common.legend = F)
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Sput.pdf", plot = C, width = 10, height = 11)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Sput.png", plot = C, width = 10, height = 11)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Sput.pdf", plot = C, width = 10, height = 11)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Sput.png", plot = C, width = 10, height = 11)
 
-rm(A, B, C)
+#C<- ggarrange(A2, B, ncol=1, nrow=2, common.legend = F)
+
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Sput_2.pdf", plot = C, width = 10, height = 12)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Sput_2.png", plot = C, width = 10, height = 12)
+
+rm(A, A2, B, C)
 
 ##Dominant taxa for sputum estimate change in relative abundance 
 ##Staphylococcus
@@ -600,6 +725,28 @@ BC_dist.sputum%>%
                 `Firmicutes-Streptococcus`, `Proteobacteria-Stenotrophomonas`)%>%
   dplyr::filter(complete.cases(.))-> tmp
 
+BC_dist.sputum%>%
+  dplyr::filter(`Firmicutes-Staphylococcus`!= 0)%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= (`Firmicutes-Staphylococcus`)*-1, y= (ppFEV1)*-1))+
+  geom_point(size=3, aes(fill= Patient_number, shape= Group), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  geom_smooth(method=lm, se = F, color= "black")+
+  scale_fill_manual(values = pal.CF)+
+  #geom_rect(aes(xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=70),alpha=0.01,fill="grey")+
+  geom_hline(yintercept=0, linetype="dashed", color = "red")+
+  geom_vline(xintercept=0, linetype="dashed", color = "red")+
+  theme_bw()+
+  labs(tag= "B)")+
+  labs(fill = "Patient")+
+  labs(shape = "Visit")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6), shape= guide_legend(nrow = 3))+
+  xlab("Change in Staphylococcus relative abundance")+
+  ylab("Change in lung function (Δ ppFEV1)")+
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")
+  
 ##Model selection do it with glm
 tmp%>%
   dplyr::select(Trainingfrequency, Trainingtime, ppFEV1, 
@@ -892,7 +1039,8 @@ names(seg.data)<-c("Genus","v.PCoA1","v.PCoA2","PCoA1","PCoA2")
 seg.data$Genus<- NULL
 ##Add Line information for each sample 
 tmp.stool%>%
-  dplyr::select(c(Genus, Visit, Patient_number))%>%
+  dplyr::select(c(Genus, Visit, Patient_number, Phenotype_severity))%>%
+  dplyr::mutate(Phenotype_severity = as.factor(Phenotype_severity))%>%
   rownames_to_column(var = "SampleID")%>%
   dplyr::group_by(Genus)%>%
   unique()%>%
@@ -904,8 +1052,10 @@ ggplot() +
   #geom_point(data=centroids[,1:4], aes(x=PCoA1,y=PCoA2, color= grps, group=grps),size=4, shape= 4) + 
   #geom_line(data=centroids[,1:4], aes(x=PCoA1,y=PCoA2), linetype = 2, color=" gray")+
   #geom_segment(data=centroids[,1:4], aes(x=centroids[1,2], y=centroids[1,3], xend=centroids[2,2], yend=centroids[2,3]), linetype = 2, color=" gray")+ 
-  geom_point(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,shape=Visit, fill= Genus),size=3) +
-  scale_shape_manual(values = c(21, 24, 22))+
+  geom_point(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,shape=Phenotype_severity, fill= Genus),size=3) +
+  #geom_point(size=3, aes(fill= Patient_number, shape= as.factor(Phenotype_severity)), color= "black")+
+  scale_shape_manual(values = c(25, 24), labels = c("Low (ppFEV1 > 70% at V1)", "High (ppFEV1 < 70% at V1)"))+
+  #scale_shape_manual(values = c(21, 24, 22))+
   scale_fill_manual(values = tax.palette)+
   scale_color_manual(values = tax.palette)+
   #stat_ellipse(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,color= Genus))+
@@ -914,14 +1064,49 @@ ggplot() +
   theme_bw()+
   theme(text = element_text(size=16))+
   labs(fill = "Dominant taxa")+
-  labs(shape = "Visit")+
+  labs(shape = "Phenotype severity")+
   xlab(paste0("PCo 1 [", round(ordination$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(ordination$values[2,2]*100, digits = 2), "%]"))-> A
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Stool.pdf", plot = A, width = 10, height = 11)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Stool.png", plot = A, width = 10, height = 11)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Stool.pdf", plot = A, width = 10, height = 11)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Dominant_Stool.png", plot = A, width = 10, height = 11)
 
-rm(A)
+##Is visit impacting differences in composition by patient? 
+BC_dist.stool%>% 
+  wilcox_test(BC_dist ~ Group)%>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance()%>%
+  add_xy_position(x = "Group")-> stats.test
+
+##Save statistical analysis
+#x <- stats.test
+#x$groups<- NULL
+#write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q3_Sample_Visit_BC.csv")
+
+##Plot 
+BC_dist.stool%>%
+  ggplot(aes(x= Group, y= BC_dist))+
+  geom_boxplot(color="black", alpha= 0.5)+
+  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
+  xlab("Visit")+
+  ylab("Bray-Curtis dissimilarity")+
+  labs(tag= "B)", caption = get_pwc_label(stats.test), fill = "Patient")+
+  scale_fill_manual(values = pal.CF)+
+  theme_classic()+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 8, size= 10), color= "none")+
+  theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")+
+  scale_x_discrete(labels=c("V1_V2" =  "V1 to V2", 
+                            "V2_V3" = "V2 to V3",
+                            "V1_V3" = "V1 to V3"))+
+  stat_pvalue_manual(stats.test, hide.ns = F, step.increase = 0.05,
+                     tip.length = 0, label = "{p.adj} {p.adj.signif}")->B
+
+C<- ggarrange(A, B, ncol=1, nrow=2)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig4_Stool.pdf", plot = C, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig4_Stool.png", plot = C, width = 10, height = 12)
+
+rm(A, B, C)
 
 ##Dominant taxa for stool estimate change in relative abundance 
 ##Bacteroides

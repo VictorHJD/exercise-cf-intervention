@@ -1,0 +1,7 @@
+"",".y.","group1","group2","n1","n2","statistic","p","p.adj","p.adj.signif","y.position","xmin","xmax"
+"1","v.PCoA2","Pseudomonas","Staphylococcus",7,16,107,0.000155,0.000465,"***",0.55436,1,2
+"2","v.PCoA2","Pseudomonas","Stenotrophomonas",7,3,17,0.183,0.2745,"ns",0.623192,1,3
+"3","v.PCoA2","Pseudomonas","Streptococcus",7,8,56,0.000311,0.000622,"***",0.692024,1,4
+"4","v.PCoA2","Staphylococcus","Stenotrophomonas",16,3,32,0.421,0.421,"ns",0.760856,2,3
+"5","v.PCoA2","Staphylococcus","Streptococcus",16,8,121,0.000122,0.000465,"***",0.829688,2,4
+"6","v.PCoA2","Stenotrophomonas","Streptococcus",3,8,18,0.279,0.3348,"ns",0.89852,3,4
