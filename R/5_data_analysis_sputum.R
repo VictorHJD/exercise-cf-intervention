@@ -196,6 +196,30 @@ gen.sputum%>%
 
 #C<- grid.arrange(A,B, heights = c(3, 3))
 
+###Colonizers and satellites
+Type.sputum<- count.genus(x = PS4.sput.Gen, num = 4.5)
+
+sdt.sputum%>%
+  rownames_to_column()%>%
+  dplyr::select(c(1, 32:33))%>%
+  dplyr::rename(SampleID = rowname)%>%
+  left_join(Type.sputum, by="SampleID")-> Type.sputum
+
+saveRDS(Type.sputum, "CF_project/exercise-cf-intervention/data/Type.sputum.rds")
+
+Type.sputum%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x=Patient_number, y=Abundance, fill=Type))+ 
+  geom_bar(aes(), stat="identity", position="stack") + 
+  facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  guides(fill=guide_legend(nrow=5))+
+  theme_bw()+
+  labs(tag= "A)")+
+  ylab("Relative abundance (%)")+
+  xlab("Patient number")
+
 #ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_Genus.pdf", plot = C, width = 10, height = 12)
 #ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Composition_Genus.png", plot = C, width = 10, height = 12)
 
@@ -492,11 +516,33 @@ metadata%>%
 BC_dist.sputum%>%
   left_join(tmp2, by="ID")-> BC_dist.sputum
 
+###Add Antibiotic intake information 
+
+antibiotic<- read.csv("~/CF_project/Metadata/sample_data_indexed_antibiotics.csv")
+
+antibiotic%>%
+  dplyr::select(c(Comed_token, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
+                  Number_iv_courses_priorstudy, Number_iv_courses_duringstudy))%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  dplyr::select(c(Patient_number, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
+                  Number_iv_courses_priorstudy, Number_iv_courses_duringstudy))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  unique()-> tmp2
+
+BC_dist.sputum%>%
+  left_join(tmp2, by="Patient_number")-> BC_dist.sputum
+
 ##Add a time between visits (Overall for know but ask values per patient per period)
 BC_dist.sputum%>%
   dplyr::mutate(Months= case_when(Group == "V1_V3" ~ 12,
                                   Group == "V1_V2" ~ 3,
                                   Group == "V2_V3" ~ 19))-> BC_dist.sputum
+
+saveRDS(BC_dist.sputum, "~/CF_project/exercise-cf-intervention/data/BC_dist.sputum.rds")
+
 #### By visit
 BC_dist.sputum%>% 
   wilcox_test(BC_dist ~ Group)%>%
@@ -622,6 +668,95 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Tr
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training.png", plot = plot, width = 10, height = 12)
 
 rm(A,B,C,D)
+
+##Correlation with Antibiotic intake 
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_antibioticCourses_priorstudystart, y= BC_dist))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Number of oral antibiotic courses prior study start")+
+  ylab("Bray-Curtis dissimilarity (Sputum microbiome)")+
+  labs(tag= "A)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> A
+
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Number of oral antibiotic courses during study")+
+  ylab("Bray-Curtis dissimilarity (Sputum microbiome)")+
+  labs(tag= "B)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> B
+
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_iv_courses_priorstudy, y= BC_dist))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Number of iv antibiotic courses prior study start")+
+  ylab("Bray-Curtis dissimilarity (Sputum microbiome)")+
+  labs(tag= "C)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> C
+
+BC_dist.sputum%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_iv_courses_duringstudy, y= BC_dist))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Number of iv antibiotic courses during study")+
+  ylab("Bray-Curtis dissimilarity (Sputum microbiome)")+
+  labs(tag= "D)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> D
+
+plot<-ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Antibiotics.pdf", plot = plot, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Antibiotics.png", plot = plot, width = 10, height = 12)
+
+rm(A,B, plot)
+
+###Matrix for Mantel test
+
+BC_sputum<- as.matrix(BC_dist)
+
+##Change row and colnames for a uniform system between sample type Patient:Visit
+rownames(BC_sputum)<-  gsub("10P", "P", rownames(BC_sputum))
+rownames(BC_sputum)<-  gsub("A", "\\1", rownames(BC_sputum))
+
+colnames(BC_sputum)<-  gsub("10P", "P", colnames(BC_sputum))
+colnames(BC_sputum)<-  gsub("A", "\\1", colnames(BC_sputum))
+
+saveRDS(BC_sputum, "~/CF_project/exercise-cf-intervention/data/BC_sputum_matrix.rds")
 
 ###Mixed effect models 
 BC_dist.sputum%>%

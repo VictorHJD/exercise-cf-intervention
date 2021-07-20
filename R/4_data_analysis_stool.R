@@ -110,6 +110,47 @@ count.high.genus <- function(x, num){
   rm(otu, tax, j1, j2, n)
   return(m)
 }
+
+count.genus <- function(x, num){
+  require(phyloseq)
+  require(magrittr)
+  #x is a phyloseq object glomed to Genus
+  #num is the threshold of Relative abundance desired 
+  otu <- as(otu_table(x), "matrix")
+  # transpose if necessary
+  if(taxa_are_rows(x)){otu <- t(otu)}
+  otu <- otu_table(otu, taxa_are_rows = F)
+  tax <- tax_table(x)
+  # Coerce to data.frame
+  n <- as.data.frame(tax)
+  n%>%
+    rownames_to_column()%>%
+    dplyr::rename(ASV = rowname)-> n
+  
+  j1 <- apply(otu,1,sort,index.return=T, decreasing=T) # modifying which.max to return a list of sorted index
+  j2 <- lapply(j1,'[[',"x") # select for Names
+  
+  m <- data.frame(unlist(j2))
+  
+  m%>%
+    rownames_to_column()%>%
+    dplyr::filter(unlist.j2.!=0)%>%
+    separate(rowname, c("SampleID", "ASV"))%>%
+    dplyr::group_by(SampleID)%>%
+    dplyr::rename(Abundance = unlist.j2.)%>%
+    dplyr::mutate(Abundance = (Abundance/1E6)*100)%>%
+    left_join(n, by="ASV")%>%
+    mutate(Main_taxa= Abundance>= num)%>%
+    dplyr::mutate(Type= case_when(Main_taxa== FALSE ~ "Satellites", TRUE ~ "Colonizers"))%>%
+    arrange(SampleID, desc(Genus))->m
+  
+  m$Genus[is.na(m$Genus)]<- "Unassigned" ##Change NA's into Unassigned 
+  m$Species<- NULL
+  
+  rm(otu, tax, j1, j2, n)
+  return(m)
+}
+
 ##Transform abundance into relative abundance
 Rel.abund_fun <- function(df){
   df2 <- sapply(df, function(x) (x/1E6)*100)  
@@ -340,6 +381,30 @@ gen.stool%>%
   ylab("Relative abundance (%)")+
   xlab("Patient number")+
   theme(legend.position="bottom")#-> A
+
+###Colonizers and satellites
+Type.stool<- count.genus(x = PS4.stool.Gen, num = 4.5)
+
+sdt.stool%>%
+  rownames_to_column()%>%
+  dplyr::select(c(1, 32:33))%>%
+  dplyr::rename(SampleID = rowname)%>%
+  left_join(Type.stool, by="SampleID")-> Type.stool
+
+saveRDS(Type.stool, "CF_project/exercise-cf-intervention/data/Type.stool.rds")
+
+Type.stool%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x=Patient_number, y=Abundance, fill=Type))+ 
+  geom_bar(aes(), stat="identity", position="stack") + 
+  facet_wrap(~Visit, scales= "free_x", nrow=1)+
+  guides(fill=guide_legend(nrow=5))+
+  theme_bw()+
+  labs(tag= "A)")+
+  ylab("Relative abundance (%)")+
+  xlab("Patient number")
 
 ###Diversity and lung function 
 sdt%>%
@@ -795,23 +860,40 @@ metadata%>%
 BC_dist.stool%>%
   left_join(tmp2, by="ID")-> BC_dist.stool
 
+###Add Antibiotic intake information 
+
+antibiotic<- read.csv("~/CF_project/Metadata/sample_data_indexed_antibiotics.csv")
+
+antibiotic%>%
+  dplyr::select(c(Comed_token, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
+                  Number_iv_courses_priorstudy, Number_iv_courses_duringstudy))%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  dplyr::select(c(Patient_number, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
+                  Number_iv_courses_priorstudy, Number_iv_courses_duringstudy))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  unique()-> tmp2
+
+BC_dist.stool%>%
+  left_join(tmp2, by="Patient_number")-> BC_dist.stool
+
 ##Add a time between visits (Overall for know but ask values per patient per period)
 BC_dist.stool%>%
   dplyr::mutate(Months= case_when(Group == "V1_V3" ~ 12,
                                   Group == "V1_V2" ~ 3,
                                   Group == "V2_V3" ~ 19))-> BC_dist.stool
 
+saveRDS(BC_dist.stool, "~/CF_project/exercise-cf-intervention/data/BC_dist.stool.rds")
+
 ##Is visit impacting differences in composition by patient? 
 BC_dist.stool%>% 
   wilcox_test(BC_dist ~ Group)%>%
   adjust_pvalue(method = "BH") %>%
   add_significance()%>%
-  add_xy_position(x = "Group")-> stats.test
+  add_xy_position(x = "Group")-> stats.test ## Not significant 
 
-##Save statistical analysis
-#x <- stats.test
-#x$groups<- NULL
-#write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q3_Sample_Visit_BC.csv")
 
 BC_dist.stool%>%
   wilcox_effsize(BC_dist ~ Group)
@@ -829,9 +911,7 @@ BC_dist.stool%>%
   theme(text = element_text(size=16), legend.position = "none")+
   scale_x_discrete(labels=c("V1_V2" =  "V1 to V2", 
                             "V2_V3" = "V2 to V3",
-                            "V1_V3" = "V1 to V3"))+
-  stat_pvalue_manual(stats.test, hide.ns = F, step.increase = 0.05,
-                     tip.length = 0, label = "{p.adj} {p.adj.signif}")->E
+                            "V1_V3" = "V1 to V3"))->E
 
 f<-ggarrange(D, E, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
@@ -923,6 +1003,61 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Tra
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Training.png", plot = plot, width = 10, height = 12)
 
 rm(A,B,C,D, plot)
+
+##Correlation with Antibiotic intake 
+BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_antibioticCourses_priorstudystart, y= BC_dist))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Number of antibiotic courses prior study start")+
+  ylab("Bray-Curtis dissimilarity (Stool microbiome)")+
+  labs(tag= "A)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> A
+
+BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Number of antibiotic courses during study")+
+  ylab("Bray-Curtis dissimilarity (Stool microbiome)")+
+  labs(tag= "B)")+
+  theme_classic()+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> B
+
+plot<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Antibiotics.pdf", plot = plot, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Antibiotics.png", plot = plot, width = 10, height = 12)
+
+rm(A,B, plot)
+
+###Matrix for Mantel test
+
+BC_stool<- as.matrix(BC_dist)
+
+##Change row and colnames for a uniform system between sample type Patient:Visit
+rownames(BC_stool)<-  gsub("10P", "P", rownames(BC_stool))
+rownames(BC_stool)<-  gsub("A", "\\1", rownames(BC_stool))
+
+colnames(BC_stool)<-  gsub("10P", "P", colnames(BC_stool))
+colnames(BC_stool)<-  gsub("A", "\\1", colnames(BC_stool))
+
+saveRDS(BC_stool, "~/CF_project/exercise-cf-intervention/data/BC_stool_matrix.rds")
 
 ###Mixed effect models 
 BC_dist.stool%>%
