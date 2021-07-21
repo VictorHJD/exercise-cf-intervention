@@ -136,3 +136,57 @@ plot2<- ggarrange(D, C, ncol=2, nrow=1, common.legend = T)
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig6_ASV_Network.pdf", plot = plot2, width = 14, height = 6, dpi = 400)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig6_ASV_Network.png", plot = plot2, width = 14, height = 6, dpi = 400)
+
+rm(A,B, C, D, plot1, plot2)
+###Line plot to compare change of total proportion of satellites vs colonizer during study
+##Get the sum of each group by patient by Visit
+
+Type.sputum%>%
+  dplyr::group_by(Patient_number, Visit, Type)%>%
+  dplyr::summarise(sum= sum(Abundance))%>%
+  dplyr::group_by(Visit, Type)%>%
+  dplyr::summarise(mean = mean(sum), sd= sd(sum), n = n())%>%
+  dplyr::mutate(se = sd / sqrt(n),
+                lower.ci = mean - qt(1 - (0.05 / 2), n - 1) * se,
+                upper.ci = mean + qt(1 - (0.05 / 2), n - 1) * se)%>%
+  dplyr::mutate(upper.ran = mean + (2*sd), 
+                lower.ran = mean - (2*sd))%>%
+  ggplot(aes(x=Visit, y=mean, group = Type, color=Type))+ 
+  geom_errorbar(aes(ymin=lower.ci, ymax=upper.ci), width=.1) +
+  geom_line(aes(linetype=Type)) + 
+  geom_point(shape=21, aes(fill= Type))+
+  labs(x="Visit", y = "Relative abundance (%)", tag = "A)", color= "Group of taxa")+
+  guides(color = guide_legend(override.aes=list(shape=c(21), fill= c('#999999','#E69F00')), 
+                              nrow = 1, size= 10),linetype= "none", fill= "none")+
+  theme_classic() + 
+  scale_color_manual(values=c('#999999','#E69F00'))+
+  scale_fill_manual(values=c('#999999','#E69F00'))+
+  theme(text = element_text(size=16))-> A
+
+Type.stool%>%
+  dplyr::group_by(Patient_number, Visit, Type)%>%
+  dplyr::summarise(sum= sum(Abundance))%>%
+  dplyr::group_by(Visit, Type)%>%
+  dplyr::summarise(mean = mean(sum), sd= sd(sum), n = n())%>%
+  dplyr::mutate(se = sd / sqrt(n),
+                lower.ci = mean - qt(1 - (0.05 / 2), n - 1) * se,
+                upper.ci = mean + qt(1 - (0.05 / 2), n - 1) * se)%>%
+  dplyr::mutate(upper.ran = mean + (2*sd), 
+                lower.ran = mean - (2*sd))%>%
+  ggplot(aes(x=Visit, y=mean, group = Type, color=Type))+ 
+  geom_errorbar(aes(ymin=lower.ci, ymax=upper.ci), width=.1) +
+  geom_line(aes(linetype=Type)) + 
+  geom_point(shape=21, aes(fill= Type))+
+  labs(x="Visit", y = "Relative abundance (%)", tag = "B)", color= "Group of taxa")+
+  guides(color = guide_legend(override.aes=list(shape=c(21), fill= c('#999999','#E69F00')), 
+                              nrow = 1, size= 10),linetype= "none", fill= "none")+
+  theme_classic() + 
+  scale_color_manual(values=c('#999999','#E69F00'))+
+  scale_fill_manual(values=c('#999999','#E69F00'))+
+  theme(text = element_text(size=16))-> B
+
+##Save
+plot1<- ggarrange(A, B, ncol=1, nrow=2, legend = "top", common.legend = T)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig6_Colonizer_Satellites.pdf", plot = plot1, width = 10, height = 8, dpi = 400)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig6_Colonizer_Satellites.png", plot = plot1, width = 10, height = 8, dpi = 400)
