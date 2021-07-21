@@ -188,5 +188,5 @@ Type.stool%>%
 ##Save
 plot1<- ggarrange(A, B, ncol=1, nrow=2, legend = "top", common.legend = T)
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig6_Colonizer_Satellites.pdf", plot = plot1, width = 10, height = 8, dpi = 400)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig6_Colonizer_Satellites.png", plot = plot1, width = 10, height = 8, dpi = 400)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig7_Colonizer_Satellites.pdf", plot = plot1, width = 10, height = 8, dpi = 400)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig7_Colonizer_Satellites.png", plot = plot1, width = 10, height = 8, dpi = 400)
