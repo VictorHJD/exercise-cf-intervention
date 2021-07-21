@@ -1046,6 +1046,33 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Ant
 
 rm(A,B, plot)
 
+###
+BC_dist.stool%>%
+  dplyr::filter(Group=="V1_V3")%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist))+
+  geom_point(size=2.5, shape= 21, aes(fill= Patient_number), color= "black")+
+  xlab("Number of antibiotic courses during study")+
+  ylab("Bray-Curtis dissimilarity V1 - V3 \n (Stool microbiome)")+
+  labs(tag= "A)")+
+  theme_classic()+
+  geom_smooth(method=lm, se = T, color= "black")+
+  stat_regline_equation(label.x = 2, label.y = 0.85)+ 
+  stat_cor(label.x = 2, label.y = 0.8, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> plot
+
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_V1V3_Antibiotics.pdf", plot = plot, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_V1V3_Antibiotics.png", plot = plot, width = 10, height = 12)
+
+
 ###Matrix for Mantel test
 
 BC_stool<- as.matrix(BC_dist)

@@ -745,6 +745,54 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_An
 
 rm(A,B, plot)
 
+##
+BC_dist.sputum%>%
+  dplyr::filter(Group=="V1_V3")%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist))+
+  geom_point(size=2.5, shape= 21, aes(fill= Patient_number), color= "black")+
+  xlab("Number of antibiotic courses during study")+
+  ylab("Bray-Curtis dissimilarity V1 - V3 \n (Sputum microbiome)")+
+  labs(tag= "A)")+
+  theme_classic()+
+  geom_smooth(method=lm, se = T, color= "black")+
+  stat_regline_equation(label.x = 3, label.y = 0.9)+ 
+  stat_cor(label.x = 3, label.y = 0.8, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> plot1
+
+BC_dist.sputum%>%
+  dplyr::filter(Group=="V1_V3")%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_iv_courses_duringstudy, y= BC_dist))+
+  geom_point(size=2.5, shape= 21, aes(fill= Patient_number), color= "black")+
+  xlab("Number of iv antibiotic courses during study")+
+  ylab("Bray-Curtis dissimilarity V1 - V3 \n (Sputum microbiome)")+
+  labs(tag= "B)")+
+  theme_classic()+
+  geom_smooth(method=lm, se = T, color= "black")+
+  stat_regline_equation(label.x = 0.5, label.y = 1.1)+ 
+  stat_cor(label.x = 0.5, label.y = 1, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  theme(text = element_text(size=16))-> plot2
+
+plot1<-ggarrange(plot1, plot2, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_V1V3_Antibiotics.pdf", plot = plot1, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_V1V3_Antibiotics.png", plot = plot1, width = 10, height = 12)
+
 ###Matrix for Mantel test
 
 BC_sputum<- as.matrix(BC_dist)
