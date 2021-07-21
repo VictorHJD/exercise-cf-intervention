@@ -116,6 +116,20 @@ x.all$SampleID<- as.numeric(x.all$SampleID)
 x.all%>%
   dplyr::rename(Patient = SampleID)-> x.all ###Without technical confunders
 
+###Add Antibiotic intake information 
+
+antibiotic<- read.csv("~/CF_project/Metadata/sample_data_indexed_antibiotics.csv")
+
+antibiotic%>%
+  dplyr::filter(material=="Stool")%>%
+  dplyr::select(c(SampleID, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
+                  Number_iv_courses_priorstudy, Number_iv_courses_duringstudy))-> tmp2
+
+rownames(tmp2)<- tmp2$SampleID
+tmp2$SampleID<-NULL
+
+x.all<- cbind(x.all, tmp2)
+
 y.all<- y
 y.all$SampleID<- NULL
 
@@ -136,7 +150,8 @@ Cun.all<- BuildHeatmap(MD.all, cuneiform = F, coloring = 1)
 Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable, 
                                     levels= c("sex","Length","Weight", "FFM_Charatsi", 
                                               "ppFEV1",  "Peak_power",  "Dist" ,  "DFr", 
-                                              "DNAse_inh","heart_med", "Montelukast",  
+                                              "DNAse_inh","heart_med", "Montelukast", "Number_iv_courses_priorstudy",
+                                              "Number_iv_courses_duringstudy",
                                               "Nutrition_supplementation", "Polyethylenglykol_Movicol", "Mutation_severity"))
                                                
 ##Edit cun plots
@@ -151,6 +166,8 @@ Cun.all+
         axis.text.y = element_text(size = 12, face="italic", color="black"))+
   scale_x_discrete(labels=c( "Mutation_severity"= "Mutation severity", "Dist"= "Distance", "Polyethylenglykol_Movicol" = "Polyeth-Movicol", 
                              "Peak_power" = "Peak power" , "FFM_Charatsi" = "FFM (Charatsi kg)", "sex" = "Sex", "DFr" = "Fiber",
+                             "Number_iv_courses_priorstudy" = "iv Antibiotic courses (prior)",
+                             "Number_iv_courses_duringstudy" = "iv Antibiotic courses (during)",
                              "Nutrition_supplementation"="Nutrition supp.", "heart_med"= "Heart medication", "DNAse_inh"= "DNAse inh"))-> A
 A <- A + theme(legend.position="none")
 
@@ -333,6 +350,18 @@ x.all$SampleID<- as.numeric(x.all$SampleID)
 x.all%>%
   dplyr::rename(Patient = SampleID)-> x.all ###Without technical confunders
 
+##Add antibiotic data 
+
+antibiotic%>%
+  dplyr::filter(material=="Sputum")%>%
+  dplyr::select(c(SampleID, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
+                  Number_iv_courses_priorstudy, Number_iv_courses_duringstudy))-> tmp2
+
+rownames(tmp2)<- tmp2$SampleID
+tmp2$SampleID<-NULL
+
+x.all<- cbind(x.all, tmp2)
+
 y.all<- y
 y.all$SampleID<- NULL
 
@@ -355,7 +384,9 @@ Cun.all<- BuildHeatmap(MD.all, cuneiform = F, coloring = 1)
 Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable, 
                                     levels= c("sex", "Length", "Weight", "FFM_Charatsi",
                                               "ppFVC","Peak_power", "CHO", "Lipids",
-                                              "Macrolides_po", "Montelukast", "Nutrition_supplementation", 
+                                              "Macrolides_po", "Montelukast", "Number_iv_courses_priorstudy",
+                                              "Number_iv_courses_duringstudy", "Number_antibioticCourses_duringstudy",
+                                             "Nutrition_supplementation", 
                                              "PPI", "Steroids_inh", "Pseudomonas_status"))
 ##Edit cun plots
 
@@ -370,6 +401,9 @@ Cun.all+
         axis.text.y = element_text(size = 12, face="italic", color="black"))+
   scale_x_discrete(labels=c("Peak_power" = "Peak power" , "FFM_Charatsi" = "FFM (Charatsi kg)",
                               "sex" = "Sex", "Pseudomonas_status"= "Pseudomonas culture",
+                            "Number_iv_courses_priorstudy" = "iv Antibiotic courses (prior)",
+                            "Number_iv_courses_duringstudy" = "iv Antibiotic courses (during)",
+                            "Number_antibioticCourses_duringstudy" = "Oral Antibiotic courses (during)",
                              "Nutrition_supplementation"="Nutrition supp.", "Steroids_inh"= "Steroids (inh)",
                              "Macrolides_po" = "Macrolides (oral)"))-> B
 
@@ -377,6 +411,12 @@ plot<-ggarrange(A,  B,  ncol=1, nrow=2, common.legend = T, legend="right")
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.png", plot = plot, width = 15, height = 25)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.pdf", plot = plot, width = 15, height = 25)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.png", plot = A, width = 15, height = 25)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.pdf", plot = A, width = 15, height = 25)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Sputum.png", plot = B, width = 15, height = 25)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Sputum.pdf", plot = B, width = 15, height = 25)
 
 #Cun.V1V2+
 #  xlab("Variables")+
