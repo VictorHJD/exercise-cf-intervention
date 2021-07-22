@@ -66,7 +66,7 @@ net.stool.gen <- make_network(PS4.stool.Gen, type="taxa", distance="bray",
                              max.dist = 0.5, keep.isolates=F)
 
 set.seed(2020)
-plot_network(net.stool.gen, PS4.stool.Gen, line_weight=0.5, type = "taxa", color = NULL,
+plot_network(net.stool.gen, PS4.stool.Gen, line_weight=0.5, type = "taxa", color = NULL, label = "Genus",
              line_alpha = 0.1,  hjust = 1.5)+ 
   theme(aspect.ratio=0.5)+
   geom_point(shape= 21, size=3, aes(fill= Phylum), color= "black")+
@@ -109,7 +109,7 @@ net.sput.gen <- make_network(PS4.sput.Gen, type="taxa", distance="bray",
                          max.dist = 0.7, keep.isolates=F)
 
 set.seed(2020)
-plot_network(net.sput.gen, PS4.sput.Gen, line_weight=0.5, type = "taxa", color = NULL,
+plot_network(net.sput.gen, PS4.sput.Gen, line_weight=0.5, type = "taxa", color = NULL, label = "Genus",
               line_alpha = 0.1,  hjust = 1.5)+ 
   theme(aspect.ratio=0.5)+
   geom_point(shape= 21, size=3, aes(fill= Phylum), color= "black")+
