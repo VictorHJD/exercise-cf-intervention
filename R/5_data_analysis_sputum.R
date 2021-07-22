@@ -674,76 +674,101 @@ BC_dist.sputum%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Number_antibioticCourses_priorstudystart, y= BC_dist))+
+  ggplot(aes(x= Number_antibioticCourses_priorstudystart, y= BC_dist, color= Group))+
   geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  xlab("Number of oral antibiotic courses prior study start")+
+  xlab("Number of antibiotic courses prior study start")+
   ylab("Bray-Curtis dissimilarity (Sputum microbiome)")+
   labs(tag= "A)")+
   theme_classic()+
+  geom_smooth(method=lm, se = F)+
+  stat_regline_equation(label.x = 2, label.y = 1)+ 
+  stat_cor(label.x = 2, label.y = 0.9, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   scale_fill_manual(values = pal.CF)+
-  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= "none")+
   labs(fill = "Patient")+
   labs(shape = "Visit period")+
+  facet_wrap(~Group)+
   theme(text = element_text(size=16))-> A
 
 BC_dist.sputum%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist))+
+  ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist, color= Group))+
   geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  xlab("Number of oral antibiotic courses during study")+
+  xlab("Number of antibiotic courses during study start")+
   ylab("Bray-Curtis dissimilarity (Sputum microbiome)")+
   labs(tag= "B)")+
   theme_classic()+
+  geom_smooth(method=lm, se = F)+
+  stat_regline_equation(label.x = 2, label.y = 1)+ 
+  stat_cor(label.x = 2, label.y = 0.9, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   scale_fill_manual(values = pal.CF)+
-  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= "none")+
   labs(fill = "Patient")+
   labs(shape = "Visit period")+
+  facet_wrap(~Group)+
   theme(text = element_text(size=16))-> B
 
 BC_dist.sputum%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Number_iv_courses_priorstudy, y= BC_dist))+
+  ggplot(aes(x= Number_iv_courses_priorstudy, y= BC_dist, color= Group))+
   geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   xlab("Number of iv antibiotic courses prior study start")+
   ylab("Bray-Curtis dissimilarity (Sputum microbiome)")+
   labs(tag= "C)")+
   theme_classic()+
+  geom_smooth(method=lm, se = F)+
+  stat_regline_equation(label.x = 0.5, label.y = 1)+ 
+  stat_cor(label.x = 0.5, label.y = 0.9, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   scale_fill_manual(values = pal.CF)+
-  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= "none")+
   labs(fill = "Patient")+
   labs(shape = "Visit period")+
+  facet_wrap(~Group)+
   theme(text = element_text(size=16))-> C
 
 BC_dist.sputum%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Number_iv_courses_duringstudy, y= BC_dist))+
+  ggplot(aes(x= Number_iv_courses_duringstudy, y= BC_dist, color= Group))+
   geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   xlab("Number of iv antibiotic courses during study")+
   ylab("Bray-Curtis dissimilarity (Sputum microbiome)")+
   labs(tag= "D)")+
   theme_classic()+
+  geom_smooth(method=lm, se = F)+
+  stat_regline_equation(label.x = 0.5, label.y = 0.8)+ 
+  stat_cor(label.x = 0.5, label.y = 0.75, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   scale_fill_manual(values = pal.CF)+
-  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= "none")+
   labs(fill = "Patient")+
   labs(shape = "Visit period")+
+  facet_wrap(~Group)+
   theme(text = element_text(size=16))-> D
 
-plot<-ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+plot1<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Antibiotics.pdf", plot = plot, width = 10, height = 12)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Antibiotics.png", plot = plot, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Oral_Antibiotics.pdf", plot = plot1, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Oral_Antibiotics.png", plot = plot1, width = 10, height = 12)
 
-rm(A,B, plot)
+plot2<-ggarrange(C, D, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_iv_Antibiotics.pdf", plot = plot2, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_iv_Antibiotics.png", plot = plot2, width = 10, height = 12)
+
+rm(A,B, C, D, plot1, plot2)
 
 ##
 BC_dist.sputum%>%
