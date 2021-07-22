@@ -1009,34 +1009,44 @@ BC_dist.stool%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Number_antibioticCourses_priorstudystart, y= BC_dist))+
+  ggplot(aes(x= Number_antibioticCourses_priorstudystart, y= BC_dist, color= Group))+
   geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
   xlab("Number of antibiotic courses prior study start")+
   ylab("Bray-Curtis dissimilarity (Stool microbiome)")+
   labs(tag= "A)")+
   theme_classic()+
+  geom_smooth(method=lm, se = F)+
+  stat_regline_equation(label.x = 2, label.y = 1)+ 
+  stat_cor(label.x = 2, label.y = 0.9, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   scale_fill_manual(values = pal.CF)+
-  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= "none")+
   labs(fill = "Patient")+
   labs(shape = "Visit period")+
+  facet_wrap(~Group)+
   theme(text = element_text(size=16))-> A
 
 BC_dist.stool%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist))+
+  ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist, color= Group))+
   geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  xlab("Number of antibiotic courses during study")+
+  xlab("Number of antibiotic courses during study start")+
   ylab("Bray-Curtis dissimilarity (Stool microbiome)")+
   labs(tag= "B)")+
   theme_classic()+
+  geom_smooth(method=lm, se = F)+
+  stat_regline_equation(label.x = 2, label.y = 1)+ 
+  stat_cor(label.x = 2, label.y = 0.9, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
   scale_fill_manual(values = pal.CF)+
-  guides(fill = guide_legend(override.aes=list(shape=c(21))))+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= "none")+
   labs(fill = "Patient")+
   labs(shape = "Visit period")+
+  facet_wrap(~Group)+
   theme(text = element_text(size=16))-> B
 
 plot<-ggarrange(A, B, ncol=1, nrow=2, common.legend = TRUE, legend="right")
