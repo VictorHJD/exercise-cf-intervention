@@ -1056,6 +1056,55 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_Ant
 
 rm(A,B, plot)
 
+BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_iv_courses_priorstudy, y= BC_dist, color= Group))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Number of iv antibiotic courses prior study start")+
+  ylab("Bray-Curtis dissimilarity (Stool microbiome)")+
+  labs(tag= "C)")+
+  theme_classic()+
+  geom_smooth(method=lm, se = F)+
+  stat_regline_equation(label.x = 0.5, label.y = 1)+ 
+  stat_cor(label.x = 0.5, label.y = 0.9, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= "none")+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  facet_wrap(~Group)+
+  theme(text = element_text(size=16))-> C
+
+BC_dist.stool%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  ggplot(aes(x= Number_iv_courses_duringstudy, y= BC_dist, color= Group))+
+  geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
+  scale_shape_manual(values = c(21, 22, 24))+ 
+  xlab("Number of iv antibiotic courses during study")+
+  ylab("Bray-Curtis dissimilarity (Stool microbiome)")+
+  labs(tag= "D)")+
+  theme_classic()+
+  geom_smooth(method=lm, se = F)+
+  stat_regline_equation(label.x = 0.5, label.y = 0.8)+ 
+  stat_cor(label.x = 0.5, label.y = 0.75, 
+           aes(label= paste(..rr.label.., ..p.label.., sep= "~`,`~")))+
+  scale_fill_manual(values = pal.CF)+
+  guides(fill = guide_legend(override.aes=list(shape=c(21))), color= "none")+
+  labs(fill = "Patient")+
+  labs(shape = "Visit period")+
+  facet_wrap(~Group)+
+  theme(text = element_text(size=16))-> D
+
+plot2<-ggarrange(C, D, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_iv_Antibiotics.pdf", plot = plot2, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool_iv_Antibiotics.png", plot = plot2, width = 10, height = 12)
+
 ###
 BC_dist.stool%>%
   dplyr::filter(Group=="V1_V3")%>%
@@ -1103,8 +1152,13 @@ BC_dist.stool%>%
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> BC_dist.stool
 ##Check for complete cases
 BC_dist.stool%>%
-  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group)%>%
+  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group, 
+                Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy, 
+                Number_iv_courses_priorstudy, Number_iv_courses_duringstudy)%>%
   dplyr::filter(complete.cases(.))-> tmp
+
+colnames(tmp)<- c("ppFVC", "Trainingfrequency", "Trainingtime", "ppFEV1", "BC_dist", "Patient_number", "Group", 
+                  "ab_prior", "ab_during", "iv_prior", "iv_during")
 
 ##qqPlots (Check whther our variables are normaly distributed)
 qqPlot(BC_dist.stool$BC_dist)
@@ -1133,16 +1187,33 @@ step.model.df%>%
 
 write.csv(step.model.df, "~/CF_project/exercise-cf-intervention/tables/Q2_BC_Sports_Lung_Stool.csv", row.names = F)
 
+##Antibiotics
+full.model<- glm(BC_dist ~ ab_prior*ab_during*iv_prior*iv_during, data = tmp) ##Full model
+# Stepwise regression model
+step.model <- MASS::stepAIC(full.model, direction = "both", 
+                            trace = FALSE)
+summary(step.model)
+step.model.df<- as.data.frame(coef(summary(step.model)))
+
+step.model.df%>%
+  mutate(p.adj = p.adjust(`Pr(>|t|)`, method='BH')) %>%
+  add_significance()%>%
+  rownames_to_column()-> step.model.df
+
+write.csv(step.model.df, "~/CF_project/exercise-cf-intervention/tables/Q2_BC_Stool_antibiotics.csv", row.names = F)
+
 ## From model selection step ppFVC:ppFEV1 interaction are the best explanatory variables for BC dissimilarities
 tr0<- lmer(BC_dist ~ (1 | Patient_number), data = tmp) ##Null model
 
 tr2<-lmer(BC_dist ~ Trainingfrequency*Trainingtime+ (1 | Patient_number), data = tmp)
 summary(tr2) ##Training
 
-tr3<-lmer(BC_dist ~ ppFEV1*ppFVC + (1 | Patient_number), data = tmp)
-summary(tr3) ##Lung function
+tr3<-lmer(BC_dist ~ ab_prior + ab_during + iv_prior + iv_during + 
+            ab_prior:ab_during + (1 | Patient_number), data = tmp)
+summary(tr3) ##Antibiotics
 
-lrtest(tr2, tr3)
+lrtest(tr0, tr3)
+
 ##Each factor ad predictive value to the model 
 ##What happen with interactions 
 summary(glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC, data = tmp))

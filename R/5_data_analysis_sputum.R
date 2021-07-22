@@ -837,9 +837,13 @@ BC_dist.sputum%>%
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> BC_dist.sputum
 BC_dist.sputum%>%
-  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group)%>%
+  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group, 
+                Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy, 
+                Number_iv_courses_priorstudy, Number_iv_courses_duringstudy)%>%
   dplyr::filter(complete.cases(.))-> tmp
 
+colnames(tmp)<- c("ppFVC", "Trainingfrequency", "Trainingtime", "ppFEV1", "BC_dist", "Patient_number", "Group", 
+                  "ab_prior", "ab_during", "iv_prior", "iv_during")
 ##qqPlots
 qqPlot(BC_dist.sputum$BC_dist)
 qqPlot(BC_dist.sputum$Trainingfrequency)
@@ -848,7 +852,7 @@ qqPlot(BC_dist.sputum$ppFEV1)
 qqPlot(BC_dist.sputum$ppFVC)
 
 ##Model selection do it with glm
-full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC, data = tmp) ##Full model
+full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC*ab_prior*ab_during*iv_prior*iv_during, data = tmp) ##Full model
 # Stepwise regression model
 step.model <- MASS::stepAIC(full.model, direction = "both", 
                             trace = FALSE)
@@ -861,6 +865,21 @@ step.model.df%>%
   rownames_to_column()-> step.model.df
 
 write.csv(step.model.df, "~/CF_project/exercise-cf-intervention/tables/Q2_BC_Sports_Lung_Sputum.csv", row.names = F)
+
+##Antibiotics
+full.model<- glm(BC_dist ~ ab_prior*ab_during*iv_prior*iv_during, data = tmp) ##Full model
+# Stepwise regression model
+step.model <- MASS::stepAIC(full.model, direction = "both", 
+                            trace = FALSE)
+summary(step.model)
+step.model.df<- as.data.frame(coef(summary(step.model)))
+
+step.model.df%>%
+  mutate(p.adj = p.adjust(`Pr(>|t|)`, method='BH')) %>%
+  add_significance()%>%
+  rownames_to_column()-> step.model.df
+
+write.csv(step.model.df, "~/CF_project/exercise-cf-intervention/tables/Q2_BC_Sputum_antibiotics.csv", row.names = F)
 
 ##Mixed effect models
 ##with patient and intervisit group as individual random effects
