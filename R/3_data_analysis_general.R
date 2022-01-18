@@ -149,7 +149,7 @@ sdt%>%
                                    "V1", "V2", "V3"))%>%
   dplyr::group_by(Visit)%>%
   wilcox_test(chao1 ~ material)%>%
-  adjust_pvalue(method = "bonferroni") %>%
+  adjust_pvalue(method = "BH") %>%
   add_significance()%>%
   add_xy_position(x = "Visit")-> stats.test
 
@@ -185,7 +185,7 @@ sdt%>%
                              "V1", "V2", "V3"))%>%
   dplyr::group_by(Visit)%>%
   wilcox_test(diversity_shannon ~ material)%>%
-  adjust_pvalue(method = "bonferroni") %>%
+  adjust_pvalue(method = "BH") %>%
   add_significance()%>%
   add_xy_position(x = "Visit")-> stats.test
 

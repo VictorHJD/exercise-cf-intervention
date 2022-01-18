@@ -225,9 +225,9 @@ sdt%>%
   ylab("Richness (Chao1 Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
   scale_fill_manual(values = pal.CF)+
-  labs(tag= "C)", fill= "Patient number")+
+  labs(tag= "B)", fill= "Patient number")+
   theme_classic()+
-  theme(text = element_text(size=16))-> C
+  theme(text = element_text(size=16))-> B
 
 ##Shannon diversity 
 ##Plot 
@@ -245,9 +245,9 @@ sdt%>%
   ylab("Diversity (Shannon Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
   scale_fill_manual(values = pal.CF)+
-  labs(tag= "B)", fill= "Patient number")+
+  labs(tag= "C)", fill= "Patient number")+
   theme_classic()+
-  theme(text = element_text(size=16))-> B
+  theme(text = element_text(size=16))-> C
 
 sdt%>%
   dplyr::filter(material=="Sputum")%>%
@@ -268,11 +268,11 @@ sdt%>%
   theme_classic()+
   theme(text = element_text(size=16))-> D
 
-E<- ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+#E<- ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.pdf", plot = E, width = 10, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png", plot = E, width = 10, height = 8)
-rm(A,B,C,D,E)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.pdf", plot = E, width = 10, height = 8)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material.png", plot = E, width = 10, height = 8)
+#rm(A,B,C,D,E)
 
 ##Dominance 
 sdt%>%
@@ -289,9 +289,9 @@ sdt%>%
   ylab("Dominance (Berger-Parker Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
   scale_fill_manual(values = pal.CF)+
-  labs(tag= "A)", fill= "Patient number")+
+  labs(tag= "E)", fill= "Patient number")+
   theme_classic()+
-  theme(text = element_text(size=16))-> A
+  theme(text = element_text(size=16))-> E
 
 sdt%>%
   dplyr::filter(material=="Sputum")%>%
@@ -308,9 +308,9 @@ sdt%>%
   ylab("Dominance (Berger-Parker Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
   scale_fill_manual(values = pal.CF)+
-  labs(tag= "B)", fill= "Patient number")+
+  labs(tag= "F)", fill= "Patient number")+
   theme_classic()+
-  theme(text = element_text(size=16))-> B
+  theme(text = element_text(size=16))-> F1
 
 ##Evenness
 sdt%>%
@@ -327,9 +327,9 @@ sdt%>%
   ylab("Evenness (Pielou Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
   scale_fill_manual(values = pal.CF)+
-  labs(tag= "C)", fill= "Patient number")+
+  labs(tag= "G)", fill= "Patient number")+
   theme_classic()+
-  theme(text = element_text(size=16))-> C
+  theme(text = element_text(size=16))-> G
 
 sdt%>%
   dplyr::filter(material=="Sputum")%>%
@@ -346,16 +346,17 @@ sdt%>%
   ylab("Evenness (Pielou Index)")+
   geom_line(aes(group = Patient_number), color= "gray")+
   scale_fill_manual(values = pal.CF)+
-  labs(tag= "D)", fill= "Patient number")+
+  labs(tag= "H)", fill= "Patient number")+
   theme_classic()+
-  theme(text = element_text(size=16))-> D
+  theme(text = element_text(size=16))-> H
 
-E<- ggarrange(A, B, C, D, ncol=2, nrow=2, common.legend = TRUE, legend="right")
+I<- ggarrange(A, B, C, D, E, F1, G, H, ncol = 2, nrow = 4, common.legend = TRUE, legend="right")
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_2_Material.pdf", plot = E, width = 10, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_2_Material.png", plot = E, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material_Final.pdf", plot = I, width = 10, height = 13, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material_Final.png", plot = I, width = 10, height = 13, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Material_Final.svg", plot = I, width = 10, height = 13, dpi = 600)
 
-rm(A,B,C,D,E)
+rm(A, B, C, D, E, F1, G, H, I)
 
 ##Barplot by sample 
 gen.stool<- count.high.genus(x = PS4.stool.Gen, num = 10)
@@ -450,6 +451,9 @@ sdt%>%
   geom_hline(yintercept=70, linetype="dashed", color = "red")+
   stat_cor(method = "spearman", label.x = 2, label.y = 30)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
+
+A+
+  xlab(NULL)-> A
 
 C<- grid.arrange(A,B, heights = c(3, 2))
 
@@ -862,7 +866,7 @@ BC_dist.stool%>%
 
 ###Add Antibiotic intake information 
 
-antibiotic<- read.csv("~/CF_project/Metadata/sample_data_indexed_antibiotics.csv")
+antibiotic<- read.csv("~/CF_project/Metadata/sample_data_indexed_antibiotics_1.csv")
 
 antibiotic%>%
   dplyr::select(c(Comed_token, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
@@ -885,6 +889,64 @@ BC_dist.stool%>%
                                   Group == "V1_V2" ~ 3,
                                   Group == "V2_V3" ~ 19))-> BC_dist.stool
 
+##Add total antibiotic burden
+antibioticB<- read.csv("~/CF_project/Metadata/antibioticBurden.csv")
+
+antibioticB%>%
+  dplyr::select(c(Comed_token, Antibiotic_until15daysbefore, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  #There is a duplicated P7V1, ask Rebecca which one is the correct one, for now eliminate one line 38 seems to be the problem
+  dplyr::slice(-38)%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  group_by(Patient_number)%>%
+  dplyr::select(c(Patient_number, Visit, AntibioticBurden_total))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::distinct()%>%
+  spread(Visit, AntibioticBurden_total)%>%
+  dplyr::mutate(V1_V2= V1 - V2)%>%
+  dplyr::mutate(V1_V3= V1 - V3)%>%
+  dplyr::mutate(V2_V3= V2 - V3)%>%
+  dplyr::select(c(Patient_number, V1_V2, V2_V3, V1_V3))%>%
+  pivot_longer(!Patient_number, names_to = "Group", values_to = "AntibioticBurden_total")%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::ungroup()%>%
+  dplyr::select(c(ID, AntibioticBurden_total))-> tmp2
+
+BC_dist.stool%>%
+  left_join(tmp2, by="ID")-> BC_dist.stool
+
+##Add total IV antibiotic burden
+antibioticB%>%
+  dplyr::select(c(Comed_token, Antibiotic_until15daysbefore, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  #There is a duplicated P7V1, ask Rebecca which one is the correct one, for now eliminate one line 38 seems to be the problem
+  dplyr::slice(-38)%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  group_by(Patient_number)%>%
+  dplyr::select(c(Patient_number, Visit, AntibioticBurden_iv))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::distinct()%>%
+  spread(Visit, AntibioticBurden_iv)%>%
+  dplyr::mutate(V1_V2= V1 - V2)%>%
+  dplyr::mutate(V1_V3= V1 - V3)%>%
+  dplyr::mutate(V2_V3= V2 - V3)%>%
+  dplyr::select(c(Patient_number, V1_V2, V2_V3, V1_V3))%>%
+  pivot_longer(!Patient_number, names_to = "Group", values_to = "AntibioticBurden_iv")%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::ungroup()%>%
+  dplyr::select(c(ID, AntibioticBurden_iv))-> tmp2
+
+BC_dist.stool%>%
+  left_join(tmp2, by="ID")-> BC_dist.stool
+
 saveRDS(BC_dist.stool, "~/CF_project/exercise-cf-intervention/data/BC_dist.stool.rds")
 
 ##Is visit impacting differences in composition by patient? 
@@ -893,7 +955,6 @@ BC_dist.stool%>%
   adjust_pvalue(method = "BH") %>%
   add_significance()%>%
   add_xy_position(x = "Group")-> stats.test ## Not significant 
-
 
 BC_dist.stool%>%
   wilcox_effsize(BC_dist ~ Group)
@@ -919,6 +980,54 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.pdf
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", plot = f, width = 10, height = 8)
 
 rm(D,E,f)
+
+##Is antibiotic burden differences impacting in composition by patient? 
+### Linear model test
+require("lmtest")
+require("lme4")
+print(summary (lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
+                       AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F)))
+
+##Nested model for Number_antibioticCourses_priorstudystart
+pABXprior<- lrtest (lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
+                               AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F),
+                       lmer (data = BC_dist.stool, rank (BC_dist) ~ AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
+
+##Nested model for AntibioticBurden_total
+pABXburden<- lrtest (lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
+                              AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F),
+                      lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
+                               AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
+
+##Nested model for AntibioticBurden_iv
+pABXiv<- lrtest (lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
+                              AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F),
+                     lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
+                             AntibioticBurden_total + (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
+
+#how large is effect compared to individual variation?
+##simple lm 
+print(summary (lm (data = BC_dist.stool, rank (dist) ~ Number_antibioticCourses_priorstudystart + 
+                     AntibioticBurden_total + AntibioticBurden_iv )))
+
+##How much variance is explained by each?
+mm.pig <- lmer (data = BC.Inf, rank (dist) ~ Same_Compartment + Same_Individual + Same_Infection_status + (1 | Pig_A) + (1 | Pig_B), REML = F)
+varianceTable <- as.data.frame(anova (mm.pig))
+varianceTable$VarExplained <- varianceTable$`Sum Sq` / sum (resid (mm.pig)^2)
+varianceTable$Variable <- rownames(varianceTable)
+varianceTable[4, ] <- c(rep(1, 4), (1 - sum(varianceTable$VarExplained)), "Residuals")
+varianceTable$VarExplained <- as.numeric(varianceTable$VarExplained)
+varianceTable$VarLabels <- scales::percent(varianceTable$VarExplained)
+print(varianceTable)
+
+#Percentage of Variance explained
+pVarExpl.pig <- ggplot (data = varianceTable) +
+  geom_bar(aes (x = "", y = VarExplained, fill = Variable), width = 1, stat = "identity", color = "black") +
+  coord_polar("y", start = 0) +
+  scale_fill_manual(values = c("white", "#0072B2",  "#CC79A7", "#44AA99"),
+                    labels = c("Residuals", "Compartment", "Individual", "Infection status"))+
+  theme_void() +
+  geom_text_repel(aes(x=1.65, y = VarExplained/2, label=VarLabels))
 
 ##Correlation with training 
 ##Frequency
