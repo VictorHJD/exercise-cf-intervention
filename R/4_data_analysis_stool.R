@@ -571,24 +571,23 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct
 ##Make a heatmap
 tmp<- as.data.frame(otu_table(tax_glom(PS4.stool, "Genus")))
 
-top.stool%>%
-  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
-  mutate(Patient_number = fct_relevel(Patient_number, 
-                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+tmp1<- count.genus(PS4.stool.Gen, 1)
+
+tmp1%>%
+  ungroup()%>%
   dplyr::select(c(Genus, ASV))%>%
   unique()-> tmp1
 
-tmp<- tmp[rownames(tmp) %in% tmp1$ASV, ] ##Subset just dominant genus for all samples
+#tmp<- tmp[rownames(tmp) %in% tmp1$ASV, ] ##Subset just dominant genus for all samples
 
 tmp<- Rel.abund_fun(tmp) ##Transform into relative abundance 
 
 tmp%>%
   rownames_to_column()%>%
-  dplyr::rename(ASV = rowname)%>%
+  dplyr::rename(ASV= rowname)%>%
   left_join(tmp1, by="ASV")%>%
-  column_to_rownames(var = "Genus")%>%
-  dplyr::select(!c(ASV))->tmp
+  unite(ASV_Genus, c("ASV", "Genus"))%>%
+  column_to_rownames(var = "ASV_Genus")->tmp
 
 library("pheatmap")
 library(dendextend)
@@ -602,21 +601,21 @@ as.dendrogram(P.clust) %>%
 P.col <- cutree(tree = P.clust, k = 2)
 P.col  <- data.frame(cluster = ifelse(test = P.col  == 1, yes = "cluster 1", no = "cluster 2"))
 P.col$SampleID <- rownames(P.col)
-
-P.col<- cbind(P.col, sdt.stool)
+P.col$SampleID<- NULL
+P.col<- cbind(P.col, top.stool)
 
 col_groups <- P.col %>%
   mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
   mutate(Patient_number = fct_relevel(Patient_number, 
                                       "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
-  dplyr::select(c(SampleID, Patient_number, Visit, ppFEV1)) ##Here It is possible to add the other characteristics
+  dplyr::select(c(SampleID, Patient_number, Visit, ppFEV1, Genus)) ##Here It is possible to add the other characteristics
 
 row.names(col_groups)<- col_groups$SampleID
 
 col_groups$SampleID<- NULL
 
-colour_groups <- list(Patient_number= pal.CF)
+colour_groups <- list(Patient_number= pal.CF, Genus= tax.palette)
 
 stool.heatmap <- pheatmap(tmp, cluster_rows = F, cluster_cols = T,
                         color = colorRampPalette(c("white","#832424FF"))(100), #"#3A3A98FF",
@@ -985,35 +984,17 @@ rm(D,E,f)
 ### Linear model test
 require("lmtest")
 require("lme4")
-print(summary (lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
-                       AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F)))
-
-##Nested model for Number_antibioticCourses_priorstudystart
-pABXprior<- lrtest (lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
-                               AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F),
-                       lmer (data = BC_dist.stool, rank (BC_dist) ~ AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
+print(summary (lmer (data = BC_dist.stool, rank (BC_dist) ~  AntibioticBurden_total + (1 | Patient_number) + (1 | Group), REML = F)))
 
 ##Nested model for AntibioticBurden_total
-pABXburden<- lrtest (lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
-                              AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F),
-                      lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
-                               AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
-
-##Nested model for AntibioticBurden_iv
-pABXiv<- lrtest (lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
-                              AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F),
-                     lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
-                             AntibioticBurden_total + (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
-
-#how large is effect compared to individual variation?
-##simple lm 
-print(summary (lm (data = BC_dist.stool, rank (dist) ~ Number_antibioticCourses_priorstudystart + 
-                     AntibioticBurden_total + AntibioticBurden_iv )))
+pABXburden<- lrtest (lmer (data = BC_dist.stool, rank (BC_dist) ~ AntibioticBurden_total + (1 | Patient_number) + (1 | Group), REML = F),
+                      lmer (data = BC_dist.stool, rank (BC_dist) ~ (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
 
 ##How much variance is explained by each?
-mm.pig <- lmer (data = BC.Inf, rank (dist) ~ Same_Compartment + Same_Individual + Same_Infection_status + (1 | Pig_A) + (1 | Pig_B), REML = F)
-varianceTable <- as.data.frame(anova (mm.pig))
-varianceTable$VarExplained <- varianceTable$`Sum Sq` / sum (resid (mm.pig)^2)
+mm.ABX <- lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
+                  AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F)
+varianceTable <- as.data.frame(anova (mm.ABX))
+varianceTable$VarExplained <- varianceTable$`Sum Sq` / sum (resid (mm.ABX)^2)
 varianceTable$Variable <- rownames(varianceTable)
 varianceTable[4, ] <- c(rep(1, 4), (1 - sum(varianceTable$VarExplained)), "Residuals")
 varianceTable$VarExplained <- as.numeric(varianceTable$VarExplained)
@@ -1021,13 +1002,14 @@ varianceTable$VarLabels <- scales::percent(varianceTable$VarExplained)
 print(varianceTable)
 
 #Percentage of Variance explained
-pVarExpl.pig <- ggplot (data = varianceTable) +
+require("ggrepel")
+pVarExpl <- ggplot (data = varianceTable) +
   geom_bar(aes (x = "", y = VarExplained, fill = Variable), width = 1, stat = "identity", color = "black") +
   coord_polar("y", start = 0) +
-  scale_fill_manual(values = c("white", "#0072B2",  "#CC79A7", "#44AA99"),
-                    labels = c("Residuals", "Compartment", "Individual", "Infection status"))+
+  scale_fill_manual(values = c( "#DDCC77", "#CC6677","#117733","white"),
+                    labels = c( "ABX iv burden", "ABX burden", "ABX prior Visit", "Residuals"))+
   theme_void() +
-  geom_text_repel(aes(x=1.65, y = VarExplained/2, label=VarLabels))
+  geom_text_repel(aes(x=1.3, y = VarExplained/2, label=VarLabels))
 
 ##Correlation with training 
 ##Frequency
@@ -1143,7 +1125,7 @@ BC_dist.stool%>%
   ggplot(aes(x= Number_antibioticCourses_duringstudy, y= BC_dist, color= Group))+
   geom_point(size=2.5, aes(shape= Group, fill= Patient_number), color= "black")+
   scale_shape_manual(values = c(21, 22, 24))+ 
-  xlab("Number of antibiotic courses during study start")+
+  xlab("Number of antibiotic courses during study")+
   ylab("Bray-Curtis dissimilarity (Stool microbiome)")+
   labs(tag= "B)")+
   theme_classic()+

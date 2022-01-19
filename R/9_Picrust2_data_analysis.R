@@ -1008,7 +1008,19 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q7_path_pred_heatmap_
 ####Based on the dominance make new PCo for stool 
 ##Bray-Curtis
 PS4.stool.2<- PS4.stool
-PS4.stool.2@sam_data<- sample_data(tmp.stool)
+top.stool%>%
+  column_to_rownames("SampleID")-> tmp
+
+##Add antibiotic burden
+antibioticB%>%
+  dplyr::filter(material== "Stool")%>%
+  dplyr::select(c(SampleID, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  column_to_rownames("SampleID")-> ABX.stool
+  
+tmp<- cbind(tmp, ABX.stool)
+
+PS4.stool.2@sam_data<- sample_data(tmp)
 
 BC_dist<- phyloseq::distance(PS4.stool.2,
                              method="bray", weighted=F)
@@ -1016,8 +1028,8 @@ ordination<- ordinate(PS4.stool.2,
                       method="PCoA", distance= BC_dist)
 
 ##Permanova
-BC.test.stool2<- vegan::adonis(BC_dist~ Phenotype_severity+ Mutation_severity + Genus + sex + age +  Visit + BMI,
-                                permutations = 999, data = tmp.stool, na.action = F, strata = tmp.stool$Patient_number)
+BC.test.stool2<- vegan::adonis2(BC_dist~ Phenotype_severity+ Genus + AntibioticBurden_total + sex + age +  Visit + BMI,
+                                permutations = 999, data = tmp, na.action = F)
 
 kable(BC.test.stool2$aov.tab)
 
