@@ -320,7 +320,7 @@ library("pheatmap")
 library(dendextend)
 ###In order to add the annotations in good order, 
 #it is necessary to have the same order in the intersection matrix and in the annotation table
-P.clust <- hclust(dist(t(tmp)), method = "complete") ##Dendogram
+P.clust <- hclust(dist(t(tmp)), method = "ward.D") ##Dendogram
 
 as.dendrogram(P.clust) %>%
   plot(horiz = T)
@@ -667,6 +667,29 @@ BC_dist.sputum%>%
                                   Group == "V2_V3" ~ 19))-> BC_dist.sputum
 
 saveRDS(BC_dist.sputum, "~/CF_project/exercise-cf-intervention/data/BC_dist.sputum.rds")
+
+##Is antibiotic burden differences impacting in composition by patient? 
+### Linear model test
+require("lmtest")
+require("lme4")
+test<- BC_dist.sputum[!is.na(BC_dist.sputum$AntibioticBurden_total),]
+
+print(summary (lmer (data = test, rank (BC_dist) ~  AntibioticBurden_total + 
+                       (1 | Patient_number) + (1 | Group), REML = F)))
+
+##Nested model for AntibioticBurden_total
+pABXburden<- lrtest (lmer (data = test, rank (BC_dist) ~ AntibioticBurden_total + (1 | Patient_number) + (1 | Group), REML = F),
+                     lmer (data = test, rank (BC_dist) ~ (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
+
+##How much variance is explained by each?
+mm.ABX <- lmer (data = test, rank (BC_dist) ~ AntibioticBurden_total  + (1 | Patient_number) + (1 | Group), REML = F)
+varianceTable <- as.data.frame(anova (mm.ABX))
+varianceTable$VarExplained <- varianceTable$`Sum Sq` / sum (resid (mm.ABX)^2)
+varianceTable$Variable <- rownames(varianceTable)
+varianceTable[2, ] <- c(rep(1), (1 - sum(varianceTable$VarExplained)), "Residuals")
+varianceTable$VarExplained <- as.numeric(varianceTable$VarExplained)
+varianceTable$VarLabels <- scales::percent(varianceTable$VarExplained)
+print(varianceTable)
 
 #### By visit
 BC_dist.sputum%>% 
