@@ -973,10 +973,10 @@ BC_dist.stool%>%
                             "V2_V3" = "V2 to V3",
                             "V1_V3" = "V1 to V3"))->E
 
-f<-ggarrange(D, E, ncol=1, nrow=2, common.legend = TRUE, legend="right")
+f<-ggarrange(D, E, ncol=1, nrow=2, common.legend = TRUE, legend="right") ##Final figure at script 9
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.pdf", plot = f, width = 10, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", plot = f, width = 10, height = 8)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.pdf", plot = f, width = 10, height = 8)
+#ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Stool.png", plot = f, width = 10, height = 8)
 
 rm(D,E,f)
 
@@ -984,19 +984,21 @@ rm(D,E,f)
 ### Linear model test
 require("lmtest")
 require("lme4")
-print(summary (lmer (data = BC_dist.stool, rank (BC_dist) ~  AntibioticBurden_total + (1 | Patient_number) + (1 | Group), REML = F)))
+test<- BC_dist.stool[!is.na(BC_dist.stool$AntibioticBurden_total),]
+
+print(summary (lmer (data = test, rank (BC_dist) ~  AntibioticBurden_total + 
+                       (1 | Patient_number) + (1 | Group), REML = F)))
 
 ##Nested model for AntibioticBurden_total
-pABXburden<- lrtest (lmer (data = BC_dist.stool, rank (BC_dist) ~ AntibioticBurden_total + (1 | Patient_number) + (1 | Group), REML = F),
-                      lmer (data = BC_dist.stool, rank (BC_dist) ~ (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
+pABXburden<- lrtest (lmer (data = test, rank (BC_dist) ~ AntibioticBurden_total + (1 | Patient_number) + (1 | Group), REML = F),
+                      lmer (data = test, rank (BC_dist) ~ (1 | Patient_number) + (1 | Group), REML = F))$'Pr(>Chisq)' [2]
 
 ##How much variance is explained by each?
-mm.ABX <- lmer (data = BC_dist.stool, rank (BC_dist) ~ Number_antibioticCourses_priorstudystart + 
-                  AntibioticBurden_total + AntibioticBurden_iv + (1 | Patient_number) + (1 | Group), REML = F)
+mm.ABX <- lmer (data = test, rank (BC_dist) ~ AntibioticBurden_total  + (1 | Patient_number) + (1 | Group), REML = F)
 varianceTable <- as.data.frame(anova (mm.ABX))
 varianceTable$VarExplained <- varianceTable$`Sum Sq` / sum (resid (mm.ABX)^2)
 varianceTable$Variable <- rownames(varianceTable)
-varianceTable[4, ] <- c(rep(1, 4), (1 - sum(varianceTable$VarExplained)), "Residuals")
+varianceTable[2, ] <- c(rep(1), (1 - sum(varianceTable$VarExplained)), "Residuals")
 varianceTable$VarExplained <- as.numeric(varianceTable$VarExplained)
 varianceTable$VarLabels <- scales::percent(varianceTable$VarExplained)
 print(varianceTable)

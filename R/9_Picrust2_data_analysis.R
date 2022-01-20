@@ -1028,13 +1028,13 @@ ordination<- ordinate(PS4.stool.2,
                       method="PCoA", distance= BC_dist)
 
 ##Permanova
-BC.test.stool2<- vegan::adonis2(BC_dist~ Phenotype_severity+ Genus + AntibioticBurden_total + sex + age +  Visit + BMI,
+BC.test.stool2<- vegan::adonis2(BC_dist~ Phenotype_severity+ Genus + sex + age +  Visit + BMI,
                                 permutations = 999, data = tmp, na.action = F)
 
-kable(BC.test.stool2$aov.tab)
+#kable(BC.test.stool2$aov.tab)
 
 ## Calculate multivariate dispersion (aka distance to the centroid)
-mvd<- vegan::betadisper(BC_dist, tmp.stool$Genus, type = "centroid")
+mvd<- vegan::betadisper(BC_dist, tmp$Genus, type = "centroid")
 mvd.perm<- vegan::permutest(mvd, permutations = 999)
 
 plot(mvd)
@@ -1050,7 +1050,7 @@ seg.data<-cbind(vectors[,1:3],centroids[rep(1:nrow(centroids),as.data.frame(tabl
 names(seg.data)<-c("Genus","v.PCoA1","v.PCoA2","PCoA1","PCoA2")
 seg.data$Genus<- NULL
 ##Add Line information for each sample 
-tmp.stool%>%
+tmp%>%
   dplyr::select(c(Genus, Visit, Patient_number, Phenotype_severity))%>%
   dplyr::mutate(Phenotype_severity = as.factor(Phenotype_severity))%>%
   rownames_to_column(var = "SampleID")%>%
@@ -1115,9 +1115,10 @@ BC_dist.stool%>%
 
 C<- ggarrange(A, B, ncol=1, nrow=2)
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig4_Stool.pdf", plot = C, width = 10, height = 12)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig4_Stool.png", plot = C, width = 10, height = 12)
-
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig4_Stool.pdf", plot = C, width = 10, height = 12, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig4_Stool.png", plot = C, width = 10, height = 12, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig4_Stool.svg", plot = C, width = 10, height = 12, dpi = 600)
+saveRDS(C, "CF_project/exercise-cf-intervention/figures/Fig4_Stool.rds") ## For later compilation
 rm(A, B, C)
 
 ##Dominant taxa for stool estimate change in relative abundance 

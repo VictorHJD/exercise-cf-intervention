@@ -42,6 +42,8 @@ pal.CF<- c("P1"="#1B9E77","P2"= "#D95F02","P3"= "#7570B3","P4"= "#E7298A","P5"= 
            "P11"= "#B2DF8A","P12"= "#33A02C","P13"= "#FB9A99","P14"="#E31A1C","P15"= "#FDBF6F",
            "P16"= "#FF7F00","P17"= "#CAB2D6","P18"= "#6A3D9A","P19"= "#FFFF99")
 
+dom.palette<- c( "Streptococcus"= "#925E9FFF", "Staphylococcus"= "#008B45FF", 
+                 "Stenotrophomonas"= "#B09C85FF", "Pseudomonas" = "#ED0000FF")
 ######Sputum###################
 sdt%>%
   dplyr::filter(Benzoase==1)%>%
@@ -92,10 +94,13 @@ sdt%>%
   stat_cor(method = "spearman", label.x = 3, label.y = 30)+ # Add sperman`s correlation coefficient
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")-> B
 
+A+
+  xlab(NULL)-> A
+
 C<- grid.arrange(A,B, heights = c(3, 2))
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.pdf", plot = C, width = 8, height = 10)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.png", plot = C, width = 8, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.pdf", plot = C, width = 8, height = 10, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Alpha_Lung_Sputum.png", plot = C, width = 8, height = 10, dpi = 600)
 
 rm(A,B,C)
 
@@ -285,9 +290,71 @@ top.sputum%>%
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal",
         axis.text.y = element_text(size = 9, face="italic", color="black")) -> A
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.pdf", plot = A, width = 10, height = 8)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.png", plot = A, width = 10, height = 8)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.pdf", plot = A, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.png", plot = A, width = 10, height = 8, dpi = 600)
 
+##Make a heatmap
+tmp<- as.data.frame(otu_table(tax_glom(PS4.sput, "Genus")))
+
+tmp1<- count.genus(PS4.sput.Gen, 1)
+
+tmp1%>%
+  ungroup()%>%
+  dplyr::select(c(Genus, ASV))%>%
+  unique()-> tmp1
+
+#tmp<- tmp[rownames(tmp) %in% tmp1$ASV, ] ##Subset just dominant genus for all samples
+
+tmp<- Rel.abund_fun(tmp) ##Transform into relative abundance 
+
+tmp%>%
+  rownames_to_column()%>%
+  dplyr::rename(ASV= rowname)%>%
+  left_join(tmp1, by="ASV")%>%
+  unite(ASV_Genus, c("ASV", "Genus"))%>%
+  column_to_rownames(var = "ASV_Genus")->tmp
+##Eliminate rows with zero
+tmp<- tmp[apply(tmp[,-1], 1, function(x) !all(x<0.9)),]
+
+library("pheatmap")
+library(dendextend)
+###In order to add the annotations in good order, 
+#it is necessary to have the same order in the intersection matrix and in the annotation table
+P.clust <- hclust(dist(t(tmp)), method = "complete") ##Dendogram
+
+as.dendrogram(P.clust) %>%
+  plot(horiz = T)
+
+P.col <- cutree(tree = P.clust, k = 2)
+P.col  <- data.frame(cluster = ifelse(test = P.col  == 1, yes = "cluster 1", no = "cluster 2"))
+P.col$SampleID <- rownames(P.col)
+P.col$SampleID<- NULL
+P.col<- cbind(P.col, top.sputum)
+
+col_groups <- P.col %>%
+  mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  mutate(Patient_number = fct_relevel(Patient_number, 
+                                      "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                      "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::select(c(SampleID, Patient_number,Genus)) ##Here It is possible to add the other characteristics
+
+row.names(col_groups)<- col_groups$SampleID
+
+col_groups$SampleID<- NULL
+
+colour_groups <- list(Patient_number= pal.CF, Genus= dom.palette)
+
+sput.heatmap <- pheatmap(tmp, cluster_rows = F, cluster_cols = T,
+                          color = colorRampPalette(c("white","#832424FF"))(50), #"#3A3A98FF",
+                          border_color = NA,
+                          annotation_col = col_groups, 
+                          annotation_colors = colour_groups,
+                          show_rownames = T,
+                          show_colnames = F)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.pdf", plot = sput.heatmap, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.png", plot = sput.heatmap, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.svg", plot = sput.heatmap, width = 10, height = 8, dpi = 600)
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.sput,
@@ -534,6 +601,64 @@ antibiotic%>%
 
 BC_dist.sputum%>%
   left_join(tmp2, by="Patient_number")-> BC_dist.sputum
+
+##Add total antibiotic burden
+antibioticB<- read.csv("~/CF_project/Metadata/antibioticBurden.csv")
+
+antibioticB%>%
+  dplyr::select(c(Comed_token, Antibiotic_until15daysbefore, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  #There is a duplicated P7V1, ask Rebecca which one is the correct one, for now eliminate one line 38 seems to be the problem
+  dplyr::slice(-38)%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  group_by(Patient_number)%>%
+  dplyr::select(c(Patient_number, Visit, AntibioticBurden_total))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::distinct()%>%
+  spread(Visit, AntibioticBurden_total)%>%
+  dplyr::mutate(V1_V2= V1 - V2)%>%
+  dplyr::mutate(V1_V3= V1 - V3)%>%
+  dplyr::mutate(V2_V3= V2 - V3)%>%
+  dplyr::select(c(Patient_number, V1_V2, V2_V3, V1_V3))%>%
+  pivot_longer(!Patient_number, names_to = "Group", values_to = "AntibioticBurden_total")%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::ungroup()%>%
+  dplyr::select(c(ID, AntibioticBurden_total))-> tmp2
+
+BC_dist.sputum%>%
+  left_join(tmp2, by="ID")-> BC_dist.sputum
+
+##Add total IV antibiotic burden
+antibioticB%>%
+  dplyr::select(c(Comed_token, Antibiotic_until15daysbefore, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  #There is a duplicated P7V1, ask Rebecca which one is the correct one, for now eliminate one line 38 seems to be the problem
+  dplyr::slice(-38)%>%
+  dplyr::mutate(Comed_token= gsub("^(.*)V", "\\1_V", Comed_token))%>%
+  separate(Comed_token, c("Patient_number", "Visit"))%>%
+  group_by(Patient_number)%>%
+  dplyr::select(c(Patient_number, Visit, AntibioticBurden_iv))%>%
+  dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
+                                             "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+                                             "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
+  dplyr::mutate(Visit = fct_relevel(Visit, "V1", "V2", "V3"))%>%
+  dplyr::distinct()%>%
+  spread(Visit, AntibioticBurden_iv)%>%
+  dplyr::mutate(V1_V2= V1 - V2)%>%
+  dplyr::mutate(V1_V3= V1 - V3)%>%
+  dplyr::mutate(V2_V3= V2 - V3)%>%
+  dplyr::select(c(Patient_number, V1_V2, V2_V3, V1_V3))%>%
+  pivot_longer(!Patient_number, names_to = "Group", values_to = "AntibioticBurden_iv")%>%
+  dplyr::mutate(ID= paste0(Patient_number, Group))%>%
+  dplyr::ungroup()%>%
+  dplyr::select(c(ID, AntibioticBurden_iv))-> tmp2
+
+BC_dist.sputum%>%
+  left_join(tmp2, by="ID")-> BC_dist.sputum
 
 ##Add a time between visits (Overall for know but ask values per patient per period)
 BC_dist.sputum%>%
