@@ -133,6 +133,15 @@ top.sputum%>%
   column_to_rownames(var = "SampleID")%>%
   cbind(y)-> tmp.sputum
 
+##Add antibiotic burden
+antibioticB%>%
+  dplyr::filter(material== "Sputum")%>%
+  dplyr::select(c(SampleID, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  column_to_rownames("SampleID")-> ABX.sputum
+
+tmp.sputum<- cbind(tmp.sputum, ABX.sputum)
+
 y<- sample_data(tmp.sputum)
 ##Stool
 ###Training information
@@ -149,13 +158,22 @@ sdt.stool%>%
                                               Mutation_severity == 1 ~ 0))%>%
   dplyr::mutate(sex = case_when(sex == 1  ~ 0,
                                 sex == 2 ~ 1))%>%
-  cbind(x)-> y
+  cbind(x)-> z
 
 ###Dominant taxa 
 top.stool%>%
   dplyr::select(c(SampleID, ASV:n))%>%
   column_to_rownames(var = "SampleID")%>%
-  cbind(y)-> tmp.stool
+  cbind(z)-> tmp.stool
+
+##Add antibiotic burden
+antibioticB%>%
+  dplyr::filter(material== "Stool")%>%
+  dplyr::select(c(SampleID, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  column_to_rownames("SampleID")-> ABX.stool
+
+tmp.stool<- cbind(tmp.stool, ABX.stool)
 
 z<- sample_data(tmp.stool)
 
@@ -244,8 +262,8 @@ plot_ordination(PS.KO.sputum, ordination = Ord.KO.sputum)+
   xlab(paste0("PCo 1 [", round(Ord.KO.sputum$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(Ord.KO.sputum$values[2,2]*100, digits = 2), "%]")) -> B
 
-BC.KO.sputum<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + Genus + sex + age +  Visit + BMI,
-                              permutations = 999, data = tmp.sputum, na.action = F, strata = tmp.sputum$Patient_number)
+BC.KO.sputum<- vegan::adonis2(BC_dist~ Phenotype_severity + Genus + sex + age +  Visit + BMI,
+                              permutations = 999, data = tmp.sputum, na.action = F)
 
 kable(BC.KO.sputum$aov.tab)#-> Report 
 
@@ -316,8 +334,8 @@ plot_ordination(PS.Path.sputum, ordination = Ord.path.sputum)+
   xlab(paste0("PCo 1 [", round(Ord.path.sputum$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(Ord.path.sputum$values[2,2]*100, digits = 2), "%]")) -> B
 
-BC.path.sputum<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + Genus + sex + age +  Visit + BMI,
-                             permutations = 999, data = tmp.sputum, na.action = F, strata = tmp.sputum$Patient_number)
+BC.path.sputum<- vegan::adonis2(BC_dist~ Phenotype_severity + Genus + sex + age +  Visit + BMI,
+                             permutations = 999, data = tmp.sputum, na.action = F)
 
 kable(BC.path.sputum$aov.tab)#-> Report 
 
@@ -381,10 +399,8 @@ ordination<- ordinate(PS4.sput.2,
                       method="PCoA", distance= BC_dist)
 
 ##Permanova
-BC.test.sputum2<- vegan::adonis(BC_dist~ Phenotype_severity+ Mutation_severity + Genus + sex + age +  Visit + BMI,
-                               permutations = 999, data = tmp.sputum, na.action = F, strata = tmp.sputum$Patient_number)
-
-kable(BC.test.sputum2$aov.tab)
+BC.test.sputum2<- vegan::adonis2(BC_dist~ Phenotype_severity + Genus + sex + age +  Visit + BMI,
+                               permutations = 999, data = tmp.sputum, na.action = F)
 
 ## Calculate multivariate dispersion (aka distance to the centroid)
 mvd<- vegan::betadisper(BC_dist, tmp.sputum$Genus, type = "centroid")
@@ -411,7 +427,6 @@ tmp.sputum%>%
   unique()%>%
   column_to_rownames(var = "SampleID")%>%
   cbind(seg.data)-> seg.data
-
 
 ##Plot BC
 ggplot() + 
@@ -540,15 +555,62 @@ BC_dist.sputum%>%
   stat_pvalue_manual(stats.test, hide.ns = F, step.increase = 0.05,
                      tip.length = 0, label = "{p.adj} {p.adj.signif}")->B
 
-C<- ggarrange(A, B, ncol=1, nrow=2, common.legend = F)
+###Incorporate figure from Rebecca linking alpha diversity and dominant groups 
+#### Chao1 By Dominant
+tmp.sputum%>% 
+  wilcox_test(chao1 ~ Genus)%>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance()%>%
+  add_xy_position(x = "Genus")-> stats.test
+
+tmp.sputum %>%
+  ggplot(aes(x= Genus, y= chao1, fill= Genus))+
+  scale_fill_manual(values = dom.palette)+
+  geom_boxplot()+
+  geom_point(position=position_jitterdodge())+
+  labs(tag= "C)", y = "Richness (Chao1 index)", fill = "Genus")+
+  theme_classic()+
+  guides(fill = "none")+
+  theme(text = element_text(size=16), axis.text.x = element_text(face = "italic", colour = "black"),
+        axis.title.x = element_blank(),legend.position="none")+
+  annotate("text", x = 3, y = 127, label = '"*"', parse = TRUE)+
+  annotate("segment", x = 2, xend = 4, y = 125, yend = 125, colour = "black")-> C1
+
+##Shannon by dominant
+tmp.sputum%>% 
+  wilcox_test(diversity_shannon ~ Genus)%>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance()%>%
+  add_xy_position(x = "Genus")-> stats.test
+
+tmp.sputum %>%
+  ggplot(aes(x= Genus, y= diversity_shannon, fill= Genus))+
+  scale_fill_manual(values = dom.palette)+
+  geom_boxplot()+
+  geom_point(position=position_jitterdodge())+
+  labs(y = "Diversity (Shannon index)", fill = "Genus")+
+  theme_classic()+
+  guides(fill = "none")+
+  theme(text = element_text(size=16), axis.text.x = element_text(face = "italic", colour = "black"),
+        axis.title.x = element_blank(),legend.position="none")+
+  annotate("text", x = 2.5, y = 4, label = '"*"', parse = TRUE)+
+  annotate("segment", x = 1, xend = 4, y = 3.9, yend = 3.9, colour = "black")+
+  annotate("text", x = 3, y = 4.2, label = '"*"', parse = TRUE)+
+  annotate("segment", x = 2, xend = 4, y = 4.1, yend = 4.1, colour = "black")-> C2
+
+C<- ggarrange(C1, C2, ncol=2, nrow=1, common.legend = F)
+
+
+C<- ggarrange(A, B, C, ncol=1, nrow=3, common.legend = F)
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3_Sput.pdf", plot = C, width = 10, height = 12)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3_Sput.png", plot = C, width = 10, height = 12)
 
-C<- ggarrange(A2, B, ncol=1, nrow=2, common.legend = F)
+C<- ggarrange(A2, B, C, ncol=1, nrow=3, common.legend = F)
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3.2_Sput.pdf", plot = C, width = 10, height = 12)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3.2_Sput.png", plot = C, width = 10, height = 12)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3.2_Sput.pdf", plot = C, width = 16, height = 16, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3.2_Sput.png", plot = C, width = 16, height = 16, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3.2_Sput.svg", plot = C, width = 16, height = 16, dpi = 600)
 
 ##Extract distance to the centroid for each samples 
 centroid.dist<- data.frame(mvd$distances)
@@ -878,8 +940,8 @@ plot_ordination(PS.KO.stool, ordination = Ord.KO.stool)+
   xlab(paste0("PCo 1 [", round(Ord.KO.stool$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(Ord.KO.stool$values[2,2]*100, digits = 2), "%]")) -> B
 
-BC.KO.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + Genus + sex + age +  Visit + BMI,
-                             permutations = 999, data = tmp.stool, na.action = F, strata = tmp.stool$Patient_number)
+BC.KO.stool<- vegan::adonis2(BC_dist~ Phenotype_severity + Genus + sex + age +  Visit + BMI,
+                             permutations = 999, data = tmp.stool, na.action = F)
 
 kable(BC.KO.stool$aov.tab)#-> Report 
 
@@ -950,8 +1012,8 @@ plot_ordination(PS.Path.stool, ordination = Ord.path.stool)+
   xlab(paste0("PCo 1 [", round(Ord.path.stool$values[1,2]*100, digits = 2), "%]"))+
   ylab(paste0("PCo 2 [", round(Ord.path.stool$values[2,2]*100, digits = 2), "%]")) -> B
 
-BC.path.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + Genus + sex + age +  Visit + BMI,
-                               permutations = 999, data = tmp.stool, na.action = F, strata = tmp.stool$Patient_number)
+BC.path.stool<- vegan::adonis2(BC_dist~ Phenotype_severity+ Genus + sex + age +  Visit + BMI,
+                               permutations = 999, data = tmp.stool, na.action = F)
 
 kable(BC.path.stool$aov.tab)#-> Report 
 
@@ -1008,19 +1070,7 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q7_path_pred_heatmap_
 ####Based on the dominance make new PCo for stool 
 ##Bray-Curtis
 PS4.stool.2<- PS4.stool
-top.stool%>%
-  column_to_rownames("SampleID")-> tmp
-
-##Add antibiotic burden
-antibioticB%>%
-  dplyr::filter(material== "Stool")%>%
-  dplyr::select(c(SampleID, AntibioticBurden_total, AntibioticBurden_iv))%>%
-  dplyr::distinct()%>%
-  column_to_rownames("SampleID")-> ABX.stool
-  
-tmp<- cbind(tmp, ABX.stool)
-
-PS4.stool.2@sam_data<- sample_data(tmp)
+PS4.stool.2@sam_data<- sample_data(tmp.stool)
 
 BC_dist<- phyloseq::distance(PS4.stool.2,
                              method="bray", weighted=F)
@@ -1029,7 +1079,7 @@ ordination<- ordinate(PS4.stool.2,
 
 ##Permanova
 BC.test.stool2<- vegan::adonis2(BC_dist~ Phenotype_severity+ Genus + sex + age +  Visit + BMI,
-                                permutations = 999, data = tmp, na.action = F)
+                                permutations = 999, data = tmp.stool, na.action = F)
 
 #kable(BC.test.stool2$aov.tab)
 

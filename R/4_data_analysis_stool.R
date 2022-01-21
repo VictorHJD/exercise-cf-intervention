@@ -670,8 +670,8 @@ tmp<- row.names(PS4.stool@sam_data)
 
 tmp<- sdt[rownames(sdt)%in%tmp, ]
 
-BC.test.stool<- vegan::adonis(BC_dist~ Phenotype_severity + Mutation_severity + sex + age +  Visit + BMI,
-                              permutations = 999, data = tmp, na.action = F, strata = tmp$Patient_number)
+BC.test.stool<- vegan::adonis2(BC_dist~ Phenotype_severity + sex + age +  Visit + BMI,
+                              permutations = 999, data = tmp, na.action = F)
 
 kable(BC.test.stool$aov.tab)
 

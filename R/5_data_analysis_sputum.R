@@ -404,8 +404,8 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Severity.
 rm(PCo.Sev.Sputum, PCo.Sev.Stool, plot)
 
 ##Stratified for Patient number 
-BC.test.sputum<- vegan::adonis(BC_dist~ Phenotype_severity+ Mutation_severity + sex + age +  Visit + BMI,
-                               permutations = 999, data = sdt.sputum, na.action = F, strata = sdt.sputum$Patient_number)
+BC.test.sputum<- vegan::adonis2(BC_dist~ Phenotype_severity + sex + age +  Visit + BMI,
+                               permutations = 999, data = sdt.sputum, na.action = F)
 
 kable(BC.test.sputum$aov.tab)
 ##BMI significant predictor explaining 4% of the variation

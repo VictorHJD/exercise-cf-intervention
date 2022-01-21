@@ -104,8 +104,9 @@ x.V1V3%>%
 x.V1V3$SampleID<- NULL
 
 ##Use severity as case-control variable
+x$Mutation_severity<- NULL
 x%>%
-  dplyr::relocate(Mutation_severity)%>%
+  dplyr::relocate(sex)%>%
   dplyr::rename(Status= Phenotype_severity)-> x.all
 
 x.all$SampleID<- gsub("V\\d+", "\\1", x.all$SampleID)
@@ -116,16 +117,14 @@ x.all$SampleID<- as.numeric(x.all$SampleID)
 x.all%>%
   dplyr::rename(Patient = SampleID)-> x.all ###Without technical confunders
 
-###Add Antibiotic intake information 
+###Add Antibiotic burden information 
 
-antibiotic<- read.csv("~/CF_project/Metadata/sample_data_indexed_antibiotics.csv")
+antibioticB%>%
+  dplyr::filter(material== "Stool")%>%
+  dplyr::select(c(SampleID, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  column_to_rownames("SampleID")-> tmp2
 
-antibiotic%>%
-  dplyr::filter(material=="Stool")%>%
-  dplyr::select(c(SampleID, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
-                  Number_iv_courses_priorstudy, Number_iv_courses_duringstudy))-> tmp2
-
-rownames(tmp2)<- tmp2$SampleID
 tmp2$SampleID<-NULL
 
 x.all<- cbind(x.all, tmp2)
@@ -152,7 +151,7 @@ Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable,
                                               "ppFEV1",  "Peak_power",  "Dist" ,  "DFr", 
                                               "DNAse_inh","heart_med", "Montelukast", "Number_iv_courses_priorstudy",
                                               "Number_iv_courses_duringstudy",
-                                              "Nutrition_supplementation", "Polyethylenglykol_Movicol", "Mutation_severity"))
+                                              "Nutrition_supplementation", "Polyethylenglykol_Movicol"))
                                                
 ##Edit cun plots
 Cun.all+
@@ -338,6 +337,8 @@ x.V1V3%>%
 x.V1V3$SampleID<- NULL
 
 ##Use severity as case-control variable
+x$Mutation_severity<- NULL
+
 x%>%
   dplyr::relocate(Phenotype_severity)%>%
   dplyr::rename(Status= Phenotype_severity)-> x.all
@@ -350,14 +351,14 @@ x.all$SampleID<- as.numeric(x.all$SampleID)
 x.all%>%
   dplyr::rename(Patient = SampleID)-> x.all ###Without technical confunders
 
-##Add antibiotic data 
+###Add Antibiotic burden information 
 
-antibiotic%>%
-  dplyr::filter(material=="Sputum")%>%
-  dplyr::select(c(SampleID, Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy,
-                  Number_iv_courses_priorstudy, Number_iv_courses_duringstudy))-> tmp2
+antibioticB%>%
+  dplyr::filter(material== "Sputum")%>%
+  dplyr::select(c(SampleID, AntibioticBurden_total, AntibioticBurden_iv))%>%
+  dplyr::distinct()%>%
+  column_to_rownames("SampleID")-> tmp2
 
-rownames(tmp2)<- tmp2$SampleID
 tmp2$SampleID<-NULL
 
 x.all<- cbind(x.all, tmp2)
@@ -384,12 +385,12 @@ Cun.all<- BuildHeatmap(MD.all, cuneiform = F, coloring = 1)
 Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable, 
                                     levels= c("sex", "Length", "Weight", "FFM_Charatsi",
                                               "ppFVC","Peak_power", "CHO", "Lipids",
-                                              "Macrolides_po", "Montelukast", "Number_iv_courses_priorstudy",
-                                              "Number_iv_courses_duringstudy", "Number_antibioticCourses_duringstudy",
-                                             "Nutrition_supplementation", 
-                                             "PPI", "Steroids_inh", "Pseudomonas_status"))
-##Edit cun plots
+                                              "Macrolides_po", "Montelukast", "Nutrition_supplementation", 
+                                              "PPI", "Steroids_inh", "Pseudomonas_status", 
+                                              "AntibioticBurden_total", "AntibioticBurden_iv"))
 
+  
+##Edit cun plots
 Cun.all+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
@@ -401,16 +402,17 @@ Cun.all+
         axis.text.y = element_text(size = 12, face="italic", color="black"))+
   scale_x_discrete(labels=c("Peak_power" = "Peak power" , "FFM_Charatsi" = "FFM (Charatsi kg)",
                               "sex" = "Sex", "Pseudomonas_status"= "Pseudomonas culture",
-                            "Number_iv_courses_priorstudy" = "iv Antibiotic courses (prior)",
-                            "Number_iv_courses_duringstudy" = "iv Antibiotic courses (during)",
-                            "Number_antibioticCourses_duringstudy" = "Oral Antibiotic courses (during)",
+                            "AntibioticBurden_total" = "Total Antibiotic burden",
+                            "AntibioticBurden_iv" = "iv Antibiotic burden",
                              "Nutrition_supplementation"="Nutrition supp.", "Steroids_inh"= "Steroids (inh)",
                              "Macrolides_po" = "Macrolides (oral)"))-> B
 
 plot<-ggarrange(A,  B,  ncol=1, nrow=2, common.legend = T, legend="right")
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.png", plot = plot, width = 15, height = 25)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.pdf", plot = plot, width = 15, height = 25)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.png", plot = plot, width = 15, height = 25, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.pdf", plot = plot, width = 15, height = 25, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.svg", plot = plot, width = 15, height = 25, dpi = 600)
+
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.png", plot = A, width = 15, height = 25)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.pdf", plot = A, width = 15, height = 25)
