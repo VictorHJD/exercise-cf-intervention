@@ -985,9 +985,7 @@ BC_dist.sputum%>%
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> BC_dist.sputum
 BC_dist.sputum%>%
-  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group, 
-                Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy, 
-                Number_iv_courses_priorstudy, Number_iv_courses_duringstudy)%>%
+  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group)%>%
   dplyr::filter(complete.cases(.))-> tmp
 
 colnames(tmp)<- c("ppFVC", "Trainingfrequency", "Trainingtime", "ppFEV1", "BC_dist", "Patient_number", "Group", 
@@ -1000,7 +998,7 @@ qqPlot(BC_dist.sputum$ppFEV1)
 qqPlot(BC_dist.sputum$ppFVC)
 
 ##Model selection do it with glm
-full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC*ab_prior*ab_during*iv_prior*iv_during, data = tmp) ##Full model
+full.model<- glm(BC_dist ~ Trainingfrequency*Trainingtime*ppFEV1*ppFVC, data = tmp) ##Full model
 # Stepwise regression model
 step.model <- MASS::stepAIC(full.model, direction = "both", 
                             trace = FALSE)
@@ -1065,7 +1063,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(tr3, p.adjust = "BH", vline.color = "gray",
+B<- plot_model(full.model, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 

@@ -435,10 +435,10 @@ ggplot() +
   geom_segment(data=centroids[,1:4], aes(x=centroids[1,2], y=centroids[1,3], xend=centroids[2,2], yend=centroids[2,3]), linetype = 2, color=" gray")+ 
   geom_point(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,shape=Phenotype_severity, fill= Genus),size=3) +
   #geom_point(size=3, aes(fill= Patient_number, shape= as.factor(Phenotype_severity)), color= "black")+
-  scale_shape_manual(values = c(25, 24), labels = c("Low (ppFEV1 > 70% at V1)", "High (ppFEV1 < 70% at V1)"))+
+  scale_shape_manual(values = c(25, 24), labels = c("Mild (ppFEV1 > 70% at V1)", "Moderate (ppFEV1 40-70% at V1)"))+
   #scale_shape_manual(values = c(21, 24, 22))+
-  scale_fill_manual(values = tax.palette)+
-  scale_color_manual(values = tax.palette)+
+  scale_fill_manual(values = dom.palette)+
+  scale_color_manual(values = dom.palette)+
   stat_ellipse(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,color= Genus))+
   labs(title = "Bray-Curtis dissimilarity",tag= "A)")+
   guides(fill = guide_legend(override.aes=list(shape=c(21))), color= F)+
@@ -523,6 +523,8 @@ p2<- insert_yaxis_grob(p1, yplot, grid::unit(.25, "null"), position = "right")
 A2<- ggdraw(p2)
 
 #### By visit
+BC_dist.sputum<- readRDS("~/CF_project/exercise-cf-intervention/data/BC_dist.sputum.rds")
+
 BC_dist.sputum%>% 
   wilcox_test(BC_dist ~ Group)%>%
   adjust_pvalue(method = "BH") %>%
@@ -547,7 +549,7 @@ BC_dist.sputum%>%
   labs(tag= "B)", caption = get_pwc_label(stats.test), fill = "Patient")+
   scale_fill_manual(values = pal.CF)+
   theme_classic()+
-  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6, size= 10), color= "none")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 11, size= 10), color= "none")+
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")+
   scale_x_discrete(labels=c("V1_V2" =  "V1 to V2", 
                             "V2_V3" = "V2 to V3",
