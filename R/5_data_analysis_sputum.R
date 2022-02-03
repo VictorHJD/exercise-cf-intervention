@@ -1063,7 +1063,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(full.model, p.adjust = "BH", vline.color = "gray",
+B<- plot_model(step.model, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 
@@ -1077,7 +1077,7 @@ B<- plot_model(full.model, p.adjust = "BH", vline.color = "gray",
                                 "Trainingfrequency:ppFEV1:ppFVC"= "(Frequency*ppFEV1)*ppFVC", 
                                 "Trainingtime:ppFEV1:ppFVC"= "(Time*ppFEV1)*ppFVC",
                                 "Trainingfrequency:Trainingtime:ppFEV1:ppFVC"= "(Frequency*Time*ppFEV1)*ppFVC"))+
-  scale_y_continuous(limits = c(-0.4, 0.4))+
+  scale_y_continuous(limits = c(-0.6, 0.7))+
   geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
   labs(title = NULL, tag= "B)")+
   theme_classic()+
@@ -1089,6 +1089,12 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Tr
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q2_Beta_div_Sputum_Training_Effect_Ranges.pdf", plot = C, width = 8, height = 8)
 
 rm(A, B, C)
+
+##Special case for Stool and Sputum models
+C<-ggarrange(A, B, ncol=1, nrow=2)
+
+ggsave(file = "CF_project/exercise-cf-intervention/figures/BC_Training_Effect_Ranges.png", plot = C, width = 8, height = 8, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/BC_Training_Effect_Ranges.pdf", plot = C, width = 8, height = 8, dpi = 600)
 
 ##Test predictive value of BC differences within patient to lung function measurements Delta ppFEV1/ppFVC between visits
 ##Model selection do it with glm

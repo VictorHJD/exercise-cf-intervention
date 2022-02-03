@@ -1239,19 +1239,19 @@ colnames(BC_stool)<-  gsub("A", "\\1", colnames(BC_stool))
 saveRDS(BC_stool, "~/CF_project/exercise-cf-intervention/data/BC_stool_matrix.rds")
 
 ###Mixed effect models 
+BC_dist.stool<- readRDS("~/CF_project/exercise-cf-intervention/data/BC_dist.stool.rds")
+
 BC_dist.stool%>%
   dplyr::mutate(Patient_number = fct_relevel(Patient_number, 
                                              "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
                                              "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))-> BC_dist.stool
 ##Check for complete cases
 BC_dist.stool%>%
-  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group, 
-                Number_antibioticCourses_priorstudystart, Number_antibioticCourses_duringstudy, 
-                Number_iv_courses_priorstudy, Number_iv_courses_duringstudy)%>%
+  dplyr::select(ppFVC, Trainingfrequency, Trainingtime, ppFEV1, BC_dist, Patient_number, Group)%>%
   dplyr::filter(complete.cases(.))-> tmp
 
-colnames(tmp)<- c("ppFVC", "Trainingfrequency", "Trainingtime", "ppFEV1", "BC_dist", "Patient_number", "Group", 
-                  "ab_prior", "ab_during", "iv_prior", "iv_during")
+#colnames(tmp)<- c("ppFVC", "Trainingfrequency", "Trainingtime", "ppFEV1", "BC_dist", "Patient_number", "Group", 
+#                  "ab_prior", "ab_during", "iv_prior", "iv_during")
 
 ##qqPlots (Check whther our variables are normaly distributed)
 qqPlot(BC_dist.stool$BC_dist)
@@ -1345,7 +1345,7 @@ A+
         text = element_text(size=16))-> A
 
 ##PLot model  
-B<- plot_model(tr4, p.adjust = "BH", vline.color = "gray",
+A<- plot_model(step.model, p.adjust = "BH", vline.color = "gray",
                axis.labels = c( "Trainingfrequency"= "Frequency",
                                 "Trainingtime" = "Time", 
                                 "Trainingfrequency:Trainingtime" = "Frequency*Time", 
@@ -1359,9 +1359,9 @@ B<- plot_model(tr4, p.adjust = "BH", vline.color = "gray",
                                 "Trainingfrequency:ppFEV1:ppFVC"= "(Frequency*ppFEV1)*ppFVC", 
                                 "Trainingtime:ppFEV1:ppFVC"= "(Time*ppFEV1)*ppFVC",
                                 "Trainingfrequency:Trainingtime:ppFEV1:ppFVC"= "(Frequency*Time*ppFEV1)*ppFVC"))+
-  scale_y_continuous(limits = c(-0.4, 0.4))+
+  scale_y_continuous(limits = c(-0.4, 0.7))+
   geom_point(shape= 21, size=2.5, aes(fill= group), color= "black")+
-  labs(title = NULL, tag= "B)")+
+  labs(title = NULL, tag= "A)")+
   theme_classic()+
   theme(text = element_text(size=16))
   
