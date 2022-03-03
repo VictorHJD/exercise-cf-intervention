@@ -144,7 +144,7 @@ MD.all<- MetaDeconfound(featureMat = y.all, metaMat = x.all, nnodes = 25, random
 #Cun.V1V2<- BuildHeatmap(MD.V1V2, cuneiform = T, coloring = 1)
 #Cun.V2V3<- BuildHeatmap(MD.V2V3, cuneiform = T, coloring = 1)
 #Cun.V1V3<- BuildHeatmap(MD.V1V3, cuneiform = T, coloring = 1)
-Cun.all<- BuildHeatmap(MD.all, cuneiform = F, coloring = 1)
+Cun.all<- BuildHeatmap(MD.all, cuneiform = T, coloring = 1)
 
 Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable, 
                                     levels= c("sex","Length","Weight", "FFM_Charatsi", 
@@ -380,7 +380,7 @@ MD.all<- MetaDeconfound(featureMat = y.all, metaMat = x.all, nnodes = 25, random
 #Cun.V1V2<- BuildHeatmap(MD.V1V2, cuneiform = T, coloring = 1)
 #Cun.V2V3<- BuildHeatmap(MD.V2V3, cuneiform = T, coloring = 1)
 #Cun.V1V3<- BuildHeatmap(MD.V1V3, cuneiform = T, coloring = 1)
-Cun.all<- BuildHeatmap(MD.all, cuneiform = F, coloring = 1)
+Cun.all<- BuildHeatmap(MD.all, cuneiform = T, coloring = 1)
 
 Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable, 
                                     levels= c("sex", "Length", "Weight", "FFM_Charatsi",
@@ -394,7 +394,7 @@ Cun.all$data$metaVariable <- factor(Cun.all$data$metaVariable,
 Cun.all+
   xlab("Variables")+
   ylab("ASVs Genus-level")+
-  labs(title = "MetaDeconfoundR summarizing (Sputum Microbiome)",tag = "B)",
+  labs(title = "MetaDeconfoundR summarizing (Sputum Microbiome)",
        fill= "Effect Size \n (Cliff's Delta)", shape= "Confounding status")+
   theme(legend.key = element_rect(color = "black"))+
   theme(axis.text.x = element_text(size = 12, angle = 90, face="bold", color="black"),
@@ -413,12 +413,15 @@ ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_S
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.pdf", plot = plot, width = 15, height = 25, dpi = 600)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool_Sputum.svg", plot = plot, width = 15, height = 25, dpi = 600)
 
+##Store them separately for crafting
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.png", plot = A, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.pdf", plot = A, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.svg", plot = A, width = 10, height = 10)
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.png", plot = A, width = 15, height = 25)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Stool.pdf", plot = A, width = 15, height = 25)
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Sputum.png", plot = B, width = 15, height = 25)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Sputum.pdf", plot = B, width = 15, height = 25)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Sputum.png", plot = B, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Sputum.pdf", plot = B, width = 10, height = 10)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Q6_Deconfound_Sputum.svg", plot = B, width = 10, height = 10)
 
 #Cun.V1V2+
 #  xlab("Variables")+
