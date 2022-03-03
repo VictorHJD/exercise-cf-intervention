@@ -42,6 +42,11 @@ pal.CF<- c("P1"="#1B9E77","P2"= "#D95F02","P3"= "#7570B3","P4"= "#E7298A","P5"= 
            "P11"= "#B2DF8A","P12"= "#33A02C","P13"= "#FB9A99","P14"="#E31A1C","P15"= "#FDBF6F",
            "P16"= "#FF7F00","P17"= "#CAB2D6","P18"= "#6A3D9A","P19"= "#FFFF99")
 
+pal.CF.spu<- c("P2"= "#D95F02","P3"= "#7570B3","P4"= "#E7298A","P5"= "#66A61E",
+           "P6"="#E6AB02","P7"= "#A6761D","P8"= "#666666","P9"= "#A6CEE3","P10"= "#1F78B4",
+           "P11"= "#B2DF8A","P12"= "#33A02C","P14"="#E31A1C","P15"= "#FDBF6F",
+           "P17"= "#CAB2D6","P18"= "#6A3D9A")
+
 dom.palette<- c( "Streptococcus"= "#925E9FFF", "Staphylococcus"= "#008B45FF", 
                  "Stenotrophomonas"= "#B09C85FF", "Pseudomonas" = "#ED0000FF")
 ######Sputum###################
@@ -276,12 +281,12 @@ top.sputum%>%
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(y= reorder(Genus, n), x= ppFEV1))+
   geom_point(shape= 21, aes(fill= Patient_number, size = Abundance), color= "black", alpha= 0.75)+
-  scale_fill_manual(values = pal.CF)+
+  scale_fill_manual(values = pal.CF.spu)+
   scale_size(range = c(.1, 10))+
   theme_bw()+
-  labs(fill = "Patient", size = "Rel. abund (%)", tag = "A)")+
+  labs(fill = "Patient", size = "Rel. abund (%)", tag = "E)")+
   labs()+
-  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 6, size= 10), size= guide_legend(nrow = 2), color= "none")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21), size= 3), ncol = 6, size= 10), size= guide_legend(nrow = 2), color= "none")+
   facet_wrap(~Visit, scales= "free_x", nrow=1)+
   scale_x_continuous(breaks = c(20, 40, 60, 80, 100),limits = c(20, 100))+
   ylab("Dominant bacterial genus")+
@@ -292,6 +297,9 @@ top.sputum%>%
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.pdf", plot = A, width = 10, height = 8, dpi = 600)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.png", plot = A, width = 10, height = 8, dpi = 600)
+
+#ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_E.png", plot = A, width = 10, height = 8, dpi = 600)
+#ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_E.svg", plot = A, width = 10, height = 8, dpi = 600)
 
 ##Make a heatmap
 tmp<- as.data.frame(otu_table(tax_glom(PS4.sput, "Genus")))

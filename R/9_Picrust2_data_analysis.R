@@ -602,12 +602,26 @@ tmp.sputum %>%
 
 C<- ggarrange(C1, C2, ncol=2, nrow=1, common.legend = F)
 
+C1+
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())-> C1
 
-C<- ggarrange(A, B, C, ncol=1, nrow=3, common.legend = F)
+C2+
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())-> C2
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3_Sput.pdf", plot = C, width = 10, height = 12)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3_Sput.png", plot = C, width = 10, height = 12)
+C3<- ggarrange(C1, C2, ncol=2, nrow=1, common.legend = F)
 
+##Save them individually for manual crafting 
+##Save in alternative location temporal location for now before a massive adjustment of the repo
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_A.png", plot = A2, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_A.svg", plot = A2, width = 10, height = 8, dpi = 600)
+
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_B.png", plot = B, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_B.svg", plot = B, width = 10, height = 8, dpi = 600)
+
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_C.png", plot = C3, width = 10, height = 6, dpi = 600)
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_C.svg", plot = C3, width = 10, height = 8, dpi = 600)
+
+##This is the one in the repo, but will be changed
 C<- ggarrange(A2, B, C, ncol=1, nrow=3, common.legend = F)
 
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Fig_3.2_Sput.pdf", plot = C, width = 16, height = 16, dpi = 600)
