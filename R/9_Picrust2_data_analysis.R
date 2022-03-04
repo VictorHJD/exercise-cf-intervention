@@ -435,7 +435,7 @@ ggplot() +
   geom_segment(data=centroids[,1:4], aes(x=centroids[1,2], y=centroids[1,3], xend=centroids[2,2], yend=centroids[2,3]), linetype = 2, color=" gray")+ 
   geom_point(data=seg.data, aes(x=v.PCoA1,y=v.PCoA2,shape=Phenotype_severity, fill= Genus),size=3) +
   #geom_point(size=3, aes(fill= Patient_number, shape= as.factor(Phenotype_severity)), color= "black")+
-  scale_shape_manual(values = c(25, 24), labels = c("Mild (ppFEV1 > 70% at V1)", "Moderate (ppFEV1 40-70% at V1)"))+
+  scale_shape_manual(values = c(25, 24), labels = c("Mild (ppFEV1 > 70%)", "Moderate (ppFEV1 40-70%)"))+
   #scale_shape_manual(values = c(21, 24, 22))+
   scale_fill_manual(values = dom.palette)+
   scale_color_manual(values = dom.palette)+
@@ -469,7 +469,7 @@ write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q2_PCoA1_Dom_tax_Sput
 
 seg.data%>%
   ggplot(aes(x=Genus, y= v.PCoA1))+
-  geom_boxplot(aes(fill= Genus), color= "black", alpha= 0.5)+
+  geom_boxplot(aes(fill= Genus), color= "black")+
   #geom_jitter(position = position_jitter(width = 0.5),size=3, aes(shape=Visit, fill= Genus)) +
   #scale_shape_manual(values = c(21, 24, 22))+
   scale_fill_manual(values = tax.palette)+
@@ -503,7 +503,7 @@ write.csv(x, "~/CF_project/exercise-cf-intervention/tables/Q2_PCoA2_Dom_tax_Sput
 
 seg.data%>%
   ggplot(aes(x=Genus, y= v.PCoA2))+
-  geom_boxplot(aes(fill= Genus), color= "black", alpha= 0.5)+
+  geom_boxplot(aes(fill= Genus), color= "black")+
   #geom_jitter(position = position_jitter(width = 0.5),size=3, aes(shape=Visit, fill= Genus)) +
   #scale_shape_manual(values = c(21, 24, 22))+
   scale_fill_manual(values = tax.palette)+
@@ -543,13 +543,13 @@ BC_dist.sputum%>%
                                       "P10", "P11", "P12", "P13", "P14","P15", "P16", "P17", "P18"))%>%
   ggplot(aes(x= Group, y= BC_dist))+
   geom_boxplot(color="black", alpha= 0.5)+
-  geom_point(shape=21, position=position_jitter(0.2), size=3, aes(fill= Patient_number), color= "black")+
+  geom_point(shape=21, position=position_jitter(0.2), size=5, aes(fill= Patient_number), color= "black")+
   xlab("Visit")+
   ylab("Bray-Curtis dissimilarity")+
   labs(tag= "B)", caption = get_pwc_label(stats.test), fill = "Patient")+
   scale_fill_manual(values = pal.CF)+
   theme_classic()+
-  guides(fill = guide_legend(override.aes=list(shape=c(21)), ncol = 11, size= 10), color= "none")+
+  guides(fill = guide_legend(override.aes=list(shape=c(21), size=5), ncol = 11, size= 10), color= "none")+
   theme(text = element_text(size=16), legend.position="bottom", legend.box = "horizontal")+
   scale_x_discrete(labels=c("V1_V2" =  "V1 to V2", 
                             "V2_V3" = "V2 to V3",
@@ -608,18 +608,18 @@ C1+
 C2+
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())-> C2
 
-C3<- ggarrange(C1, C2, ncol=2, nrow=1, common.legend = F)
+C3<- ggarrange(C1, C2, ncol=1, nrow=2, align = "hv", common.legend = F)
 
 ##Save them individually for manual crafting 
 ##Save in alternative location temporal location for now before a massive adjustment of the repo
-ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_A.png", plot = A2, width = 10, height = 8, dpi = 600)
-ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_A.svg", plot = A2, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_A.png", plot = A2, width = 20, height = 14, dpi = 600, units = "cm")
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_A.svg", plot = A2, width = 20, height = 14, dpi = 600, units = "cm")
 
-ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_B.png", plot = B, width = 10, height = 8, dpi = 600)
-ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_B.svg", plot = B, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_B.png", plot = B, width = 20, height = 14, dpi = 600, units = "cm")
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_B.svg", plot = B, width = 20, height = 14, dpi = 600, units = "cm")
 
-ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_C.png", plot = C3, width = 10, height = 6, dpi = 600)
-ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_C.svg", plot = C3, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_C.png", plot = C3, width = 10, height = 26, dpi = 600, units = "cm")
+ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_C.svg", plot = C3, width = 10, height = 26, dpi = 600, units = "cm")
 
 ##This is the one in the repo, but will be changed
 C<- ggarrange(A2, B, C, ncol=1, nrow=3, common.legend = F)

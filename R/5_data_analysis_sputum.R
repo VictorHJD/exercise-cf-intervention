@@ -298,8 +298,8 @@ top.sputum%>%
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.pdf", plot = A, width = 10, height = 8, dpi = 600)
 ggsave(file = "CF_project/exercise-cf-intervention/figures/Q1_Dominant_Lungfunct_Sputum.png", plot = A, width = 10, height = 8, dpi = 600)
 
-#ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_E.png", plot = A, width = 10, height = 8, dpi = 600)
-#ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_E.svg", plot = A, width = 10, height = 8, dpi = 600)
+#ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_E.png", plot = A, width = 20, height = 14, dpi = 600, units = "cm")
+#ggsave(file = "CF_project/Adjusted_figures/Fig_1_Sputum_E.svg", plot = A, width = 20, height = 14, dpi = 600, units = "cm")
 
 ##Make a heatmap
 tmp<- as.data.frame(otu_table(tax_glom(PS4.sput, "Genus")))
@@ -323,7 +323,7 @@ tmp%>%
   column_to_rownames(var = "ASV_Genus")->tmp
 ##Eliminate rows with zero
 tmp<- tmp[apply(tmp[,-1], 1, function(x) !all(x<0.9)),]
-
+tmp<-tmp[1:18,]
 library("pheatmap")
 library(dendextend)
 ###In order to add the annotations in good order, 
@@ -358,11 +358,14 @@ sput.heatmap <- pheatmap(tmp, cluster_rows = F, cluster_cols = T,
                           annotation_col = col_groups, 
                           annotation_colors = colour_groups,
                           show_rownames = T,
-                          show_colnames = F)
+                          show_colnames = F,
+                         fontsize = 16,
+                         fontsize_row = 16,
+                         fontsize_number = 16)
 
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.pdf", plot = sput.heatmap, width = 10, height = 8, dpi = 600)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.png", plot = sput.heatmap, width = 10, height = 8, dpi = 600)
-ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.svg", plot = sput.heatmap, width = 10, height = 8, dpi = 600)
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.pdf", plot = sput.heatmap, width = 20, height = 12, dpi = 600, units = "cm")
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.png", plot = sput.heatmap, width = 20, height = 12, dpi = 600, units = "cm")
+ggsave(file = "CF_project/exercise-cf-intervention/figures/Heatmap_Sputum.svg", plot = sput.heatmap, width = 20, height = 12, dpi = 600, units = "cm")
 
 ##Bray-Curtis
 BC_dist<- phyloseq::distance(PS4.sput,
