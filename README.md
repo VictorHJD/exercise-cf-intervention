@@ -1,21 +1,12 @@
 # Project: Diet and activity intervention on patients with cystic-fibrosis 
 
-[[_TOC_]]
 # Project status: 
 - [X] planned
 - [X] running
-- [ ] manuscript writing
+- [X] manuscript writing
 - [ ] submitted
 - [ ] revision
 - [ ] closed
-
-
-
-## Deadlines
-
-
-# Project description
-(Unpdate later)
 
 ## Key questions
 1. Are the excercise routine and a diet intervention impacting the microbiome of patients with cystic fibrosis?
@@ -39,7 +30,7 @@
 
 | File or Directory | System | Path | short desciption |
 | -------- | -------- | -------- | ---------| 
-| Commed_Subset/ | VM    |/fast/AG_Forslund/Victor/CF_project/Seqdata/| all raw sequencing data  |
+| Commed_Subset/ | MaxCluster-MDC  |/fast/AG_Forslund/Victor/CF_project/Seqdata/| all raw sequencing data  |
 
 
 ## Status
